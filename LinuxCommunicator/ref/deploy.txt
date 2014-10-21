@@ -1,0 +1,17 @@
+Microsoft.Hpc.Communicators.LinuxCommunicator.dll
+Microsoft.Hpc.Communicators.LinuxCommunicator.pdb
+Microsoft.Owin.dll
+Microsoft.Owin.Host.HttpListener.dll
+Microsoft.Owin.Host.HttpListener.xml
+Microsoft.Owin.Hosting.dll
+Microsoft.Owin.Hosting.xml
+Microsoft.Owin.xml
+Newtonsoft.Json.dll
+Newtonsoft.Json.xml
+Owin.dll
+System.Net.Http.Formatting.dll
+System.Net.Http.Formatting.xml
+System.Web.Http.dll
+System.Web.Http.Owin.dll
+System.Web.Http.Owin.xml
+System.Web.Http.xml

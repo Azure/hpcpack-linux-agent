@@ -115,7 +115,6 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
             this.SendRequest("endtask", "taskcompleted", nodeName, callback, arg);
         }
 
-
         public void StartJobAndTask(string nodeName, StartJobAndTaskArg arg, string userName, string password, ProcessStartInfo startInfo, NodeCommunicatorCallBack<StartJobAndTaskArg> callback)
         {
             this.SendRequest("startjobandtask", "taskcompleted", nodeName, callback, Tuple.Create(arg, startInfo));
