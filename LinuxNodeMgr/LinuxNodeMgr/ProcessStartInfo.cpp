@@ -7,7 +7,7 @@ ProcessStartInfo* ProcessStartInfo::FromJson(const web::json::value& jsonInfo)
 	auto commandLineValue = jsonInfo.at(U("commandLine"));
 	if (!commandLineValue.is_null() && commandLineValue.is_string()){
 		processStartInfo->commandLine = commandLineValue.as_string();
-		std::cout << "Get commandLine from json : " << processStartInfo->commandLine << std::endl;
+		//std::cout << "Get commandLine from json : " << processStartInfo->commandLine << std::endl;
 	}
 
 	auto affinityValue = jsonInfo.at(U("affinity"));
@@ -15,14 +15,14 @@ ProcessStartInfo* ProcessStartInfo::FromJson(const web::json::value& jsonInfo)
 		auto& arr = affinityValue.as_array();
 		for (auto i = arr.begin(); i != arr.end(); i++){
 			processStartInfo->affinity.push_back(i->as_number().to_int64());
-			std::cout << "Get affinity from json : " << i->as_number().to_int64() << std::endl;
+			//std::cout << "Get affinity from json : " << i->as_number().to_int64() << std::endl;
 		}
 	}
 
 	auto workingDirectoryValue = jsonInfo.at(U("workingDirectory"));
 	if (!workingDirectoryValue.is_null() && workingDirectoryValue.is_string()){
 		processStartInfo->workingDirectory = workingDirectoryValue.as_string();
-		std::cout << "Get workingDirectory from json : " << processStartInfo->workingDirectory << std::endl;
+		//std::cout << "Get workingDirectory from json : " << processStartInfo->workingDirectory << std::endl;
 	}
 
 	auto environmentVariablesValue = jsonInfo.at(U("environmentVariables"));
@@ -31,21 +31,11 @@ ProcessStartInfo* ProcessStartInfo::FromJson(const web::json::value& jsonInfo)
 		for (auto i = obj.begin(); i != obj.end(); i++){
 			std::string s = i->first + "=" + i->second.as_string();
 			processStartInfo->environmentVariables.push_back(s);
-			std::cout << "Get environmentVariables from json : " << s << std::endl;
+			//std::cout << "Get environmentVariables from json : " << s << std::endl;
 		}
-
-		//size_t count = environmentVariablesValue.size();
-		//std::cout << "Get environmentVariables from json count : " << count << std::endl;
-
-		//for (size_t i = 0; i < count;i++){
-		//	auto env = environmentVariablesValue.at(i);
-		//	std::string s = env.first.as_string() + "=" + env.second.as_string();
-		//	processStartInfo->environmentVariables.push_back(s);
-		//	std::cout << "Get environmentVariables from json : " << s << std::endl;
-		//}
 	}
 
-	std::cout << "jsonInfo from json " << jsonInfo.serialize();
+	//std::cout << "jsonInfo from json " << jsonInfo.serialize();
 
     return processStartInfo;
 }

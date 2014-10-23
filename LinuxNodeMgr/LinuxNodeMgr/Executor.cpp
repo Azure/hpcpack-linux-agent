@@ -79,14 +79,14 @@ void* RunThread(void* arg)
 			argarray[ix] = NULL;
 		}
 
-		for (int i = 0; i < argsize + 1; i++){
-			if (argarray[i] == NULL){
-				std::cout << "arg[" << i << "]: " << "NULL" << std::endl;
-			}
-			else{
-				std::cout << "arg[" << i << "]: " << argarray[i] << std::endl;
-			}
-		}
+		//for (int i = 0; i < argsize + 1; i++){
+		//	if (argarray[i] == NULL){
+		//		std::cout << "arg[" << i << "]: " << "NULL" << std::endl;
+		//	}
+		//	else{
+		//		std::cout << "arg[" << i << "]: " << argarray[i] << std::endl;
+		//	}
+		//}
 
 		std::vector< std::string > envs = startInfo->environmentVariables;
 		//startInfo->GetCommandEnvs(&envs);
@@ -97,7 +97,7 @@ void* RunThread(void* arg)
 			size_t ix = 0;
 			for (std::vector<std::string>::iterator i = envs.begin(); i != envs.end(); ++i, ++ix){
 				envarray[ix] = (char*)i->c_str();
-				std::cout << "env[" << ix << "]: " << envarray[ix] << std::endl;
+				//std::cout << "env[" << ix << "]: " << envarray[ix] << std::endl;
 			}
 			envarray[ix] = NULL;
 		}
