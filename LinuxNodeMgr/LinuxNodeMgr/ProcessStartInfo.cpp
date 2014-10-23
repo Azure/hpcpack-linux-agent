@@ -3,7 +3,94 @@
 ProcessStartInfo* ProcessStartInfo::FromJson(const web::json::value& jsonInfo)
 {
     ProcessStartInfo *processStartInfo = new ProcessStartInfo();
-    processStartInfo->commandLine = jsonInfo.at(U("commandLine")).as_string();
+
+	auto commandLineValue = jsonInfo.at(U("commandLine"));
+	if (!commandLineValue.is_null() && commandLineValue.is_string()){
+		processStartInfo->commandLine = commandLineValue.as_string();
+		std::cout << "Get commandLine from json : " << processStartInfo->commandLine << std::endl;
+	}
+
+	auto affinityValue = jsonInfo.at(U("affinity"));
+	if (!affinityValue.is_null() && affinityValue.is_array()){
+		auto& arr = affinityValue.as_array();
+		for (auto i = arr.begin(); i != arr.end(); i++){
+			processStartInfo->affinity.push_back(i->as_number().to_int64());
+			std::cout << "Get affinity from json : " << i->as_number().to_int64() << std::endl;
+		}
+	}
+
+	auto workingDirectoryValue = jsonInfo.at(U("workingDirectory"));
+	if (!workingDirectoryValue.is_null() && workingDirectoryValue.is_string()){
+		processStartInfo->workingDirectory = workingDirectoryValue.as_string();
+		std::cout << "Get workingDirectory from json : " << processStartInfo->workingDirectory << std::endl;
+	}
+
+	auto environmentVariablesValue = jsonInfo.at(U("environmentVariables"));
+	if (!environmentVariablesValue.is_null() && environmentVariablesValue.is_object()){
+		auto& obj = environmentVariablesValue.as_object();
+		for (auto i = obj.begin(); i != obj.end(); i++){
+			std::string s = i->first + "=" + i->second.as_string();
+			processStartInfo->environmentVariables.push_back(s);
+			std::cout << "Get environmentVariables from json : " << s << std::endl;
+		}
+
+		//size_t count = environmentVariablesValue.size();
+		//std::cout << "Get environmentVariables from json count : " << count << std::endl;
+
+		//for (size_t i = 0; i < count;i++){
+		//	auto env = environmentVariablesValue.at(i);
+		//	std::string s = env.first.as_string() + "=" + env.second.as_string();
+		//	processStartInfo->environmentVariables.push_back(s);
+		//	std::cout << "Get environmentVariables from json : " << s << std::endl;
+		//}
+	}
+
+	std::cout << "jsonInfo from json " << jsonInfo.serialize();
 
     return processStartInfo;
+}
+
+std::string ProcessStartInfo::GetCommand()
+{
+	std::string command = "";
+	size_t index = commandLine.find_first_of(' ', 0);
+	if (index != std::string::npos){
+		command = commandLine.substr(0, index);
+	}
+	else {
+		command = commandLine;
+	}
+	return command;
+}
+
+void ProcessStartInfo::GetCommandArgs(std::vector< std::string >* ret)
+{
+	std::cout << "GetCommandArgs : " << commandLine << std::endl;
+	split(commandLine, ' ', ret);
+}
+
+void ProcessStartInfo::GetCommandEnvs(std::vector< std::string >* ret)
+{
+	//std::cout << "GetCommandEnvs : " << environmentVariables.size() << std::endl;
+
+	//for (std::map<std::string, std::string>::iterator i = environmentVariables.begin(); i != environmentVariables.end(); ++i){
+	//	std::cout << "Env :" + i->first + "=" + i->second << std::endl;
+	//	ret->push_back(i->first + "=" + i->second);
+	//}
+}
+
+void ProcessStartInfo::split(std::string& s, char delim, std::vector< std::string >* ret)
+{
+	size_t last = 0;
+	size_t index = s.find_first_of(delim, last);
+	while (index != std::string::npos)
+	{
+		ret->push_back(s.substr(last, index - last));
+		last = index + 1;
+		index = s.find_first_of(delim, last);
+	}
+	if (index - last>0)
+	{
+		ret->push_back(s.substr(last, index - last));
+	}
 }

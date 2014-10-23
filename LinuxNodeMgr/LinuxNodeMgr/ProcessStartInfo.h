@@ -27,14 +27,20 @@ struct ProcessStartInfo
     std::string stdOutText;
     std::string stdErrText;
     std::string workingDirectory;
-    std::vector<long long> affinity;
-    std::map<std::string, std::string> environmentVariables;
+    std::vector<long> affinity;
+	std::vector<std::string> environmentVariables;
 
     ///Task thread&process information.
     rusage Usage;
     pthread_t* threadId;
     pid_t processId;
     int exitCode;
+
+	std::string GetCommand();
+	void GetCommandArgs(std::vector< std::string >* ret);
+	void GetCommandEnvs(std::vector< std::string >* ret);
+	void split(std::string& s, char delim, std::vector<std::string>* ret);
+	
 };
 
 #endif // ProcessStartInfo_H_INCLUDED
