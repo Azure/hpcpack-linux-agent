@@ -142,9 +142,9 @@ int main()
   //  syslog(LOG_INFO, "Started");
     std::cout << "Start" << std::endl;
 
-    int a;
-    std::cin >> a;
-    sleep(10);
+	while (true){
+		sleep(100);
+	}
 
     rc.CloseListener();
 
