@@ -22,6 +22,7 @@ struct ProcessStartInfo
     static ProcessStartInfo* FromJson(const web::json::value& jsonValue);
 
     /// Input Parameters
+	std::string commandScript;
     std::string commandLine;
     std::string stdInText;
     std::string stdOutText;
@@ -39,8 +40,10 @@ struct ProcessStartInfo
 	std::string GetCommand();
 	void GetCommandArgs(std::vector< std::string >* ret);
 	void GetCommandEnvs(std::vector< std::string >* ret);
-	void split(std::string& s, char delim, std::vector<std::string>* ret);
+	std::string GetCommandScript();
+	void DeleteCommandScript();
 	
+	void split(std::string& s, char delim, std::vector<std::string>* ret);
 };
 
 #endif // ProcessStartInfo_H_INCLUDED

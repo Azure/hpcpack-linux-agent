@@ -84,3 +84,45 @@ void ProcessStartInfo::split(std::string& s, char delim, std::vector< std::strin
 		ret->push_back(s.substr(last, index - last));
 	}
 }
+
+std::string ProcessStartInfo::GetCommandScript()
+{
+	char scriptPath[256];
+
+	strcpy(scriptPath, "/tmp/run.XXXXXX");
+	/* Make temp file */
+	if (mkstemp(scriptPath) < 0)
+	{
+		return "";
+	}
+	else
+	{
+		std::cout << "Script temp file name: " << scriptPath << std::endl;
+	}
+
+	commandScript = scriptPath;
+	std::ofstream scriptFile(commandScript, std::ios::trunc);
+	scriptFile << "#!/bin/bash" << std::endl << std::endl;
+
+	if (workingDirectory != "" && access(workingDirectory.c_str(),0 ) != -1){
+		scriptFile << "cd " << workingDirectory << std::endl << std::endl;
+	}
+
+	if (commandLine != ""){
+		scriptFile << commandLine << std::endl;
+	}
+
+	scriptFile.close();
+
+	return commandScript;
+}
+
+void ProcessStartInfo::DeleteCommandScript(){
+	if (commandScript == ""){
+		return;
+	}
+
+	unlink(commandScript.c_str());
+	return;
+}
+

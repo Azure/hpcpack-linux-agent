@@ -41,6 +41,7 @@ void* RunThread(void* arg)
 
 	// Fork the task as child process.
 	std::cout << "before fork" << std::endl;
+	std::string scrpitPath = startInfo->GetCommandScript();
 
 	pid_t childPid = fork();
 	if (childPid < 0)
@@ -63,21 +64,23 @@ void* RunThread(void* arg)
 	else if (childPid == 0)
 	{
 		// run command
-		std::string command = startInfo->GetCommand();
-		std::cout << "command : " << command << std::endl;
+		//std::string command = startInfo->GetCommand();
+		//std::cout << "command : " << command << std::endl;
 
-		std::vector< std::string > args;
-		startInfo->GetCommandArgs(&args);
-		char** argarray = NULL;
-		int argsize = (int)args.size();
-		if (argsize > 0) {
-			argarray = new char*[argsize + 1];
-			size_t ix = 0;
-			for (std::vector<std::string>::iterator i = args.begin(); i != args.end(); i++, ix++){
-				argarray[ix] = (char*)i->c_str();
-			}
-			argarray[ix] = NULL;
-		}
+		char * argarray[3] = { (char*)"/bin/bash", (char*)scrpitPath.c_str(), NULL };
+
+		//std::vector< std::string > args;
+		//startInfo->GetCommandArgs(&args);
+		//char** argarray = NULL;
+		//int argsize = (int)args.size();
+		//if (argsize > 0) {
+		//	argarray = new char*[argsize + 1];
+		//	size_t ix = 0;
+		//	for (std::vector<std::string>::iterator i = args.begin(); i != args.end(); i++, ix++){
+		//		argarray[ix] = (char*)i->c_str();
+		//	}
+		//	argarray[ix] = NULL;
+		//}
 
 		//for (int i = 0; i < argsize + 1; i++){
 		//	if (argarray[i] == NULL){
@@ -110,11 +113,13 @@ void* RunThread(void* arg)
 		dup2(pipeForStdErr[1], 2);
 		close(pipeForStdErr[0]);
 		close(pipeForStdErr[1]);
-		int sts = execvpe(command.c_str(), argarray, envarray);
+		//int sts = execvpe(command.c_str(), argarray, envarray);
+		int sts = execvpe("/bin/bash", argarray, envarray);
 		std::cout << "after exec " << sts << std::endl;
 
-		delete[] argarray;
+		//delete[] argarray;
 		delete[] envarray;
+		startInfo->DeleteCommandScript();
 
 		//execle(startInfo->commandLine.c_str(), startInfo->commandLine.c_str(), NULL);
 		exit(0);
@@ -126,6 +131,9 @@ void* RunThread(void* arg)
 
 		/// Wait the end of child process.
 		int status;
+		char buf[32] = { 0 };
+		ssize_t bytesRead;
+
 		wait3(&status, 0, &startInfo->Usage);
 		if (WIFEXITED(status)){
 			startInfo->exitCode = WEXITSTATUS(status);
@@ -134,11 +142,8 @@ void* RunThread(void* arg)
 			startInfo->exitCode = -1;
 		}
 
-		char buf[32] = { 0 };
 		close(pipeForStdOut[1]);
 		close(pipeForStdErr[1]);
-
-		ssize_t bytesRead;
 
 		/// Read data from pipe for stdout.
 		while ((bytesRead = read(pipeForStdOut[0], buf, sizeof(buf) - 1)) > 0)
@@ -147,8 +152,6 @@ void* RunThread(void* arg)
 			startInfo->stdOutText += buf;
 		}
 
-		close(pipeForStdOut[0]);
-
 		/// Read data from pipe for stderr.
 		while ((bytesRead = read(pipeForStdErr[0], buf, sizeof(buf) - 1)) > 0)
 		{
@@ -156,7 +159,9 @@ void* RunThread(void* arg)
 			startInfo->stdErrText += buf;
 		}
 
+		close(pipeForStdOut[0]);
 		close(pipeForStdErr[0]);
+		startInfo->DeleteCommandScript();
 
 		taskInfo->Message += startInfo->stdOutText + startInfo->stdErrText;
 		taskInfo->ExitCode = startInfo->exitCode;
