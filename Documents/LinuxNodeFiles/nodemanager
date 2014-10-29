@@ -1,0 +1,57 @@
+#! /bin/sh
+# Put this file into /etc/init.d/
+# sudo cp nodemanager /etc/init.d
+# Then run
+# cd /etc/init.d
+# sudo chown root:root nodemanager
+# sudo chmod 755 nodemanager
+# sudo ln -s /usr/lib/insserv/insserv /sbin/insserv
+# sudo insserv nodemanager
+
+NAME=nodemanager
+DESC="hpc node manager"
+USERGROUP="root:root"
+EXEC=/home/azureuser/nm/startnm.sh
+
+#Helper functions
+start() {
+        start-stop-daemon --start --quiet --background --make-pidfile \
+                --pidfile /var/run/$NAME.pid --chuid $USERGROUP \
+                --chdir /home/azureuser/nm \
+                --exec $EXEC
+}
+
+stop() {
+        start-stop-daemon --stop --quiet --pidfile /var/run/$NAME.pid \
+                --exec $EXEC --retry 30
+}
+
+case "$1" in
+  start)
+        echo -n "Starting $DESC: "
+        start
+        echo "$NAME."
+        ;;
+  stop)
+        echo -n "Stopping $DESC: "
+        stop
+        echo "$NAME."
+        ;;
+  restart)
+        echo -n "Restarting $DESC: "
+        #set +e
+        stop
+        #set -e
+        #sleep 1
+        Start
+
+        echo "$NAME."
+        ;;
+  *)
+        N=/etc/init.d/$NAME
+        echo "Usage: $N {start|stop|restart}" >&2
+        exit 1
+        ;;
+esac
+
+exit 0

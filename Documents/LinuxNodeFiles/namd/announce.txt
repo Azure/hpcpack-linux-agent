@@ -1,0 +1,80 @@
++--------------------------------------------------------------------+
+|                                                                    |
+|                  NAMD 2.10b1 Release Announcement                  |
+|                                                                    |
++--------------------------------------------------------------------+
+
+                                                      August 22, 2014
+
+The Theoretical and Computational Biophysics Group at the University of
+Illinois is proud to announce the public release of a new version of
+NAMD, a parallel, object-oriented molecular dynamics code designed for
+high-performance simulation of large biomolecular systems.  NAMD is
+distributed free of charge and includes source code.  NAMD development
+is supported by the NIH National Institute of General Medical Sciences.
+
+NAMD 2.10b1 has many advantages over NAMD 2.9, among these are:
+
+- Network topology adaptation for CRAY XE/XK and IBM Blue Gene/Q
+
+- CRAY XC30 and IBM Blue Gene/Q native network layers
+
+- Multiple-copy algorithm support for native network layers
+
+- Lambda-exchange multiple-copy alchemical free energy calculations
+
+- String method with swarms-of-trajectories transition pathways
+
+- Atom coordinate/velocity exchange for multiple-copy algorithms
+
+- Tcl scripting command to reinitialize atoms from output files
+
+- Tcl scripting configuration file parameter introspection
+
+- Tcl scripting trajectory and restart output file switching
+
+- Multilevel summation method for long-range electrostatics
+
+- Normalized external electric field to avoid pressure artifacts
+
+- Improved scalability for collective variables, Tcl forces, etc.
+
+- Collective variables module improvements
+
+- Drude polarizable force field improvements
+
+- SMOG structure-based potential support
+
+- Minimizer stability and performance improvements
+
+- Various improvements for 100-million-atom simulations
+
+- Update to CUDA 6.0 with Kepler GPU optimizations
+
+- GPU-accelerated particle-mesh Ewald calculation
+
+- Intel Xeon Phi coprocessor support
+
+- 64-bit Windows shared-memory single-node port with CUDA support
+
+- 32-bit and 64-bit ARM processor port with CUDA support
+
+- Enhanced performance and scalability
+
+Details at http://www.ks.uiuc.edu/Research/namd/2.10/features.html
+
+NAMD is available from http://www.ks.uiuc.edu/Research/namd/
+
+For your convenience, NAMD has been ported to and will be installed
+on the machines at the NSF-sponsored national supercomputing centers.
+If you are planning substantial simulation work of an academic nature
+you should apply for these resources.  Benchmarks for your proposal
+are available at http://www.ks.uiuc.edu/Research/namd/performance.html
+
+The Theoretical and Computational Biophysics Group encourages NAMD users
+to be closely involved in the development process through reporting
+bugs, contributing fixes, periodical surveys and via other means.
+Questions or comments may be directed to namd@ks.uiuc.edu.
+
+We are eager to hear from you, and thank you for using our software!
+
