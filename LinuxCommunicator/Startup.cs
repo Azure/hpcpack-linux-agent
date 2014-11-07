@@ -25,6 +25,11 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
                 defaults: new { id = RouteParameter.Optional }
             );
 
+            var json = config.Formatters.JsonFormatter;
+            json.SerializerSettings.PreserveReferencesHandling = Newtonsoft.Json.PreserveReferencesHandling.Objects;
+            config.Formatters.Remove(config.Formatters.XmlFormatter);
+            json.SerializerSettings.PreserveReferencesHandling = Newtonsoft.Json.PreserveReferencesHandling.None;
+
             appBuilder.UseWebApi(config); 
         }
     }

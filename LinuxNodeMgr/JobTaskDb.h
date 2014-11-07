@@ -3,10 +3,41 @@
 
 #include "ProcessStartInfo.h"
 #include "Executor.h"
+#include "Monitoring.h"
 
 #include <syslog.h>
+#include <time.h>
 
 class Executor;
+
+struct UMID
+{
+public:
+	UMID(unsigned short metricId, unsigned short instanceId)
+		: MetricId(metricId), InstanceId(instanceId) {}
+	web::json::value GetJson() const;
+	unsigned short MetricId;
+	unsigned short InstanceId;
+};
+
+struct ComputeNodeMetricInformation
+{
+public:
+	ComputeNodeMetricInformation(std::string nodeName)
+		: Name(nodeName)
+	{
+		time_t t;
+		time(&t);
+		Time = ctime(&t);
+		TickCount = Monitoring::Interval;
+	}
+	web::json::value GetJson() const;
+	std::string Name;
+	std::string Time;
+	std::map<int, UMID*> Umids;
+	std::map<int, float> Values;
+	int TickCount;
+};
 
 struct ComputeClusterTaskInformation
 {
@@ -74,6 +105,7 @@ class JobTaskDb
         // Not acquiring locks for singleton. We can initialize in the very beginning.
         static void Initialize()
         {
+			std::cout << "JobTaskDb : Initializing" << std::endl;
             instance = new JobTaskDb();
         
             char nodeName[256];
@@ -93,6 +125,8 @@ class JobTaskDb
             if (uriFile)
             {
                 uriFile >> instance->reportUri;
+				instance->metricReportUri = instance->GetMetricReportUri(instance->reportUri);
+
                 std::cout << "Loaded Report Uri: " << instance->reportUri << std::endl;            
             }
             else
@@ -102,6 +136,7 @@ class JobTaskDb
         }
 
         web::json::value GetNodeInfo();
+		web::json::value GetMetricInfo();
         web::json::value GetTaskInfo(int jobId, int taskId) const;
         void StartJobAndTask(int jobId, int taskId, ProcessStartInfo* startInfo, const std::string& callbackUri);
         void EndJob(int jobId);
@@ -109,20 +144,26 @@ class JobTaskDb
         void RemoveTask(int jobId, int taskId);
         void SetReportUri(const std::string& reportUri);
         const std::string GetReportUri();
+		const std::string GetMetricReportUri();
+		std::string GetMetricReportUri(std::string & reportUri);
 
     protected:
     private:
-        JobTaskDb();
+		JobTaskDb();
+		~JobTaskDb();
 
         void Callback(std::string callbackUri, web::json::value callbackBody);
 
         static JobTaskDb* instance;
         pthread_mutex_t jobTaskDbLock;
-        pthread_t *threadId;
+        pthread_t threadId;
+		pthread_t metricThreadId;
         std::string reportUri;
+		std::string metricReportUri;
 
         ComputeClusterNodeInformation nodeInfo;
         Executor* executor;
+		Monitoring monitoring;
 };
 
 #endif // JOBTASKDB_H

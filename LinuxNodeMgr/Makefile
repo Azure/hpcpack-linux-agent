@@ -40,9 +40,9 @@ OBJDIR_RELEASE = obj/Release
 DEP_RELEASE = 
 OUT_RELEASE = bin/Release/NM
 
-OBJ_DEBUG = $(OBJDIR_DEBUG)/Executor.o $(OBJDIR_DEBUG)/JobTaskDb.o $(OBJDIR_DEBUG)/ProcessStartInfo.o $(OBJDIR_DEBUG)/RemotingCommunicator.o $(OBJDIR_DEBUG)/RemotingExecutor.o $(OBJDIR_DEBUG)/UnionFindSet.o $(OBJDIR_DEBUG)/main.o
+OBJ_DEBUG = $(OBJDIR_DEBUG)/Executor.o $(OBJDIR_DEBUG)/JobTaskDb.o $(OBJDIR_DEBUG)/ProcessStartInfo.o $(OBJDIR_DEBUG)/RemotingCommunicator.o $(OBJDIR_DEBUG)/RemotingExecutor.o $(OBJDIR_DEBUG)/UnionFindSet.o $(OBJDIR_DEBUG)/main.o $(OBJDIR_DEBUG)/Monitoring.o
 
-OBJ_RELEASE = $(OBJDIR_RELEASE)/Executor.o $(OBJDIR_RELEASE)/JobTaskDb.o $(OBJDIR_RELEASE)/ProcessStartInfo.o $(OBJDIR_RELEASE)/RemotingCommunicator.o $(OBJDIR_RELEASE)/RemotingExecutor.o $(OBJDIR_RELEASE)/UnionFindSet.o $(OBJDIR_RELEASE)/main.o
+OBJ_RELEASE = $(OBJDIR_RELEASE)/Executor.o $(OBJDIR_RELEASE)/JobTaskDb.o $(OBJDIR_RELEASE)/ProcessStartInfo.o $(OBJDIR_RELEASE)/RemotingCommunicator.o $(OBJDIR_RELEASE)/RemotingExecutor.o $(OBJDIR_RELEASE)/UnionFindSet.o $(OBJDIR_RELEASE)/main.o $(OBJDIR_RELEASE)/Monitoring.o
 
 all: debug release
 
@@ -80,6 +80,9 @@ $(OBJDIR_DEBUG)/UnionFindSet.o: UnionFindSet.cpp
 $(OBJDIR_DEBUG)/main.o: main.cpp
 	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c main.cpp -o $(OBJDIR_DEBUG)/main.o
 
+$(OBJDIR_DEBUG)/Monitoring.o: Monitoring.cpp
+	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c Monitoring.cpp -o $(OBJDIR_DEBUG)/Monitoring.o
+
 clean_debug: 
 	rm -f $(OBJ_DEBUG) $(OUT_DEBUG)
 	rm -rf bin/Debug
@@ -116,6 +119,9 @@ $(OBJDIR_RELEASE)/UnionFindSet.o: UnionFindSet.cpp
 
 $(OBJDIR_RELEASE)/main.o: main.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c main.cpp -o $(OBJDIR_RELEASE)/main.o
+
+$(OBJDIR_RELEASE)/Monitoring.o: Monitoring.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c Monitoring.cpp -o $(OBJDIR_RELEASE)/Monitoring.o
 
 clean_release: 
 	rm -f $(OBJ_RELEASE) $(OUT_RELEASE)

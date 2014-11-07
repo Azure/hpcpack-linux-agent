@@ -7,17 +7,26 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Hpc.Activation;
+using Microsoft.Hpc.Scheduler;
 using Microsoft.Hpc.Scheduler.Communicator;
+using System.Net;
 
 namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 {
     public class LinuxCommunicator : IUnmanagedResourceCommunicator, IDisposable
     {
         private const string ResourceUriFormat = "http://{0}:50001/api/{1}/{2}";
-        private const string CallbackUriHeaderName = "CallbackUri";  
+        private const string CallbackUriHeaderName = "CallbackUri";
+        private const string HpcFullKeyName = @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\HPC";
+        private const string ClusterNameKeyName = "ClusterName";
+
+        private readonly string HeadNode = (string)Microsoft.Win32.Registry.GetValue(HpcFullKeyName, ClusterNameKeyName, null);
+        private readonly int MonitoringPort = 9894;
 
         private HttpClient client;
         private WebServer server;
+        private Monitoring.CounterDataSender sender;
+        private Dictionary<string, Guid> nodeMap;
 
         private CancellationTokenSource cancellationTokenSource;
 
@@ -35,6 +44,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
         public void Dispose()
         {
+            this.sender.CloseConnection();
             this.server.Dispose();
             this.client.Dispose();
             GC.SuppressFinalize(this);
@@ -77,6 +87,25 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
             this.Tracer.TraceInfo("Initializing LinuxCommunicator.");
             this.client = new HttpClient();
             this.server = new WebServer();
+
+            if (this.HeadNode == null)
+            {
+                ArgumentNullException exp = new ArgumentNullException(ClusterNameKeyName);
+                Tracer.TraceError("Failed to find registry value: {0}. {1}", ClusterNameKeyName, exp);
+                throw exp;
+            }
+
+            this.sender = new Monitoring.CounterDataSender();
+            this.sender.OpenConnection(this.HeadNode, this.MonitoringPort);
+
+            IScheduler scheduler = new Scheduler.Scheduler();
+            scheduler.Connect(this.HeadNode);
+            this.nodeMap = new Dictionary<string, Guid>();
+            foreach (ISchedulerNode node in scheduler.GetNodeList(null, null))
+            {
+                this.nodeMap.Add(node.Name.ToLower(), node.Guid);
+            }
+            scheduler.Close();
 
             this.Tracer.TraceInfo("Initialized LinuxCommunicator.");
             return true;
@@ -211,6 +240,56 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
       //      var callbackUri = "http://10.0.0.4:50000/api/{1}/{2}";
 
             return string.Format("{0}/api/{1}/{2}", this.server.ListeningUri, nodeName, action);
+        }
+
+        public void MetricReported(Monitoring.ComputeNodeMetricInformation MetricInfo)
+        {
+            Guid nodeid = GetNodeId(MetricInfo.Name);
+            if (nodeid == Guid.Empty)
+            {
+                this.Tracer.TraceWarning("Ignore MetricData from UNKNOWN Node {0}.", MetricInfo.Name);
+                return;
+            }
+
+            this.sender.SendData(nodeid, MetricInfo.GetUmids(), MetricInfo.GetValues(), MetricInfo.TickCount);
+
+            this.Tracer.TraceInfo("Send MetricData from Node {0} ({1}).", MetricInfo.Name, nodeid);
+        }
+
+        private Guid GetNodeId(string nodeName)
+        {
+            Guid guid = Guid.Empty;
+            if (string.IsNullOrEmpty(nodeName))
+            {
+                return guid;
+            }
+            
+            string lower = nodeName.ToLower();
+            if (this.nodeMap.ContainsKey(lower))
+            {
+                guid = this.nodeMap[lower];
+            }
+            else
+            {
+                // new node added ? refresh the nodemap
+                IScheduler scheduler = new Scheduler.Scheduler();
+                scheduler.Connect(this.HeadNode);
+                foreach (ISchedulerNode node in scheduler.GetNodeList(null, null))
+                {
+                    string l = node.Name.ToLower();
+                    if (!this.nodeMap.ContainsKey(l))
+                    {
+                        nodeMap.Add(l, node.Guid);
+                    }
+                    if (l.Equals(lower))
+                    {
+                        guid = node.Guid;
+                    }
+                }
+                scheduler.Close();
+            }
+
+            return guid;
         }
     }
 }

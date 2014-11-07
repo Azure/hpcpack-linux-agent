@@ -26,6 +26,9 @@ namespace HandleJson
     /// Ping
     void Ping(std::string);
 
+	/// Metric 
+	void Metric(std::string);
+
     template<typename T>
     void HandleError(pplx::task<T>& t);
 };

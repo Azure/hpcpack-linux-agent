@@ -46,14 +46,32 @@ void HandleJson::Ping(std::string callBackUri)
     web::http::http_request request;
     request.set_method(http::methods::POST);
     std::string body = JobTaskDb::GetInstance().GetNodeInfo().serialize();
-    std::cout << "Reported to " << callBackUri << std::endl;
-    std::cout << "Body: " << body << std::endl;
+
+    //std::cout << "Reported to " << callBackUri << std::endl;
+    //std::cout << "Body: " << body << std::endl;
 
     request.set_body(body, U("application/json"));
     client.request(request).then([](pplx::task<web::http::http_response> t)
     {
         HandleError(t);
     });
+}
+
+void HandleJson::Metric(std::string callBackUri)
+{
+	web::http::client::http_client client(U(callBackUri));
+	web::http::http_request request;
+	request.set_method(http::methods::POST);
+	std::string body = JobTaskDb::GetInstance().GetMetricInfo().serialize();
+
+	//std::cout << "Reported to " << callBackUri << std::endl;
+	//std::cout << "Body: " << body << std::endl;
+
+	request.set_body(body, U("application/json"));
+	client.request(request).then([](pplx::task<web::http::http_response> t)
+	{
+		HandleError(t);
+	});
 }
 
 template<typename T>

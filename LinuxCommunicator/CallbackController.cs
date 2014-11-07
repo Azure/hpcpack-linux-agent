@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.Web.Http;
 using Microsoft.Hpc.Activation;
 using Microsoft.Hpc.Scheduler.Communicator;
+using Microsoft.Hpc.Communicators.LinuxCommunicator.Monitoring;
 
 namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 {
@@ -46,5 +47,29 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
                 return NextOperation.CancelJob;
             }
         }
+
+        [HttpPost]
+        [Route("api/{nodename}/metricreported")]
+        //public int MetricReported(string nodeName, [FromBody] ComputeClusterNodeInformation metricInfo)
+        public int MetricReported(string nodeName, [FromBody] ComputeNodeMetricInformation metricInfo)
+        {
+            try
+            {
+                LinuxCommunicator.Instance.Tracer.TraceInfo("Linux MetricReported. NodeName {0}, Metric Time {1} ", metricInfo.Name, metricInfo.Time);
+                LinuxCommunicator.Instance.MetricReported(metricInfo);
+
+                return -1;
+            }
+            catch (Exception ex)
+            {
+                LinuxCommunicator.Instance.Tracer.TraceException(ex);
+            }
+
+            return 5000;
+        }
+
+
+        //    return -1;
+        //}
     }
 }

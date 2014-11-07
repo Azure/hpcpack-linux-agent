@@ -134,8 +134,8 @@ int main()
     std::cout << sourceAddress << std::endl;
    // syslog(LOG_INFO, sourceAddress.c_str());
 
-    KillZombie();
-    JobTaskDb::Initialize();
+    KillZombie(); 
+	JobTaskDb::Initialize();
 
     RemotingCommunicator rc(sourceAddress);
     rc.OpenListener();
@@ -152,3 +152,4 @@ int main()
 
     return 0;
 }
+

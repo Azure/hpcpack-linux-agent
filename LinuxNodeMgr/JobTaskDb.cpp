@@ -1,9 +1,34 @@
 #include "JobTaskDb.h"
 #include "RemotingExecutor.h"
 
+void* MetricThread(void* arg)
+{
+	std::cout << "Start report thread." << std::endl;
+	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+
+	while (true)
+	{
+		std::string metricUri = JobTaskDb::GetInstance().GetMetricReportUri();
+
+		if (!metricUri.empty())
+		{
+			HandleJson::Metric(metricUri);
+		}
+
+		sleep(Monitoring::Interval);
+	}
+
+	pthread_exit(0);
+}
+
 void* ReportingThread(void* arg)
 {
-    while (true)
+	std::cout << "Start metric thread." << std::endl;
+	pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, NULL);
+	pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, NULL);
+
+	while (true)
     {
         std::string reportUri = JobTaskDb::GetInstance().GetReportUri();
 
@@ -20,16 +45,42 @@ void* ReportingThread(void* arg)
 
 JobTaskDb::JobTaskDb() : executor(new Executor())
 {
+	// start monitoring service
+	monitoring.Start();
+
     pthread_mutex_init(&jobTaskDbLock, NULL);
 
-    this->threadId = new pthread_t();
-    pthread_create(this->threadId, NULL, ReportingThread, NULL);
+    pthread_create(&(this->threadId), NULL, ReportingThread, NULL);
+
+	pthread_create(&(this->metricThreadId), NULL, MetricThread, NULL);
+}
+
+JobTaskDb::~JobTaskDb()
+{
+	if (executor != NULL)
+		delete executor;
+
+	// stop monitoring service
+	monitoring.Stop();
+
+	pthread_mutex_destroy(&jobTaskDbLock);
+
+	if (threadId != 0){
+		pthread_cancel(threadId);
+		pthread_join(threadId, NULL);
+	}
+
+	if (metricThreadId != 0){
+		pthread_cancel(metricThreadId);
+		pthread_join(metricThreadId, NULL);
+	}
 }
 
 void JobTaskDb::SetReportUri(const std::string& reportUri)
 {
     pthread_mutex_lock(&jobTaskDbLock);
     this->reportUri = reportUri;
+	this->metricReportUri = GetMetricReportUri(this->reportUri);
 
     std::ofstream uriFile("ReportUri", std::ios::trunc);
     uriFile << reportUri;
@@ -41,14 +92,58 @@ void JobTaskDb::SetReportUri(const std::string& reportUri)
 
 const std::string JobTaskDb::GetReportUri()
 {
-    pthread_mutex_lock(&jobTaskDbLock);
-    std::string reportUri = this->reportUri;
-    pthread_mutex_unlock(&jobTaskDbLock);
+	return this->reportUri;
+}
 
-    return reportUri;
+const std::string JobTaskDb::GetMetricReportUri()
+{
+	return this->metricReportUri;
+}
+
+std::string JobTaskDb::GetMetricReportUri(std::string & reportUri)
+{
+	size_t found = reportUri.find_last_of('/');
+	if (found != std::string::npos){
+		std::string metricReportUri = reportUri.substr(0, found + 1) + "metricreported";
+		std::cout << "GetMetricReportUri : " << metricReportUri << std::endl;
+		return metricReportUri;
+	}
+	return "";
 }
 
 JobTaskDb* JobTaskDb::instance = NULL;
+
+json::value UMID::GetJson() const
+{
+	json::value obj;
+	obj[U("MetricId")] = json::value(this->MetricId);
+	obj[U("InstanceId")] = json::value(this->InstanceId);
+	return obj;
+}
+
+json::value ComputeNodeMetricInformation::GetJson() const
+{
+	json::value obj;
+	obj[U("Name")] = json::value::string(this->Name);
+	obj[U("Time")] = json::value::string(this->Time);
+
+	std::vector<json::value> arr1;
+	std::vector<json::value> arr2;
+	for (std::map<int, UMID*>::const_iterator it = this->Umids.begin();
+		it != this->Umids.end();
+		it++)
+	{
+		int no = it->first;
+		arr1.push_back(it->second->GetJson());
+		arr2.push_back(json::value::number(this->Values.at(no)));
+	}
+
+	obj[U("Umids")] = json::value::array(arr1);
+	obj[U("Values")] = json::value::array(arr2);
+
+	obj[U("TickCount")] = json::value::number(this->TickCount);
+	return obj;
+}
 
 json::value ComputeClusterTaskInformation::GetJson() const
 {
@@ -120,6 +215,26 @@ json::value JobTaskDb::GetNodeInfo()
     pthread_mutex_unlock(&jobTaskDbLock);
 
     return obj;
+}
+
+json::value JobTaskDb::GetMetricInfo()
+{
+	ComputeNodeMetricInformation cnmi(nodeInfo.Name);
+	// add metric data
+	UMID cpuUsage(1, 1);
+	cnmi.Umids[0] = &cpuUsage;
+	cnmi.Values[0] = monitoring.GetCpuUsage();
+
+	UMID memoryUsage(3, 0);
+	cnmi.Umids[1] = &memoryUsage;
+	cnmi.Values[1] = monitoring.GetAvailableMemory();
+
+	UMID networkUsage(12, 1);
+	cnmi.Umids[2] = &networkUsage;
+	cnmi.Values[2] = monitoring.GetNetworkUsage();
+
+	json::value obj = cnmi.GetJson();
+	return obj;
 }
 
 void JobTaskDb::StartJobAndTask(int jobId, int taskId, ProcessStartInfo* startInfo, const std::string& callbackUri)
