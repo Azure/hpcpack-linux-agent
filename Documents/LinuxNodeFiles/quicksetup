@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# get home
+cd ~
+HOMEDIR = `pwd`
+
+# update & upgrade
+sudo apt-get update -qq
+sudo apt-get upgrade –y
+
+# install necessary packages
+sudo apt-get install g++-4.8 g++ git make libboost1.54-all-dev libssl-dev cmake –y
+sudo apt-get install cifs-utils –y
+
+# Make NM runnable
+chmod 777 ~/nm/*
+
+# Copy script to init.d
+sudo cp nodemanager /etc/init.d
+
+# Change owner and make it excutable
+cd /etc/init.d
+sudo chown root:root nodemanager
+sudo chmod 755 nodemanager
+
+# Install as Linux service
+sudo update-rc.d nodemanager defaults 
+sudo update-rc.d nodemanager enable
+
+# sysprep
+sudo waagent -deprovision
