@@ -2,15 +2,15 @@
 
 # get home
 cd ~
-HOMEDIR = `pwd`
+HOMEDIR=`pwd`
 
 # update & upgrade
 sudo apt-get update -qq
 sudo apt-get upgrade –y
 
 # install necessary packages
-sudo apt-get install g++-4.8 g++ git make libboost1.54-all-dev libssl-dev cmake –y
-sudo apt-get install cifs-utils –y
+sudo apt-get  –y install g++-4.8 g++ git make libboost1.54-all-dev libssl-dev cmake
+sudo apt-get  –y install cifs-utils
 
 # Make NM runnable
 chmod 777 ~/nm/*
@@ -28,4 +28,4 @@ sudo update-rc.d nodemanager defaults
 sudo update-rc.d nodemanager enable
 
 # sysprep
-sudo waagent -deprovision
+sudo waagent -deprovision -force
