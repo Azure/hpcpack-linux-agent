@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes" ?>
+<CodeBlocks_project_file>
+	<FileVersion major="1" minor="6" />
+	<Project>
+		<Option title="NodeManager" />
+		<Option pch_mode="2" />
+		<Option compiler="gcc" />
+		<Build>
+			<Target title="Debug">
+				<Option output="bin/Debug/NodeManager" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Debug/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-std=c++11" />
+					<Add option="-Wall" />
+					<Add option="-g" />
+					<Add option="-Wno-unused-local-typedefs" />
+					<Add directory="utils" />
+					<Add directory="arguments" />
+					<Add directory="../../casablanca/Release/include" />
+				</Compiler>
+				<Linker>
+					<Add library="../../casablanca/Release/build.debug/Binaries/libcpprest.so" />
+				</Linker>
+			</Target>
+			<Target title="Release">
+				<Option output="bin/Release/NodeManager" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/Release/" />
+				<Option type="1" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-O2" />
+					<Add option="-std=c++11" />
+					<Add option="-Wno-unused-local-typedefs" />
+					<Add directory="utils" />
+					<Add directory="arguments" />
+					<Add directory="../../casablanca/Release/include" />
+				</Compiler>
+				<Linker>
+					<Add library="../../casablanca/Release/build.debug/Binaries/libcpprest.so" />
+				</Linker>
+			</Target>
+		</Build>
+		<Compiler>
+			<Add option="-std=c++11" />
+			<Add option="-Wall" />
+			<Add option="-fexceptions" />
+			<Add option="-Wno-unused-local-typedefs" />
+			<Add directory="../../casablanca/Release/include" />
+		</Compiler>
+		<Unit filename="Readme.txt" />
+		<Unit filename="RemoteCommunicator.cpp" />
+		<Unit filename="RemoteCommunicator.h" />
+		<Unit filename="Test.cpp" />
+		<Unit filename="Test.h" />
+		<Unit filename="arguments/ProcessStartInfo.cpp" />
+		<Unit filename="arguments/ProcessStartInfo.h" />
+		<Unit filename="arguments/StartJobAndTaskArgs.cpp" />
+		<Unit filename="arguments/StartJobAndTaskArgs.h" />
+		<Unit filename="main.cpp" />
+		<Unit filename="utils/JsonHelper.cpp" />
+		<Unit filename="utils/JsonHelper.h" />
+		<Unit filename="utils/Logger.cpp" />
+		<Unit filename="utils/Logger.h" />
+		<Unit filename="utils/String.cpp" />
+		<Unit filename="utils/String.h" />
+		<Unit filename="utils/System.cpp" />
+		<Unit filename="utils/System.h" />
+		<Extensions>
+			<code_completion />
+			<debugger />
+		</Extensions>
+	</Project>
+</CodeBlocks_project_file>
