@@ -5,8 +5,6 @@
 
 #include "ProcessStartInfo.h"
 
-using namespace web;
-
 namespace hpc
 {
     namespace arguments

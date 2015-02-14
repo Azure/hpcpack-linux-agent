@@ -5,6 +5,7 @@
 #include <cpprest/json.h>
 
 #include "utils/Logger.h"
+#include "IRemoteExecutor.h"
 
 namespace hpc
 {
@@ -14,7 +15,7 @@ namespace hpc
     class RemoteCommunicator
     {
         public:
-            RemoteCommunicator();
+            RemoteCommunicator(IRemoteExecutor& executor);
             ~RemoteCommunicator();
 
             void Open();
@@ -47,6 +48,7 @@ namespace hpc
             bool EndJob(const json::value& val);
             bool EndTask(const json::value& val);
             bool Ping(const json::value& val);
+            bool Metric(const json::value& val);
 
             static const std::string ApiSpace;
             static const std::string CallbackUriKey;
@@ -56,6 +58,8 @@ namespace hpc
 
             std::map<std::string, std::function<bool(const json::value&)>> processors;
             std::string callbackUri;
+
+            IRemoteExecutor& executor;
 
             web::http::experimental::listener::http_listener listener;
     };

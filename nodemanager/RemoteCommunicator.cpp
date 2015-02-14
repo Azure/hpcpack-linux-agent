@@ -11,8 +11,8 @@ namespace hpc
     using namespace utils;
     using namespace arguments;
 
-    RemoteCommunicator::RemoteCommunicator() :
-        listeningUri(this->GetListeningUri()), isListening(false), listener(listeningUri)
+    RemoteCommunicator::RemoteCommunicator(IRemoteExecutor& exec) :
+        listeningUri(this->GetListeningUri()), isListening(false), executor(exec), listener(listeningUri)
     {
         this->listener.support(
             methods::POST,
@@ -23,6 +23,7 @@ namespace hpc
         this->processors["endjob"] = std::bind(&RemoteCommunicator::EndJob, this, std::placeholders::_1);
         this->processors["endtask"] = std::bind(&RemoteCommunicator::EndTask, this, std::placeholders::_1);
         this->processors["ping"] = std::bind(&RemoteCommunicator::Ping, this, std::placeholders::_1);
+        this->processors["metric"] = std::bind(&RemoteCommunicator::Metric, this, std::placeholders::_1);
     }
 
     RemoteCommunicator::~RemoteCommunicator()
@@ -123,30 +124,35 @@ namespace hpc
     bool RemoteCommunicator::StartJobAndTask(const json::value& val)
     {
         auto args = StartJobAndTaskArgs::FromJson(val);
-
-
-        return true;
+        return this->executor.StartJobAndTask(args);
     }
 
     bool RemoteCommunicator::StartTask(const json::value& val)
     {
-
-        return true;
+        auto args = StartTaskArgs::FromJson(val);
+        return this->executor.StartTask(args);
     }
 
     bool RemoteCommunicator::EndJob(const json::value& val)
     {
-        return true;
+        auto args = EndJobArgs::FromJson(val);
+        return this->executor.EndJob(args);
     }
 
     bool RemoteCommunicator::EndTask(const json::value& val)
     {
-        return true;
+        auto args = EndTaskArgs::FromJson(val);
+        return this->executor.EndTask(args);
     }
 
     bool RemoteCommunicator::Ping(const json::value& val)
     {
-        return true;
+        return this->executor.Ping(this->callbackUri);
+    }
+
+    bool RemoteCommunicator::Metric(const json::value& val)
+    {
+        return this->executor.Metric(this->callbackUri);
     }
 
     const std::string RemoteCommunicator::ApiSpace = "api";

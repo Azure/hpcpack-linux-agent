@@ -4,6 +4,7 @@
 
 #include "utils/Logger.h"
 #include "RemoteCommunicator.h"
+#include "RemoteExecutor.h"
 
 using namespace std;
 using namespace hpc;
@@ -13,7 +14,9 @@ int main()
     std::cout << "Node manager started." << std::endl;
     Logger::Info("Log system works.");
 
-    RemoteCommunicator rc;
+    RemoteExecutor executor;
+
+    RemoteCommunicator rc(executor);
     rc.Open();
 
     while (true)

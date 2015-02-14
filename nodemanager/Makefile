@@ -49,9 +49,9 @@ OBJDIR_RELEASE = obj/Release
 DEP_RELEASE =
 OUT_RELEASE = bin/Release/$(BINARY)
 
-OBJ_DEBUG = $(OBJDIR_DEBUG)/main.o $(OBJDIR_DEBUG)/RemoteCommunicator.o $(OBJDIR_DEBUG)/JsonHelper.o $(OBJDIR_DEBUG)/Logger.o $(OBJDIR_DEBUG)/String.o $(OBJDIR_DEBUG)/System.o $(OBJDIR_DEBUG)/ProcessStartInfo.o $(OBJDIR_DEBUG)/StartJobAndTaskArgs.o
+OBJ_DEBUG = $(OBJDIR_DEBUG)/main.o $(OBJDIR_DEBUG)/RemoteCommunicator.o $(OBJDIR_DEBUG)/JsonHelper.o $(OBJDIR_DEBUG)/Logger.o $(OBJDIR_DEBUG)/String.o $(OBJDIR_DEBUG)/System.o $(OBJDIR_DEBUG)/ProcessStartInfo.o $(OBJDIR_DEBUG)/StartJobAndTaskArgs.o $(OBJDIR_DEBUG)/RemoteExecutor.o $(OBJDIR_DEBUG)/StartTaskArgs.o $(OBJDIR_DEBUG)/EndJobArgs.o $(OBJDIR_DEBUG)/EndTaskArgs.o
 
-OBJ_RELEASE = $(OBJDIR_RELEASE)/main.o $(OBJDIR_RELEASE)/RemoteCommunicator.o $(OBJDIR_RELEASE)/JsonHelper.o $(OBJDIR_RELEASE)/Logger.o $(OBJDIR_RELEASE)/String.o $(OBJDIR_RELEASE)/System.o $(OBJDIR_RELEASE)/ProcessStartInfo.o $(OBJDIR_RELEASE)/StartJobAndTaskArgs.o
+OBJ_RELEASE = $(OBJDIR_RELEASE)/main.o $(OBJDIR_RELEASE)/RemoteCommunicator.o $(OBJDIR_RELEASE)/JsonHelper.o $(OBJDIR_RELEASE)/Logger.o $(OBJDIR_RELEASE)/String.o $(OBJDIR_RELEASE)/System.o $(OBJDIR_RELEASE)/ProcessStartInfo.o $(OBJDIR_RELEASE)/StartJobAndTaskArgs.o $(OBJDIR_DEBUG)/RemoteExecutor.o $(OBJDIR_DEBUG)/StartTaskArgs.o $(OBJDIR_DEBUG)/EndJobArgs.o $(OBJDIR_DEBUG)/EndTaskArgs.o
 
 all: debug release
 
@@ -74,6 +74,9 @@ $(OBJDIR_DEBUG)/main.o: main.cpp
 $(OBJDIR_DEBUG)/RemoteCommunicator.o: RemoteCommunicator.cpp
 	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c RemoteCommunicator.cpp -o $(OBJDIR_DEBUG)/RemoteCommunicator.o
 
+$(OBJDIR_DEBUG)/RemoteExecutor.o: RemoteExecutor.cpp
+	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c RemoteExecutor.cpp -o $(OBJDIR_DEBUG)/RemoteExecutor.o
+
 $(OBJDIR_DEBUG)/JsonHelper.o: utils/JsonHelper.cpp
 	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c utils/JsonHelper.cpp -o $(OBJDIR_DEBUG)/JsonHelper.o
 
@@ -91,6 +94,15 @@ $(OBJDIR_DEBUG)/ProcessStartInfo.o: arguments/ProcessStartInfo.cpp
 
 $(OBJDIR_DEBUG)/StartJobAndTaskArgs.o: arguments/StartJobAndTaskArgs.cpp
 	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c arguments/StartJobAndTaskArgs.cpp -o $(OBJDIR_DEBUG)/StartJobAndTaskArgs.o
+
+$(OBJDIR_DEBUG)/StartTaskArgs.o: arguments/StartTaskArgs.cpp
+	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c arguments/StartTaskArgs.cpp -o $(OBJDIR_DEBUG)/StartTaskArgs.o
+
+$(OBJDIR_DEBUG)/EndJobArgs.o: arguments/EndJobArgs.cpp
+	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c arguments/EndJobArgs.cpp -o $(OBJDIR_DEBUG)/EndJobArgs.o
+
+$(OBJDIR_DEBUG)/EndTaskArgs.o: arguments/EndTaskArgs.cpp
+	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c arguments/EndTaskArgs.cpp -o $(OBJDIR_DEBUG)/EndTaskArgs.o
 
 clean_debug: 
 	rm -f $(OBJ_DEBUG) $(OUT_DEBUG)
@@ -114,6 +126,9 @@ $(OBJDIR_RELEASE)/main.o: main.cpp
 $(OBJDIR_RELEASE)/RemoteCommunicator.o: RemoteCommunicator.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c RemoteCommunicator.cpp -o $(OBJDIR_RELEASE)/RemoteCommunicator.o
 
+$(OBJDIR_RELEASE)/RemoteExecutor.o: RemoteExecutor.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c RemoteExecutor.cpp -o $(OBJDIR_RELEASE)/RemoteExecutor.o
+
 $(OBJDIR_RELEASE)/JsonHelper.o: JsonHelper.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c JsonHelper.cpp -o $(OBJDIR_RELEASE)/JsonHelper.o
 
@@ -131,6 +146,15 @@ $(OBJDIR_RELEASE)/ProcessStartInfo.o: ProcessStartInfo.cpp
 
 $(OBJDIR_RELEASE)/StartJobAndTaskArgs.o: StartJobAndTaskArgs.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c StartJobAndTaskArgs.cpp -o $(OBJDIR_RELEASE)/StartJobAndTaskArgs.o
+
+$(OBJDIR_RELEASE)/StartTaskArgs.o: arguments/StartTaskArgs.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c arguments/StartTaskArgs.cpp -o $(OBJDIR_RELEASE)/StartTaskArgs.o
+
+$(OBJDIR_RELEASE)/EndJobArgs.o: arguments/EndJobArgs.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c arguments/EndJobArgs.cpp -o $(OBJDIR_RELEASE)/EndJobArgs.o
+
+$(OBJDIR_RELEASE)/EndTaskArgs.o: arguments/EndTaskArgs.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c arguments/EndTaskArgs.cpp -o $(OBJDIR_RELEASE)/EndTaskArgs.o
 
 clean_release: 
 	rm -f $(OBJ_RELEASE) $(OUT_RELEASE)
