@@ -49,9 +49,9 @@ OBJDIR_RELEASE = obj/Release
 DEP_RELEASE =
 OUT_RELEASE = bin/Release/$(BINARY)
 
-OBJ_DEBUG = $(OBJDIR_DEBUG)/main.o $(OBJDIR_DEBUG)/RemoteCommunicator.o $(OBJDIR_DEBUG)/JsonHelper.o $(OBJDIR_DEBUG)/Logger.o $(OBJDIR_DEBUG)/String.o $(OBJDIR_DEBUG)/System.o $(OBJDIR_DEBUG)/ProcessStartInfo.o $(OBJDIR_DEBUG)/StartJobAndTaskArgs.o $(OBJDIR_DEBUG)/RemoteExecutor.o $(OBJDIR_DEBUG)/StartTaskArgs.o $(OBJDIR_DEBUG)/EndJobArgs.o $(OBJDIR_DEBUG)/EndTaskArgs.o
+OBJ_DEBUG = $(OBJDIR_DEBUG)/main.o $(OBJDIR_DEBUG)/RemoteCommunicator.o $(OBJDIR_DEBUG)/JsonHelper.o $(OBJDIR_DEBUG)/Logger.o $(OBJDIR_DEBUG)/String.o $(OBJDIR_DEBUG)/System.o $(OBJDIR_DEBUG)/ProcessStartInfo.o $(OBJDIR_DEBUG)/StartJobAndTaskArgs.o $(OBJDIR_DEBUG)/RemoteExecutor.o $(OBJDIR_DEBUG)/StartTaskArgs.o $(OBJDIR_DEBUG)/EndJobArgs.o $(OBJDIR_DEBUG)/EndTaskArgs.o $(OBJDIR_DEBUG)/Process.o
 
-OBJ_RELEASE = $(OBJDIR_RELEASE)/main.o $(OBJDIR_RELEASE)/RemoteCommunicator.o $(OBJDIR_RELEASE)/JsonHelper.o $(OBJDIR_RELEASE)/Logger.o $(OBJDIR_RELEASE)/String.o $(OBJDIR_RELEASE)/System.o $(OBJDIR_RELEASE)/ProcessStartInfo.o $(OBJDIR_RELEASE)/StartJobAndTaskArgs.o $(OBJDIR_DEBUG)/RemoteExecutor.o $(OBJDIR_DEBUG)/StartTaskArgs.o $(OBJDIR_DEBUG)/EndJobArgs.o $(OBJDIR_DEBUG)/EndTaskArgs.o
+OBJ_RELEASE = $(OBJDIR_RELEASE)/main.o $(OBJDIR_RELEASE)/RemoteCommunicator.o $(OBJDIR_RELEASE)/JsonHelper.o $(OBJDIR_RELEASE)/Logger.o $(OBJDIR_RELEASE)/String.o $(OBJDIR_RELEASE)/System.o $(OBJDIR_RELEASE)/ProcessStartInfo.o $(OBJDIR_RELEASE)/StartJobAndTaskArgs.o $(OBJDIR_RELEASE)/RemoteExecutor.o $(OBJDIR_RELEASE)/StartTaskArgs.o $(OBJDIR_RELEASE)/EndJobArgs.o $(OBJDIR_RELEASE)/EndTaskArgs.o $(OBJDIR_RELEASE)/Process.o
 
 all: debug release
 
@@ -71,11 +71,11 @@ out_debug: before_debug $(OBJ_DEBUG) $(DEP_DEBUG)
 $(OBJDIR_DEBUG)/main.o: main.cpp
 	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c main.cpp -o $(OBJDIR_DEBUG)/main.o
 
-$(OBJDIR_DEBUG)/RemoteCommunicator.o: RemoteCommunicator.cpp
-	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c RemoteCommunicator.cpp -o $(OBJDIR_DEBUG)/RemoteCommunicator.o
+$(OBJDIR_DEBUG)/RemoteCommunicator.o: core/RemoteCommunicator.cpp
+	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c core/RemoteCommunicator.cpp -o $(OBJDIR_DEBUG)/RemoteCommunicator.o
 
-$(OBJDIR_DEBUG)/RemoteExecutor.o: RemoteExecutor.cpp
-	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c RemoteExecutor.cpp -o $(OBJDIR_DEBUG)/RemoteExecutor.o
+$(OBJDIR_DEBUG)/RemoteExecutor.o: core/RemoteExecutor.cpp
+	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c core/RemoteExecutor.cpp -o $(OBJDIR_DEBUG)/RemoteExecutor.o
 
 $(OBJDIR_DEBUG)/JsonHelper.o: utils/JsonHelper.cpp
 	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c utils/JsonHelper.cpp -o $(OBJDIR_DEBUG)/JsonHelper.o
@@ -104,6 +104,10 @@ $(OBJDIR_DEBUG)/EndJobArgs.o: arguments/EndJobArgs.cpp
 $(OBJDIR_DEBUG)/EndTaskArgs.o: arguments/EndTaskArgs.cpp
 	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c arguments/EndTaskArgs.cpp -o $(OBJDIR_DEBUG)/EndTaskArgs.o
 
+$(OBJDIR_DEBUG)/Process.o: core/Process.cpp
+	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c core/Process.cpp -o $(OBJDIR_DEBUG)/Process.o
+
+
 clean_debug: 
 	rm -f $(OBJ_DEBUG) $(OUT_DEBUG)
 	rm -rf bin/Debug
@@ -123,29 +127,29 @@ out_release: before_release $(OBJ_RELEASE) $(DEP_RELEASE)
 $(OBJDIR_RELEASE)/main.o: main.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c main.cpp -o $(OBJDIR_RELEASE)/main.o
 
-$(OBJDIR_RELEASE)/RemoteCommunicator.o: RemoteCommunicator.cpp
-	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c RemoteCommunicator.cpp -o $(OBJDIR_RELEASE)/RemoteCommunicator.o
+$(OBJDIR_RELEASE)/RemoteCommunicator.o: core/RemoteCommunicator.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c core/RemoteCommunicator.cpp -o $(OBJDIR_RELEASE)/RemoteCommunicator.o
 
-$(OBJDIR_RELEASE)/RemoteExecutor.o: RemoteExecutor.cpp
-	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c RemoteExecutor.cpp -o $(OBJDIR_RELEASE)/RemoteExecutor.o
+$(OBJDIR_RELEASE)/RemoteExecutor.o: core/RemoteExecutor.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c core/RemoteExecutor.cpp -o $(OBJDIR_RELEASE)/RemoteExecutor.o
 
-$(OBJDIR_RELEASE)/JsonHelper.o: JsonHelper.cpp
-	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c JsonHelper.cpp -o $(OBJDIR_RELEASE)/JsonHelper.o
+$(OBJDIR_RELEASE)/JsonHelper.o: utils/JsonHelper.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c utils/JsonHelper.cpp -o $(OBJDIR_RELEASE)/JsonHelper.o
 
-$(OBJDIR_RELEASE)/Logger.o: Logger.cpp
-	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c Logger.cpp -o $(OBJDIR_RELEASE)/Logger.o
+$(OBJDIR_RELEASE)/Logger.o: utils/Logger.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c utils/Logger.cpp -o $(OBJDIR_RELEASE)/Logger.o
 
-$(OBJDIR_RELEASE)/String.o: String.cpp
-	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c String.cpp -o $(OBJDIR_RELEASE)/String.o
+$(OBJDIR_RELEASE)/String.o: utils/String.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c utils/String.cpp -o $(OBJDIR_RELEASE)/String.o
 
-$(OBJDIR_RELEASE)/System.o: System.cpp
-	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c System.cpp -o $(OBJDIR_RELEASE)/System.o
+$(OBJDIR_RELEASE)/System.o: utils/System.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c utils/System.cpp -o $(OBJDIR_RELEASE)/System.o
 
-$(OBJDIR_RELEASE)/ProcessStartInfo.o: ProcessStartInfo.cpp
-	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c ProcessStartInfo.cpp -o $(OBJDIR_RELEASE)/ProcessStartInfo.o
+$(OBJDIR_RELEASE)/ProcessStartInfo.o: arguments/ProcessStartInfo.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c arguments/ProcessStartInfo.cpp -o $(OBJDIR_RELEASE)/ProcessStartInfo.o
 
-$(OBJDIR_RELEASE)/StartJobAndTaskArgs.o: StartJobAndTaskArgs.cpp
-	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c StartJobAndTaskArgs.cpp -o $(OBJDIR_RELEASE)/StartJobAndTaskArgs.o
+$(OBJDIR_RELEASE)/StartJobAndTaskArgs.o: arguments/StartJobAndTaskArgs.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c arguments/StartJobAndTaskArgs.cpp -o $(OBJDIR_RELEASE)/StartJobAndTaskArgs.o
 
 $(OBJDIR_RELEASE)/StartTaskArgs.o: arguments/StartTaskArgs.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c arguments/StartTaskArgs.cpp -o $(OBJDIR_RELEASE)/StartTaskArgs.o
@@ -155,6 +159,10 @@ $(OBJDIR_RELEASE)/EndJobArgs.o: arguments/EndJobArgs.cpp
 
 $(OBJDIR_RELEASE)/EndTaskArgs.o: arguments/EndTaskArgs.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c arguments/EndTaskArgs.cpp -o $(OBJDIR_RELEASE)/EndTaskArgs.o
+
+$(OBJDIR_RELEASE)/Process.o: core/Process.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c core/Process.cpp -o $(OBJDIR_RELEASE)/Process.o
+
 
 clean_release: 
 	rm -f $(OBJ_RELEASE) $(OUT_RELEASE)
