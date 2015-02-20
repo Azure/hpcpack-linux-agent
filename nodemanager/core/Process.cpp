@@ -1,5 +1,6 @@
 #include "Process.h"
 #include "../utils/Logger.h"
+#include "../utils/String.h"
 
 using namespace hpc::core;
 using namespace hpc::utils;
@@ -155,5 +156,17 @@ void Process::CleanupScript()
 
 std::unique_ptr<char * const []> Process::PrepareEnvironment()
 {
-    return nullptr;
+    std::transform(
+        this->environments.cbegin(),
+        this->environments.cend(),
+        std::back_inserter(this->environmentsBuffer),
+        [](const auto& v) { return String::Join(v->first, "=", v->second); });
+
+    auto envi = std::make_unique<char* const>(this->environments.count() + 1);
+    int p = 0;
+    for_each(
+        this->environmentsBuffer.cbegin(),
+        this->environmentsBuffer.cend(),
+        [p](decltype(*this->environmentsBuffer.cbegin())& i) { envi[p++] = &i; });
+    return std::move(envi);
 }

@@ -47,6 +47,7 @@ namespace hpc
                 const std::string& commandLine;
                 const std::vector<std::string>& arguments;
                 const std::map<std::string, std::string>& environments;
+                const std::vector<std::string> environmentsBuffer;
                 const std::function<Callback> callback;
 
                 pthread_t* threadId;
