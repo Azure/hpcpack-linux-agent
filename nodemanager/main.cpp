@@ -3,11 +3,12 @@
 #include <cpprest/json.h>
 
 #include "utils/Logger.h"
-#include "RemoteCommunicator.h"
-#include "RemoteExecutor.h"
+#include "core/RemoteCommunicator.h"
+#include "core/RemoteExecutor.h"
 
 using namespace std;
-using namespace hpc;
+using namespace hpc::core;
+using namespace hpc::utils;
 
 int main()
 {
