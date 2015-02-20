@@ -14,9 +14,9 @@ SPDLOG_INC = $(SPDLOG)/include
 WORKDIR = `pwd`
 
 CC = gcc
-CXX = g++-4.8
+CXX = g++
 AR = ar
-LD = g++-4.8
+LD = g++
 WINDRES = windres
 
 INC = -I$(CASA_INC) -I$(SPDLOG_INC) -Iinclude -I.
@@ -129,23 +129,23 @@ $(OBJDIR_RELEASE)/RemoteCommunicator.o: RemoteCommunicator.cpp
 $(OBJDIR_RELEASE)/RemoteExecutor.o: RemoteExecutor.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c RemoteExecutor.cpp -o $(OBJDIR_RELEASE)/RemoteExecutor.o
 
-$(OBJDIR_RELEASE)/JsonHelper.o: JsonHelper.cpp
-	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c JsonHelper.cpp -o $(OBJDIR_RELEASE)/JsonHelper.o
+$(OBJDIR_RELEASE)/JsonHelper.o: utils/JsonHelper.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c utils/JsonHelper.cpp -o $(OBJDIR_RELEASE)/JsonHelper.o
 
-$(OBJDIR_RELEASE)/Logger.o: Logger.cpp
-	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c Logger.cpp -o $(OBJDIR_RELEASE)/Logger.o
+$(OBJDIR_RELEASE)/Logger.o: utils/Logger.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c utils/Logger.cpp -o $(OBJDIR_RELEASE)/Logger.o
 
-$(OBJDIR_RELEASE)/String.o: String.cpp
-	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c String.cpp -o $(OBJDIR_RELEASE)/String.o
+$(OBJDIR_RELEASE)/String.o: utils/String.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c utils/String.cpp -o $(OBJDIR_RELEASE)/String.o
 
-$(OBJDIR_RELEASE)/System.o: System.cpp
-	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c System.cpp -o $(OBJDIR_RELEASE)/System.o
+$(OBJDIR_RELEASE)/System.o: utils/System.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c utils/System.cpp -o $(OBJDIR_RELEASE)/System.o
 
-$(OBJDIR_RELEASE)/ProcessStartInfo.o: ProcessStartInfo.cpp
-	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c ProcessStartInfo.cpp -o $(OBJDIR_RELEASE)/ProcessStartInfo.o
+$(OBJDIR_RELEASE)/ProcessStartInfo.o: arguments/ProcessStartInfo.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c arguments/ProcessStartInfo.cpp -o $(OBJDIR_RELEASE)/ProcessStartInfo.o
 
-$(OBJDIR_RELEASE)/StartJobAndTaskArgs.o: StartJobAndTaskArgs.cpp
-	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c StartJobAndTaskArgs.cpp -o $(OBJDIR_RELEASE)/StartJobAndTaskArgs.o
+$(OBJDIR_RELEASE)/StartJobAndTaskArgs.o: arguments/StartJobAndTaskArgs.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c arguments/StartJobAndTaskArgs.cpp -o $(OBJDIR_RELEASE)/StartJobAndTaskArgs.o
 
 $(OBJDIR_RELEASE)/StartTaskArgs.o: arguments/StartTaskArgs.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c arguments/StartTaskArgs.cpp -o $(OBJDIR_RELEASE)/StartTaskArgs.o
