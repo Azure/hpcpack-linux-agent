@@ -1,3 +1,5 @@
+#include <memory.h>
+
 #include "Process.h"
 #include "../utils/Logger.h"
 #include "../utils/String.h"
@@ -133,7 +135,7 @@ void Process::Run(int stdOutPipe[2], int stdErrPipe[2])
     close(stdOutPipe[0]);
     close(stdOutPipe[1]);
 
-    int ret = execvpe(bashCmd, args, envi.get());
+    int ret = execvpe(bashCmd, args, const_cast<char* const*>(envi.get()));
 
     assert(ret == -1);
 
@@ -154,19 +156,20 @@ void Process::CleanupScript()
 {
 }
 
-std::unique_ptr<char * const []> Process::PrepareEnvironment()
+std::unique_ptr<const char * []>&& Process::PrepareEnvironment()
 {
     std::transform(
         this->environments.cbegin(),
         this->environments.cend(),
         std::back_inserter(this->environmentsBuffer),
-        [](const auto& v) { return String::Join(v->first, "=", v->second); });
+        [](const std::pair<std::string, std::string>& v) { return String::Join("=", v.first, v.second); });
 
-    auto envi = std::make_unique<char* const>(this->environments.count() + 1);
+    auto envi = std::unique_ptr<const char*[]>(new const char*[this->environments.size() + 1]);
     int p = 0;
     for_each(
         this->environmentsBuffer.cbegin(),
         this->environmentsBuffer.cend(),
-        [p](decltype(*this->environmentsBuffer.cbegin())& i) { envi[p++] = &i; });
+        [&p, &envi](decltype(*this->environmentsBuffer.cbegin())& i) { envi[p++] = i.c_str(); });
+
     return std::move(envi);
 }

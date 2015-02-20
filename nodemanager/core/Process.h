@@ -37,7 +37,7 @@ namespace hpc
                 void Monitor();
                 const std::string& BuildScript();
                 void CleanupScript();
-                std::unique_ptr<char* const []> PrepareEnvironment();
+                std::unique_ptr<const char* []>&& PrepareEnvironment();
 
                 std::ostringstream stdOut;
                 std::ostringstream stdErr;
@@ -47,8 +47,9 @@ namespace hpc
                 const std::string& commandLine;
                 const std::vector<std::string>& arguments;
                 const std::map<std::string, std::string>& environments;
-                const std::vector<std::string> environmentsBuffer;
                 const std::function<Callback> callback;
+
+                std::vector<std::string> environmentsBuffer;
 
                 pthread_t* threadId;
                 pid_t processId;

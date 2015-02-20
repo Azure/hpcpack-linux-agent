@@ -1,9 +1,9 @@
 #include <sstream>
 
 #include "RemoteCommunicator.h"
-#include "utils/String.h"
-#include "utils/System.h"
-#include "arguments/StartJobAndTaskArgs.h"
+#include "../utils/String.h"
+#include "../utils/System.h"
+#include "../arguments/StartJobAndTaskArgs.h"
 
 using namespace web::http;
 using namespace hpc::utils;

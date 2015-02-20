@@ -14,13 +14,14 @@ namespace hpc
             public:
                 static std::vector<std::string>& Split(const std::string& str, char delim, std::vector<std::string>& tokens);
 
-                template <typename T, typename ... args>
-                static std::string&& Join(const T& delim, std::string ...)
+                template <typename T, typename ... Args>
+                static std::string&& Join(const T& delim, const Args& ...args)
                 {
                     std::ostringstream oss;
-                    int i = 0;
+                    bool first = true;
 
-                    auto tmp = { ((i == 0) ? oss : oss << delim <<  args)... };
+                    auto tmp = { ((first ? oss : oss << delim) << args, first = false)... };
+                    [&tmp]() { };
 
                     return std::move(oss.str());
                 }

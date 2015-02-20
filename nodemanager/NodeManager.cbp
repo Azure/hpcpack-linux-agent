@@ -16,8 +16,6 @@
 					<Add option="-Wall" />
 					<Add option="-g" />
 					<Add option="-Wno-unused-local-typedefs" />
-					<Add directory="utils" />
-					<Add directory="arguments" />
 					<Add directory="../../casablanca/Release/include" />
 				</Compiler>
 				<Linker>
@@ -49,16 +47,7 @@
 			<Add option="-Wno-unused-local-typedefs" />
 			<Add directory="../../casablanca/Release/include" />
 		</Compiler>
-		<Unit filename="IRemoteExecutor.h" />
-		<Unit filename="Process.cpp" />
-		<Unit filename="Process.h" />
 		<Unit filename="Readme.txt" />
-		<Unit filename="RemoteCommunicator.cpp" />
-		<Unit filename="RemoteCommunicator.h" />
-		<Unit filename="RemoteExecutor.cpp" />
-		<Unit filename="RemoteExecutor.h" />
-		<Unit filename="Test.cpp" />
-		<Unit filename="Test.h" />
 		<Unit filename="arguments/EndJobArgs.cpp" />
 		<Unit filename="arguments/EndJobArgs.h" />
 		<Unit filename="arguments/EndTaskArgs.cpp" />

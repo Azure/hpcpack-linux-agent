@@ -1,10 +1,10 @@
 #ifndef IREMOTEEXECUTOR_H
 #define IREMOTEEXECUTOR_H
 
-#include "arguments/StartJobAndTaskArgs.h"
-#include "arguments/StartTaskArgs.h"
-#include "arguments/EndJobArgs.h"
-#include "arguments/EndTaskArgs.h"
+#include "../arguments/StartJobAndTaskArgs.h"
+#include "../arguments/StartTaskArgs.h"
+#include "../arguments/EndJobArgs.h"
+#include "../arguments/EndTaskArgs.h"
 
 namespace hpc
 {

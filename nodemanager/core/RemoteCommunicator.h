@@ -4,7 +4,7 @@
 #include <cpprest/http_listener.h>
 #include <cpprest/json.h>
 
-#include "utils/Logger.h"
+#include "../utils/Logger.h"
 #include "IRemoteExecutor.h"
 
 namespace hpc
