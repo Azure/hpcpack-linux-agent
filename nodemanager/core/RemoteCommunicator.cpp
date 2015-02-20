@@ -15,14 +15,14 @@ RemoteCommunicator::RemoteCommunicator(IRemoteExecutor& exec) :
 {
     this->listener.support(
         methods::POST,
-        [this](http_request request) { this->HandlePost(request); });
+        [this](auto request) { this->HandlePost(request); });
 
-    this->processors["startjobandtask"] = std::bind(&RemoteCommunicator::StartJobAndTask, this, std::placeholders::_1);
-    this->processors["starttask"] = std::bind(&RemoteCommunicator::StartTask, this, std::placeholders::_1);
-    this->processors["endjob"] = std::bind(&RemoteCommunicator::EndJob, this, std::placeholders::_1);
-    this->processors["endtask"] = std::bind(&RemoteCommunicator::EndTask, this, std::placeholders::_1);
-    this->processors["ping"] = std::bind(&RemoteCommunicator::Ping, this, std::placeholders::_1);
-    this->processors["metric"] = std::bind(&RemoteCommunicator::Metric, this, std::placeholders::_1);
+    this->processors["startjobandtask"] = [this] (const auto& j) { return this->StartJobAndTask(j); };
+    this->processors["starttask"] = [this] (const auto& j) { return this->StartTask(j); };
+    this->processors["endjob"] = [this] (const auto& j) { return this->EndJob(j); };
+    this->processors["endtask"] = [this] (const auto& j) { return this->EndTask(j); };
+    this->processors["ping"] = [this] (const auto& j) { return this->Ping(j); };
+    this->processors["metric"] = [this] (const auto& j) { return this->Metric(j); };
 }
 
 RemoteCommunicator::~RemoteCommunicator()
@@ -34,7 +34,7 @@ void RemoteCommunicator::Open()
 {
     if (!this->isListening)
     {
-        this->listener.open().then([this](pplx::task<void> t)
+        this->listener.open().then([this](auto t)
         {
             this->isListening = !IsError(t);
             Logger::Info(
@@ -82,7 +82,7 @@ void RemoteCommunicator::HandlePost(http_request request)
     {
         Logger::Error("Not allowed ApiSpace {0}", apiSpace);
         request.reply(status_codes::NotFound, U("Not found"))
-            .then([this](pplx::task<void> t) { IsError(t); });
+            .then([this](auto t) { this->IsError(t); });
         return;
     }
 
@@ -97,26 +97,27 @@ void RemoteCommunicator::HandlePost(http_request request)
 
     if (processor != this->processors.end())
     {
-        request.extract_json().then([processor, request](pplx::task<json::value> t)
+        request.extract_json().then([processor](pplx::task<json::value> t)
         {
+            // todo: throw exception instead of using the return value.
             processor->second(t.get());
         })
-        .then([request](pplx::task<void> t)
+        .then([request, this](auto t)
         {
-            if (!IsError(t))
+            if (!this->IsError(t))
             {
-                request.reply(status_codes::OK, "").then([](pplx::task<void> t) { IsError(t); });
+                request.reply(status_codes::OK, "").then([this](auto t) { this->IsError(t); });
             }
             else
             {
-                request.reply(status_codes::InternalError, "").then([](pplx::task<void> t) { IsError(t); });
+                request.reply(status_codes::InternalError, "").then([this](auto t) { this->IsError(t); });
             }
         });
     }
     else
     {
         Logger::Warn("Unable to find the method {0}", methodName.c_str());
-        request.reply(status_codes::NotFound, "").then([](pplx::task<void> t) { IsError(t); });
+        request.reply(status_codes::NotFound, "").then([this](auto t) { this->IsError(t); });
     }
 }
 

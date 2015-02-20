@@ -57,7 +57,7 @@ namespace hpc
                         arr.cbegin(),
                         arr.cend(),
                         std::back_inserter(values),
-                        [](const json::value& i) { return JsonHelper<T>::GetValue(i); });
+                        [](const auto& i) { return JsonHelper<T>::GetValue(i); });
 
                     return std::move(values);
                 }

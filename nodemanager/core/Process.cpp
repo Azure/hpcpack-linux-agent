@@ -156,20 +156,20 @@ void Process::CleanupScript()
 {
 }
 
-std::unique_ptr<const char * []>&& Process::PrepareEnvironment()
+std::unique_ptr<const char* []>&& Process::PrepareEnvironment()
 {
     std::transform(
         this->environments.cbegin(),
         this->environments.cend(),
         std::back_inserter(this->environmentsBuffer),
-        [](const std::pair<std::string, std::string>& v) { return String::Join("=", v.first, v.second); });
+        [](const auto& v) { return String::Join("=", v.first, v.second); });
 
-    auto envi = std::unique_ptr<const char*[]>(new const char*[this->environments.size() + 1]);
+    auto envi = std::unique_ptr<const char* []>(new const char*[this->environments.size() + 1]);
     int p = 0;
     for_each(
         this->environmentsBuffer.cbegin(),
         this->environmentsBuffer.cend(),
-        [&p, &envi](decltype(*this->environmentsBuffer.cbegin())& i) { envi[p++] = i.c_str(); });
+        [&p, &envi](const auto& i) { envi[p++] = i.c_str(); });
 
     return std::move(envi);
 }

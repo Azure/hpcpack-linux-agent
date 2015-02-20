@@ -16,7 +16,7 @@ namespace hpc
         struct System
         {
             public:
-                static std::string GetIpAddress(IpAddressVersion version, const std::string&);
+                static std::string GetIpAddress(IpAddressVersion version, const std::string& name);
 
             protected:
             private:

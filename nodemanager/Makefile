@@ -20,7 +20,7 @@ LD = g++
 WINDRES = windres
 
 INC = -I$(CASA_INC) -I$(SPDLOG_INC) -Iinclude -I.
-CFLAGS = -Wall -std=gnu++11 -Wno-unused-local-typedefs
+CFLAGS = -Wall -std=c++1y -Wno-unused-local-typedefs
 RESINC =
 LIBDIR =
 LIB = -lcpprest
