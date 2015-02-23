@@ -30,7 +30,7 @@ namespace hpc
                 static T GetValue(const json::value& j);
 
                 // Implicit interface on T
-                static json::value&& GetJson(const T& t) { return std::move(T::ToJson(t)); }
+                static json::value GetJson(const T& t) { return std::move(T::ToJson(t)); }
 
             protected:
             private:
@@ -41,28 +41,31 @@ namespace hpc
         class JsonHelper<std::vector<T>>
         {
             public:
-                static std::vector<T>&& Read(const std::string& name, const json::value& j)
+                static std::vector<T> Read(const std::string& name, const json::value& j)
                 {
                     auto obj = j.at(name);
-                    return JsonHelper<std::vector<T>>::GetValue(j);
+                    return JsonHelper<std::vector<T>>::GetValue(obj);
                 }
 
-                static std::vector<T>&& GetValue(const json::value& j)
+                static std::vector<T> GetValue(const json::value& j)
                 {
-                    auto arr = JsonHelper<const json::array&>::GetValue(j);
-
                     std::vector<T> values;
 
-                    std::transform(
-                        arr.cbegin(),
-                        arr.cend(),
-                        std::back_inserter(values),
-                        [](const auto& i) { return JsonHelper<T>::GetValue(i); });
+                    if (!j.is_null())
+                    {
+                        auto arr = JsonHelper<const json::array&>::GetValue(j);
+
+                        std::transform(
+                            arr.cbegin(),
+                            arr.cend(),
+                            std::back_inserter(values),
+                            [](const auto& i) { return JsonHelper<T>::GetValue(i); });
+                    }
 
                     return std::move(values);
                 }
 
-                static json::array&& GetJson(const std::vector<T>& vec)
+                static json::array GetJson(const std::vector<T>& vec)
                 {
                     std::vector<json::value> values;
 
@@ -72,7 +75,7 @@ namespace hpc
                         std::back_inserter(values),
                         [](const T& v) { return JsonHelper<T>::GetJson(v); });
 
-                    return json::value::array(values);
+                    return std::move(json::value::array(values));
                 }
 
             protected:
@@ -84,27 +87,30 @@ namespace hpc
         class JsonHelper<std::map<std::string, T>>
         {
             public:
-                static std::map<std::string, T>&& Read(const std::string& name, const json::value& j)
+                static std::map<std::string, T> Read(const std::string& name, const json::value& j)
                 {
                     auto obj = j.at(name);
-                    return JsonHelper<std::map<std::string, T>>::GetValue(j);
+                    return std::move(JsonHelper<std::map<std::string, T>>::GetValue(obj));
                 }
 
-                static std::map<std::string, T>&& GetValue(const json::value& j)
+                static std::map<std::string, T> GetValue(const json::value& j)
                 {
-                    const auto& arr = JsonHelper<const json::object&>::GetValue(j);
-
                     std::map<std::string, T> values;
 
-                    for (auto const i : arr)
+                    if (!j.is_null())
                     {
-                        values[i.first] = JsonHelper<T>::GetValue(i.second);
+                        const auto& arr = JsonHelper<const json::object&>::GetValue(j);
+
+                        for (auto const i : arr)
+                        {
+                            values[i.first] = JsonHelper<T>::GetValue(i.second);
+                        }
                     }
 
                     return std::move(values);
                 }
 //
-//                static json::object&& GetJson(const std::map<std::string, T>& m)
+//                static json::object GetJson(const std::map<std::string, T>& m)
 //                {
 //                    return json::value::object(m);
 //                }

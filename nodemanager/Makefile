@@ -49,19 +49,28 @@ OBJDIR_RELEASE = obj/Release
 DEP_RELEASE =
 OUT_RELEASE = bin/Release/$(BINARY)
 
-OBJ_DEBUG = $(OBJDIR_DEBUG)/main.o $(OBJDIR_DEBUG)/RemoteCommunicator.o $(OBJDIR_DEBUG)/JsonHelper.o $(OBJDIR_DEBUG)/Logger.o $(OBJDIR_DEBUG)/String.o $(OBJDIR_DEBUG)/System.o $(OBJDIR_DEBUG)/ProcessStartInfo.o $(OBJDIR_DEBUG)/StartJobAndTaskArgs.o $(OBJDIR_DEBUG)/RemoteExecutor.o $(OBJDIR_DEBUG)/StartTaskArgs.o $(OBJDIR_DEBUG)/EndJobArgs.o $(OBJDIR_DEBUG)/EndTaskArgs.o $(OBJDIR_DEBUG)/Process.o
+OBJ_DEBUG = $(OBJDIR_DEBUG)/main.o $(OBJDIR_DEBUG)/RemoteCommunicator.o $(OBJDIR_DEBUG)/JsonHelper.o \
+	$(OBJDIR_DEBUG)/Logger.o $(OBJDIR_DEBUG)/String.o $(OBJDIR_DEBUG)/System.o $(OBJDIR_DEBUG)/ProcessStartInfo.o \
+	$(OBJDIR_DEBUG)/StartJobAndTaskArgs.o $(OBJDIR_DEBUG)/RemoteExecutor.o $(OBJDIR_DEBUG)/StartTaskArgs.o \
+	$(OBJDIR_DEBUG)/EndJobArgs.o $(OBJDIR_DEBUG)/EndTaskArgs.o $(OBJDIR_DEBUG)/Process.o $(OBJDIR_DEBUG)/JobInfo.o \
+	$(OBJDIR_DEBUG)/NodeInfo.o $(OBJDIR_DEBUG)/TaskInfo.o $(OBJDIR_DEBUG)/JobTaskTable.o
 
-OBJ_RELEASE = $(OBJDIR_RELEASE)/main.o $(OBJDIR_RELEASE)/RemoteCommunicator.o $(OBJDIR_RELEASE)/JsonHelper.o $(OBJDIR_RELEASE)/Logger.o $(OBJDIR_RELEASE)/String.o $(OBJDIR_RELEASE)/System.o $(OBJDIR_RELEASE)/ProcessStartInfo.o $(OBJDIR_RELEASE)/StartJobAndTaskArgs.o $(OBJDIR_RELEASE)/RemoteExecutor.o $(OBJDIR_RELEASE)/StartTaskArgs.o $(OBJDIR_RELEASE)/EndJobArgs.o $(OBJDIR_RELEASE)/EndTaskArgs.o $(OBJDIR_RELEASE)/Process.o
+OBJ_RELEASE = $(OBJDIR_RELEASE)/main.o $(OBJDIR_RELEASE)/RemoteCommunicator.o $(OBJDIR_RELEASE)/JsonHelper.o \
+	$(OBJDIR_RELEASE)/Logger.o $(OBJDIR_RELEASE)/String.o $(OBJDIR_RELEASE)/System.o \
+	$(OBJDIR_RELEASE)/ProcessStartInfo.o $(OBJDIR_RELEASE)/StartJobAndTaskArgs.o $(OBJDIR_RELEASE)/RemoteExecutor.o \
+	$(OBJDIR_RELEASE)/StartTaskArgs.o $(OBJDIR_RELEASE)/EndJobArgs.o $(OBJDIR_RELEASE)/EndTaskArgs.o \
+	$(OBJDIR_RELEASE)/Process.o $(OBJDIR_DEBUG)/JobInfo.o $(OBJDIR_DEBUG)/NodeInfo.o $(OBJDIR_DEBUG)/TaskInfo.o \
+	$(OBJDIR_DEBUG)/JobTaskTable.o
 
 all: debug release
 
 clean: clean_debug clean_release
 
-before_debug: 
+before_debug:
 	test -d bin/Debug || mkdir -p bin/Debug
 	test -d $(OBJDIR_DEBUG) || mkdir -p $(OBJDIR_DEBUG)
 
-after_debug: 
+after_debug:
 
 debug: before_debug out_debug after_debug
 
@@ -107,17 +116,29 @@ $(OBJDIR_DEBUG)/EndTaskArgs.o: arguments/EndTaskArgs.cpp
 $(OBJDIR_DEBUG)/Process.o: core/Process.cpp
 	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c core/Process.cpp -o $(OBJDIR_DEBUG)/Process.o
 
+$(OBJDIR_DEBUG)/JobTaskTable.o: core/JobTaskTable.cpp
+	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c core/JobTaskTable.cpp -o $(OBJDIR_DEBUG)/JobTaskTable.o
 
-clean_debug: 
+$(OBJDIR_DEBUG)/JobInfo.o: data/JobInfo.cpp
+	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c data/JobInfo.cpp -o $(OBJDIR_DEBUG)/JobInfo.o
+
+$(OBJDIR_DEBUG)/TaskInfo.o: data/TaskInfo.cpp
+	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c data/TaskInfo.cpp -o $(OBJDIR_DEBUG)/TaskInfo.o
+
+$(OBJDIR_DEBUG)/NodeInfo.o: data/NodeInfo.cpp
+	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c data/NodeInfo.cpp -o $(OBJDIR_DEBUG)/NodeInfo.o
+
+
+clean_debug:
 	rm -f $(OBJ_DEBUG) $(OUT_DEBUG)
 	rm -rf bin/Debug
 	rm -rf $(OBJDIR_DEBUG)
 
-before_release: 
+before_release:
 	test -d bin/Release || mkdir -p bin/Release
 	test -d $(OBJDIR_RELEASE) || mkdir -p $(OBJDIR_RELEASE)
 
-after_release: 
+after_release:
 
 release: before_release out_release after_release
 
@@ -163,8 +184,19 @@ $(OBJDIR_RELEASE)/EndTaskArgs.o: arguments/EndTaskArgs.cpp
 $(OBJDIR_RELEASE)/Process.o: core/Process.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c core/Process.cpp -o $(OBJDIR_RELEASE)/Process.o
 
+$(OBJDIR_RELEASE)/JobTaskTable.o: core/JobTaskTable.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c core/JobTaskTable.cpp -o $(OBJDIR_RELEASE)/JobTaskTable.o
 
-clean_release: 
+$(OBJDIR_RELEASE)/JobInfo.o: data/JobInfo.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c data/JobInfo.cpp -o $(OBJDIR_RELEASE)/JobInfo.o
+
+$(OBJDIR_RELEASE)/TaskInfo.o: data/TaskInfo.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c data/TaskInfo.cpp -o $(OBJDIR_RELEASE)/TaskInfo.o
+
+$(OBJDIR_RELEASE)/NodeInfo.o: data/NodeInfo.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c data/NodeInfo.cpp -o $(OBJDIR_RELEASE)/NodeInfo.o
+
+clean_release:
 	rm -f $(OBJ_RELEASE) $(OUT_RELEASE)
 	rm -rf bin/Release
 	rm -rf $(OBJDIR_RELEASE)

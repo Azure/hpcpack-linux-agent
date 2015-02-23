@@ -24,7 +24,7 @@ namespace hpc
 
         #define GETJSON(T, JsonType) \
         template <> \
-        json::value&& JsonHelper<T>::GetJson(const T& val) { return std::move(json::value::JsonType(val)); }
+        json::value JsonHelper<T>::GetJson(const T& val) { return std::move(json::value::JsonType(val)); }
 
         GETJSON(int, number)
         GETJSON(double, number)

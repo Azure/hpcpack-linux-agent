@@ -12,13 +12,16 @@
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
-					<Add option="-std=c++11" />
 					<Add option="-Wall" />
 					<Add option="-g" />
+					<Add option="-fexceptions" />
 					<Add option="-Wno-unused-local-typedefs" />
+					<Add option="-std=c++1y" />
 					<Add directory="../../casablanca/Release/include" />
+					<Add directory="../../spdlog/include" />
 				</Compiler>
 				<Linker>
+					<Add option="-lpthread" />
 					<Add library="../../casablanca/Release/build.debug/Binaries/libcpprest.so" />
 				</Linker>
 			</Target>
@@ -29,24 +32,30 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-O2" />
-					<Add option="-std=c++11" />
+					<Add option="-fexceptions" />
 					<Add option="-Wno-unused-local-typedefs" />
-					<Add directory="utils" />
-					<Add directory="arguments" />
+					<Add option="-std=c++1y" />
 					<Add directory="../../casablanca/Release/include" />
+					<Add directory="../../spdlog/include" />
 				</Compiler>
 				<Linker>
-					<Add library="../../casablanca/Release/build.debug/Binaries/libcpprest.so" />
+					<Add option="-lpthread" />
+					<Add library="../../casablanca/Release/build.release/Binaries/libcpprest.so" />
 				</Linker>
 			</Target>
 		</Build>
 		<Compiler>
-			<Add option="-std=c++11" />
 			<Add option="-Wall" />
 			<Add option="-fexceptions" />
 			<Add option="-Wno-unused-local-typedefs" />
+			<Add option="-std=c++1y" />
 			<Add directory="../../casablanca/Release/include" />
+			<Add directory="../../spdlog/include" />
 		</Compiler>
+		<Linker>
+			<Add option="-lpthread" />
+			<Add library="../../casablanca/Release/build.debug/Binaries/libcpprest.so" />
+		</Linker>
 		<Unit filename="Readme.txt" />
 		<Unit filename="arguments/EndJobArgs.cpp" />
 		<Unit filename="arguments/EndJobArgs.h" />
@@ -59,6 +68,8 @@
 		<Unit filename="arguments/StartTaskArgs.cpp" />
 		<Unit filename="arguments/StartTaskArgs.h" />
 		<Unit filename="core/IRemoteExecutor.h" />
+		<Unit filename="core/JobTaskTable.cpp" />
+		<Unit filename="core/JobTaskTable.h" />
 		<Unit filename="core/Process.cpp" />
 		<Unit filename="core/Process.h" />
 		<Unit filename="core/RemoteCommunicator.cpp" />

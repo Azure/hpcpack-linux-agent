@@ -15,29 +15,22 @@ namespace hpc
         {
             public:
                 ProcessStartInfo(
-                    const std::string& cmdLine,
-                    const std::string& workingDir,
+                    std::string&& cmdLine,
+                    std::string&& workDir,
                     std::vector<long>&& affinity,
                     std::map<std::string, std::string>&& enviVars);
 
-                ProcessStartInfo(ProcessStartInfo&& startInfo) :
-                    CommandLine(startInfo.CommandLine),
-                    WorkingDirectory(startInfo.WorkingDirectory),
-                    Affinity(std::move(startInfo.Affinity)),
-                    EnvironmentVariables(std::move(startInfo.EnvironmentVariables))
-                {
+                ProcessStartInfo(ProcessStartInfo&& startInfo) = default;
 
-                }
+                static ProcessStartInfo FromJson(const web::json::value& jsonValue);
 
-                static ProcessStartInfo&& FromJson(const web::json::value& jsonValue);
-
-                std::string CommandScript;
                 std::string CommandLine;
                 std::string StdInText;
-                std::string StdOutText;
-                std::string StdErrText;
-                std::string WorkingDirectory;
-                std::vector<long> Affinity;
+                std::string StdOutText; // TODO: use stdout
+                std::string StdErrText; // TODO: use stderr
+                std::string WorkDirectory;
+                int TaskRequeueCount;
+                std::vector<long> Affinity; // TODO: use the affinity
                 std::map<std::string, std::string> EnvironmentVariables;
             protected:
             private:

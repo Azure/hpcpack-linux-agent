@@ -18,7 +18,7 @@ namespace hpc
                 int TaskId;
                 ProcessStartInfo StartInfo;
 
-                static StartTaskArgs&& FromJson(const web::json::value& jsonValue);
+                static StartTaskArgs FromJson(const web::json::value& jsonValue);
 
              protected:
             private:

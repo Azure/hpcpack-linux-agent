@@ -33,11 +33,11 @@ namespace hpc
                     try { t.wait(); return false; }
                     catch (const web::http::http_exception& httpEx)
                     {
-                        Logger::Error("Http exception occurred: %s", httpEx.what());
+                        Logger::Error("Http exception occurred: {0}", httpEx.what());
                     }
                     catch (const std::exception& ex)
                     {
-                        Logger::Error("Exception occurred: %s", ex.what());
+                        Logger::Error("Exception occurred: {0}", ex.what());
                     }
 
                     return true;

@@ -64,17 +64,14 @@ void RemoteCommunicator::Close()
 void RemoteCommunicator::HandlePost(http_request request)
 {
     auto uri = request.relative_uri().to_string();
-    Logger::Info("Request: {0}", uri);
 
-    std::vector<std::string> tokens;
-    String::Split(uri, '/', tokens);
+    std::vector<std::string> tokens = String::Split(uri, '/');
 
     // skip the first '/'.
     int p = 1;
     auto apiSpace = tokens[p++];
     auto nodeName = tokens[p++];
     auto methodName = tokens[p++];
-    Logger::Info("Request:");
 
     Logger::Info("Request: Uri {0}, Node {1}, Method {2}", uri, nodeName, methodName);
 
@@ -123,26 +120,27 @@ void RemoteCommunicator::HandlePost(http_request request)
 
 bool RemoteCommunicator::StartJobAndTask(const json::value& val)
 {
+    Logger::Info("Json: {0}", val.serialize());
     auto args = StartJobAndTaskArgs::FromJson(val);
-    return this->executor.StartJobAndTask(args);
+    return this->executor.StartJobAndTask(std::move(args), this->callbackUri);
 }
 
 bool RemoteCommunicator::StartTask(const json::value& val)
 {
     auto args = StartTaskArgs::FromJson(val);
-    return this->executor.StartTask(args);
+    return this->executor.StartTask(std::move(args), this->callbackUri);
 }
 
 bool RemoteCommunicator::EndJob(const json::value& val)
 {
     auto args = EndJobArgs::FromJson(val);
-    return this->executor.EndJob(args);
+    return this->executor.EndJob(std::move(args));
 }
 
 bool RemoteCommunicator::EndTask(const json::value& val)
 {
     auto args = EndTaskArgs::FromJson(val);
-    return this->executor.EndTask(args);
+    return this->executor.EndTask(std::move(args));
 }
 
 bool RemoteCommunicator::Ping(const json::value& val)
@@ -162,7 +160,6 @@ std::string RemoteCommunicator::GetListeningUri()
 {
     std::ostringstream oss;
     oss << "http://" << System::GetIpAddress(IpAddressVersion::V4, "eth0") << ":50000";
-    std::string uri = oss.str();
-    return uri;
+    return std::move(oss.str());
 }
 

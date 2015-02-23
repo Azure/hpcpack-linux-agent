@@ -9,7 +9,7 @@ EndTaskArgs::EndTaskArgs(int jobId, int taskId) : JobId(jobId), TaskId(taskId)
     //ctor
 }
 
-EndTaskArgs&& EndTaskArgs::FromJson(const json::value& j)
+EndTaskArgs EndTaskArgs::FromJson(const json::value& j)
 {
     EndTaskArgs args(
         JsonHelper<int>::Read("JobId", j),

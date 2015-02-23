@@ -14,7 +14,7 @@ namespace hpc
 
                 int JobId;
 
-                static EndJobArgs&& FromJson(const web::json::value& jsonValue);
+                static EndJobArgs FromJson(const web::json::value& jsonValue);
 
              protected:
             private:

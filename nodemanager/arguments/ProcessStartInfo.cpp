@@ -5,16 +5,16 @@ using namespace hpc::arguments;
 using namespace hpc::utils;
 
 ProcessStartInfo::ProcessStartInfo(
-    const std::string& cmdLine,
-    const std::string& workingDir,
+    std::string&& cmdLine,
+    std::string&& workDir,
     std::vector<long>&& affinity,
     std::map<std::string, std::string>&& enviVars) :
-    CommandLine(cmdLine), WorkingDirectory(workingDir), Affinity(affinity), EnvironmentVariables(enviVars)
+    CommandLine(std::move(cmdLine)), WorkDirectory(std::move(workDir)), Affinity(std::move(affinity)), EnvironmentVariables(std::move(enviVars))
 {
 }
 
 /// TODO: Consider using attribute feature when compiler ready.
-ProcessStartInfo&& ProcessStartInfo::FromJson(const web::json::value& jsonValue)
+ProcessStartInfo ProcessStartInfo::FromJson(const web::json::value& jsonValue)
 {
     ProcessStartInfo startInfo(
         JsonHelper<std::string>::Read("commandLine", jsonValue),

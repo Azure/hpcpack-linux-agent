@@ -14,11 +14,13 @@ namespace hpc
             public:
                 StartJobAndTaskArgs(int jobId, int taskId, ProcessStartInfo&& startInfo);
 
+                StartJobAndTaskArgs(StartJobAndTaskArgs&& args) = default;
+
                 int JobId;
                 int TaskId;
                 ProcessStartInfo StartInfo;
 
-                static StartJobAndTaskArgs&& FromJson(const web::json::value& jsonValue);
+                static StartJobAndTaskArgs FromJson(const web::json::value& jsonValue);
 
              protected:
             private:

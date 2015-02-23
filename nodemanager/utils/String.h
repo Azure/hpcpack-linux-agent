@@ -12,10 +12,10 @@ namespace hpc
         class String
         {
             public:
-                static std::vector<std::string>& Split(const std::string& str, char delim, std::vector<std::string>& tokens);
+                static std::vector<std::string> Split(const std::string& str, char delim);
 
                 template <typename T, typename ... Args>
-                static std::string&& Join(const T& delim, const Args& ...args)
+                static std::string Join(const T& delim, const Args& ...args)
                 {
                     std::ostringstream oss;
                     bool first = true;

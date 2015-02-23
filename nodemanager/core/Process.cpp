@@ -1,4 +1,7 @@
 #include <memory.h>
+#include <sys/wait.h>
+#include <sys/resource.h>
+#include <fstream>
 
 #include "Process.h"
 #include "../utils/Logger.h"
@@ -9,11 +12,10 @@ using namespace hpc::utils;
 
 Process::Process(
     const std::string& cmdLine,
-    const std::vector<std::string>& args,
-    const std::map<std::string, std::string>& envi,
+    const std::string& workDir,
+    std::map<std::string, std::string>&& envi,
     const std::function<Callback> completed) :
-    commandLine(cmdLine), arguments(args), environments(envi), callback(completed),
-    threadId(nullptr), processId(0)
+    commandLine(cmdLine), workDirectory(workDir), environments(envi), callback(completed), processId(0)
 {
 
 }
@@ -21,31 +23,27 @@ Process::Process(
 Process::~Process()
 {
     this->Kill();
-    if (this->threadId)
-    {
-        delete this->threadId;
-        this->threadId = nullptr;
-    }
 }
 
-void Process::Start()
+pplx::task<pid_t> Process::Start()
 {
-    this->threadId = new pthread_t();
-    pthread_create(this->threadId, nullptr, ForkThread, this);
+    pthread_create(&this->threadId, nullptr, ForkThread, this);
 
-    Logger::Info("Created thread {0}", *this->threadId);
+    Logger::Info("Created thread {0}", this->threadId);
+
+    return pplx::task<pid_t>(this->started);
 }
 
 void Process::Kill()
 {
-    if (this->processId != 0) { kill(this->processId, SIGQUIT); }
+    if (this->processId != 0) { kill(this->processId, SIGQUIT); this->processId = 0; }
 }
 
 void Process::OnCompleted()
 {
     try
     {
-        this->callback(this->exitCode, std::move(this->stdOut.str()), std::move(this->stdErr.str()), std::move(this->message.str()));
+        this->callback(this->exitCode, std::move(this->message.str()), this->userTime, this->kernelTime);
     }
     catch (const std::exception& ex)
     {
@@ -60,6 +58,8 @@ void Process::OnCompleted()
 void* Process::ForkThread(void* arg)
 {
     Process* const p = static_cast<Process* const>(arg);
+
+    const std::string path = p->BuildScript();
 
     int stdOutPipe[2], stdErrPipe[2];
 
@@ -98,27 +98,81 @@ void* Process::ForkThread(void* arg)
 
     if (p->processId == 0)
     {
-        p->Run(stdOutPipe, stdErrPipe);
+        p->Run(stdOutPipe, stdErrPipe, path);
     }
     else
     {
-        p->Monitor();
+        p->started.set(p->processId);
+        p->Monitor(stdOutPipe, stdErrPipe);
     }
 
 Final:
+    p->processId = 0;
+    p->CleanupScript(path);
+
     p->OnCompleted();
+
     pthread_exit(0);
 }
 
-void Process::Monitor()
+void Process::Monitor(int stdOutPipe[2], int stdErrPipe[2])
 {
+    Logger::Info("Monitor the forked process {0}", this->processId);
 
+    int status;
+    rusage usage;
+    pid_t waitedPid = wait4(this->processId, &status, 0, &usage);
+    if (waitedPid == -1)
+    {
+        Logger::Error("wait4 for process {0} error {1}", this->processId, errno);
+        this->message << "wait4 for process " << " error " << errno << std::endl;
+        this->exitCode = errno;
+        return;
+    }
+
+    assert(this->processId == waitedPid);
+
+    if (WIFEXITED(status))
+    {
+        this->exitCode = WEXITSTATUS(status);
+    }
+    else
+    {
+        Logger::Error("wait4 for process {0} status {1}", this->processId, status);
+        this->exitCode = -1;
+        this->message << "wait4 for process " << this->processId << " status " << status << std::endl;
+    }
+
+    ReadFromPipe(this->stdOut, stdOutPipe);
+    ReadFromPipe(this->stdErr, stdErrPipe);
+
+    this->message << this->stdOut.str() << std::endl;
+    this->message << this->stdErr.str() << std::endl;
+
+    this->userTime = usage.ru_utime;
+    this->kernelTime = usage.ru_stime;
+    // TODO: Number of process;
 }
 
-void Process::Run(int stdOutPipe[2], int stdErrPipe[2])
+void Process::ReadFromPipe(std::ostringstream& stream, int pipe[2])
 {
-    const std::string& path = this->BuildScript();
+    close(pipe[1]);
 
+    ssize_t bytesRead;
+    const int BufferSize = 1024;
+    char buf[BufferSize] = { 0 };
+
+    while ((bytesRead = read(pipe[0], buf, sizeof(buf) - 1)) > 0)
+    {
+        buf[bytesRead] = 0;
+        stream << buf;
+    }
+
+    close(pipe[0]);
+}
+
+void Process::Run(int stdOutPipe[2], int stdErrPipe[2], const std::string& path)
+{
     std::vector<char> pathBuffer(path.cbegin(), path.cend());
     pathBuffer.push_back('\0');
 
@@ -139,24 +193,54 @@ void Process::Run(int stdOutPipe[2], int stdErrPipe[2])
 
     assert(ret == -1);
 
-    int err = errno;
-    std::cout << "Error occurred when execvpe, errno = " << err << std::endl;
+    std::cout << "Error occurred when execvpe, errno = " << errno << std::endl;
 
-    this->CleanupScript();
-
-    exit(err);
+    exit(errno);
 }
 
-const std::string& Process::BuildScript()
+std::string Process::BuildScript()
 {
-    return this->scriptPath;
+    char scriptPath[256] = "/tmp/nodemanager.XXXXXX";
+
+    int fd;
+    if ((fd = mkstemp(scriptPath)) < 0)
+    {
+        return std::string();
+    }
+    else
+    {
+        close(fd);
+    }
+
+    std::string path = scriptPath;
+    Logger::Info("Script path {0}", path);
+
+    std::ofstream fs(path, std::ios::trunc);
+    fs << "#!/bin/bash" << std::endl << std::endl;
+    if (!this->workDirectory.empty() && access(this->workDirectory.c_str(), 0) != -1)
+    {
+        fs << "cd " << this->workDirectory << std::endl << std::endl;
+    }
+
+    if (!this->commandLine.empty())
+    {
+        fs << this->commandLine << std::endl;
+    }
+
+    fs.close();
+
+    return std::move(path);
 }
 
-void Process::CleanupScript()
+void Process::CleanupScript(const std::string& path)
 {
+    if (!path.empty())
+    {
+        unlink(path.c_str());
+    }
 }
 
-std::unique_ptr<const char* []>&& Process::PrepareEnvironment()
+std::unique_ptr<const char* []> Process::PrepareEnvironment()
 {
     std::transform(
         this->environments.cbegin(),

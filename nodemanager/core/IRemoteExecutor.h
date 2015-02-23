@@ -13,10 +13,10 @@ namespace hpc
         class IRemoteExecutor
         {
             public:
-                virtual bool StartJobAndTask(const hpc::arguments::StartJobAndTaskArgs& args) = 0;
-                virtual bool StartTask(const hpc::arguments::StartTaskArgs& args) = 0;
-                virtual bool EndJob(const hpc::arguments::EndJobArgs& args) = 0;
-                virtual bool EndTask(const hpc::arguments::EndTaskArgs& args) = 0;
+                virtual bool StartJobAndTask(hpc::arguments::StartJobAndTaskArgs&& args, const std::string& callbackUri) = 0;
+                virtual bool StartTask(hpc::arguments::StartTaskArgs&& args, const std::string& callbackUri) = 0;
+                virtual bool EndJob(hpc::arguments::EndJobArgs&& args) = 0;
+                virtual bool EndTask(hpc::arguments::EndTaskArgs&& args) = 0;
                 virtual bool Ping(const std::string& callbackUri) = 0;
                 virtual bool Metric(const std::string& callbackUri) = 0;
         };

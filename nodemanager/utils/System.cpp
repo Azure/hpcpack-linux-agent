@@ -45,7 +45,7 @@ namespace hpc
 
             if (ifAddr != nullptr) freeifaddrs(ifAddr);
 
-            return ip;
+            return std::move(ip);
         }
     }
 }

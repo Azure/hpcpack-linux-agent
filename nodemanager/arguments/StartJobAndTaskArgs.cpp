@@ -10,7 +10,7 @@ StartJobAndTaskArgs::StartJobAndTaskArgs(int jobId, int taskId, ProcessStartInfo
     //ctor
 }
 
-StartJobAndTaskArgs&& StartJobAndTaskArgs::FromJson(const json::value& j)
+StartJobAndTaskArgs StartJobAndTaskArgs::FromJson(const json::value& j)
 {
     StartJobAndTaskArgs args(
         JsonHelper<int>::Read("JobId", j.at("m_Item1")),

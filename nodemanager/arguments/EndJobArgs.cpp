@@ -9,7 +9,7 @@ EndJobArgs::EndJobArgs(int jobId) : JobId(jobId)
     //ctor
 }
 
-EndJobArgs&& EndJobArgs::FromJson(const json::value& j)
+EndJobArgs EndJobArgs::FromJson(const json::value& j)
 {
     EndJobArgs args(JsonHelper<int>::Read("JobId", j));
 
