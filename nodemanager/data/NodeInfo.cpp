@@ -9,7 +9,7 @@ NodeInfo::NodeInfo()
 }
 
 
-json::value NodeInfo::GetJson() const
+json::value NodeInfo::ToJson() const
 {
     json::value j;
     return std::move(j);

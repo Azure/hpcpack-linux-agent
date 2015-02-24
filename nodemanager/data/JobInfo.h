@@ -15,7 +15,7 @@ namespace hpc
             public:
                 JobInfo(int jobId) : JobId(jobId) { }
 
-                web::json::value GetJson() const;
+                web::json::value ToJson() const;
 
                 int JobId;
                 std::map<int, TaskInfo> Tasks;

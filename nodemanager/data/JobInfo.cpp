@@ -3,7 +3,7 @@
 using namespace web;
 using namespace hpc::data;
 
-json::value JobInfo::GetJson() const
+json::value JobInfo::ToJson() const
 {
     json::value v;
     return std::move(v);

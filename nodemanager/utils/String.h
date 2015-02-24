@@ -25,6 +25,21 @@ namespace hpc
 
                     return std::move(oss.str());
                 }
+
+                template <char delim, typename T>
+                static std::string Join(const std::vector<T>& values)
+                {
+                    std::ostringstream oss;
+                    bool first = true;
+
+                    for (const auto& v : values)
+                    {
+                        (first ? oss : oss << delim) << v;
+                        first = false;
+                    }
+
+                    return std::move(oss.str());
+                }
             protected:
             private:
         };

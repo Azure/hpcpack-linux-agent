@@ -23,7 +23,7 @@ namespace hpc
             public:
                 NodeInfo();
 
-                web::json::value GetJson() const;
+                web::json::value ToJson() const;
 
                 NodeAvailability Availability;
                 bool JustStarted;

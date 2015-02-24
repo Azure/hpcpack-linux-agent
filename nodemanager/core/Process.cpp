@@ -152,6 +152,8 @@ void Process::Monitor(int stdOutPipe[2], int stdErrPipe[2])
     this->userTime = usage.ru_utime;
     this->kernelTime = usage.ru_stime;
     // TODO: Number of process;
+    // TODO: ProcessIds
+    // TODO: WorkingSet
 }
 
 void Process::ReadFromPipe(std::ostringstream& stream, int pipe[2])

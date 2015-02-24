@@ -6,7 +6,7 @@ using namespace hpc::data;
 
 json::value JobTaskTable::GetNodeJson() const
 {
-    return this->nodeInfo.GetJson();
+    return this->nodeInfo.ToJson();
 }
 
 json::value JobTaskTable::GetMetricJson() const

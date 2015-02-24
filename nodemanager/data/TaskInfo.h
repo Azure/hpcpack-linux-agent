@@ -22,7 +22,7 @@ namespace hpc
 
                 TaskInfo(TaskInfo&& t) = default;
 
-                web::json::value GetJson() const;
+                web::json::value ToJson() const;
 
                 int JobId;
                 int TaskId;

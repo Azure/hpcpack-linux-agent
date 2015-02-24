@@ -52,7 +52,7 @@ bool RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& callback
                     client::http_client client(callbackUri);
                     http_request request;
                     request.set_method(methods::POST);
-                    auto result = taskInfo.GetJson();
+                    auto result = taskInfo.ToJson();
                     //std::string jsonBody = callbackBody.serialize();
 
                     Logger::Info("Callback to {0} with {1}", callbackUri, result);
