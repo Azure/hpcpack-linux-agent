@@ -30,7 +30,7 @@ namespace hpc
                 std::string MacAddress;
                 std::string Name;
 
-                std::map<int, JobInfo> Jobs;
+                std::map<int, std::shared_ptr<JobInfo>> Jobs;
             protected:
             private:
         };

@@ -441,7 +441,7 @@
 	"../arguments/EndJobArgs.h"
 	"../arguments/EndTaskArgs.h"
 
-1424622243 /home/evanc/whpc-linux-communicator/nodemanager/core/RemoteExecutor.h
+1424818196 /home/evanc/whpc-linux-communicator/nodemanager/core/RemoteExecutor.h
 	"IRemoteExecutor.h"
 	"JobTaskTable.h"
 	"Process.h"
@@ -554,25 +554,25 @@
 1424727976 source:/home/evanc/whpc-linux-communicator/nodemanager/core/JobTaskTable.cpp
 	"JobTaskTable.h"
 
-1424613557 /home/evanc/whpc-linux-communicator/nodemanager/core/JobTaskTable.h
+1424817391 /home/evanc/whpc-linux-communicator/nodemanager/core/JobTaskTable.h
 	<map>
 	<cpprest/json.h>
 	"../data/TaskInfo.h"
 	"../data/JobInfo.h"
 	"../data/NodeInfo.h"
 
-1424727434 /home/evanc/whpc-linux-communicator/nodemanager/data/TaskInfo.h
+1424815938 /home/evanc/whpc-linux-communicator/nodemanager/data/TaskInfo.h
 	<cpprest/json.h>
 	<vector>
 	<string>
 	<memory>
 
-1424728116 /home/evanc/whpc-linux-communicator/nodemanager/data/JobInfo.h
+1424817748 /home/evanc/whpc-linux-communicator/nodemanager/data/JobInfo.h
 	<cpprest/json.h>
 	<map>
 	"TaskInfo.h"
 
-1424727451 /home/evanc/whpc-linux-communicator/nodemanager/data/NodeInfo.h
+1424815120 /home/evanc/whpc-linux-communicator/nodemanager/data/NodeInfo.h
 	<cpprest/json.h>
 	<string>
 	<map>

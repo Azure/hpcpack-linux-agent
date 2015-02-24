@@ -1,8 +1,10 @@
+#include <cpprest/http_client.h>
+#include <memory>
+
 #include "RemoteExecutor.h"
 #include "../utils/WriterLock.h"
+#include "../utils/ReaderLock.h"
 #include "../utils/Logger.h"
-
-#include <cpprest/http_client.h>
 
 using namespace web::http;
 
@@ -25,53 +27,62 @@ bool RemoteExecutor::StartJobAndTask(StartJobAndTaskArgs&& args, const std::stri
 
 bool RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& callbackUri)
 {
-    this->jobTaskTable.AddJobAndTask(args.JobId, args.TaskId, TaskInfo(args.JobId, args.TaskId, args.StartInfo.TaskRequeueCount));
+    std::shared_ptr<TaskInfo> taskInfo = this->jobTaskTable.AddJobAndTask(args.JobId, args.TaskId);
 
-    std::map<int, Process*>::iterator p;
+    if (taskInfo->TaskRequeueCount < args.StartInfo.TaskRequeueCount)
+    {
+        Logger::Info("Change the task {0} requeue count from {1} to {2}", args.TaskId, taskInfo->TaskRequeueCount, args.StartInfo.TaskRequeueCount);
+        taskInfo->TaskRequeueCount = args.StartInfo.TaskRequeueCount;
+    }
 
     {
-        WriterLock(&this->lock);
-        p = this->processes.find(args.TaskId);
-        if (p == this->processes.end())
-        {
-            int jobId = args.JobId;
-            int taskId = args.TaskId;
+        WriterLock writerLock(&this->lock);
 
-            auto process = new Process(
+        if (this->processes.find(args.TaskId) == this->processes.end())
+        {
+            auto process = std::shared_ptr<Process>(new Process(
                 std::move(args.StartInfo.CommandLine),
                 std::move(args.StartInfo.WorkDirectory),
                 std::move(args.StartInfo.EnvironmentVariables),
-                [jobId, taskId, callbackUri, this] (int exitCode, std::string&& message, timeval userTime, timeval kernelTime)
+                [taskInfo, callbackUri, this] (int exitCode, std::string&& message, timeval userTime, timeval kernelTime)
                 {
-                    auto taskInfo = this->jobTaskTable.RemoveTask(jobId, taskId);
-                    taskInfo.ExitCode = exitCode;
-                    taskInfo.Message = std::move(message);
-                    taskInfo.KernelProcessorTime = kernelTime.tv_sec * 1000000 + kernelTime.tv_usec;
-                    taskInfo.UserProcessorTime = userTime.tv_sec * 1000000 + userTime.tv_usec;
-
-                    client::http_client client(callbackUri);
-                    http_request request;
-                    request.set_method(methods::POST);
-                    auto result = taskInfo.ToJson();
-                    //std::string jsonBody = callbackBody.serialize();
-
-                    Logger::Info("Callback to {0} with {1}", callbackUri, result);
-
-                    request.set_body(result);
-                    client.request(request).get(); // This get doesn't affect the threadpool since it will be run in the dedicated thread in the Process.
-
+                    try
                     {
-                        WriterLock(&this->lock);
+                        {
+                            Logger::Debug("Acquiring lock to erase the process");
+                            WriterLock writerLock(&this->lock);
 
-                        // Remove it here, since, the process will be deleted by itself after the callback.
-                        this->processes.erase(taskId);
+                            // Remove it here, since, the process will be deleted by itself after the callback.
+                            this->processes.erase(taskInfo->TaskId);
+                            Logger::Debug("erased process");
+                        }
+
+                        this->jobTaskTable.RemoveTask(taskInfo->JobId, taskInfo->TaskId);
+                        taskInfo->ExitCode = exitCode;
+                        taskInfo->Message = std::move(message);
+                        taskInfo->KernelProcessorTime = kernelTime.tv_sec * 1000000 + kernelTime.tv_usec;
+                        taskInfo->UserProcessorTime = userTime.tv_sec * 1000000 + userTime.tv_usec;
+
+                        auto jsonBody = taskInfo->ToJson();
+                        Logger::Debug("Callback to {0} with {1}", callbackUri, jsonBody);
+                        client::http_client client(callbackUri);
+                        client.request(methods::POST, "", jsonBody).then([&callbackUri](http_response response)
+                        {
+                            Logger::Info("Callback to {0} response code {1}", callbackUri, response.status_code());
+                        }).wait();
+
+//                        client.request(request).get(); // This get doesn't affect the threadpool since it will be run in the dedicated thread in the Process.
+                        Logger::Debug("Callback success.");
                     }
-                });
+                    catch (const std::exception& ex)
+                    {
+                        Logger::Error("Exception when sending back task result. {0}", ex.what());
+                    }
+                }));
 
-            auto insertResult = this->processes.insert(std::make_pair(args.TaskId, process));
-            assert(insertResult.second);
+            this->processes[args.TaskId] = process;
 
-            insertResult.first->second->Start().then([this] (pid_t pid)
+            process->Start().then([this] (pid_t pid)
             {
                 if (pid > 0)
                 {
@@ -81,6 +92,7 @@ bool RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& callback
         }
         else
         {
+            Logger::Info("The task {0} has started already.", args.TaskId);
             // Found the original process.
             // TODO: assert the job task table call is the same.
         }
@@ -91,11 +103,19 @@ bool RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& callback
 
 bool RemoteExecutor::EndJob(hpc::arguments::EndJobArgs&& args)
 {
+    auto jobInfo = this->jobTaskTable.RemoveJob(args.JobId);
+
+    for (auto& taskPair : jobInfo->Tasks)
+    {
+        this->TerminateTask(taskPair.first);
+    }
+
     return true;
 }
 
 bool RemoteExecutor::EndTask(hpc::arguments::EndTaskArgs&& args)
 {
+    this->TerminateTask(args.TaskId);
     return true;
 }
 
@@ -108,3 +128,21 @@ bool RemoteExecutor::Metric(const std::string& callbackUri)
 {
     return true;
 }
+
+bool RemoteExecutor::TerminateTask(int taskId)
+{
+    ReaderLock readerLock(&this->lock);
+    auto p = this->processes.find(taskId);
+
+    if (p != this->processes.end())
+    {
+        p->second->Kill();
+
+        return true;
+    }
+    else
+    {
+        return false;
+    }
+}
+

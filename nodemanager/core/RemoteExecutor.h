@@ -25,10 +25,12 @@ namespace hpc
 
             protected:
             private:
+                bool TerminateTask(int taskId);
+
                 JobTaskTable jobTaskTable;
 
                 // TODO: Make map hold Process directly.
-                std::map<int, Process*> processes;
+                std::map<int, std::shared_ptr<Process>> processes;
                 pthread_rwlock_t lock;
         };
     }

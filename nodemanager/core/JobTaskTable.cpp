@@ -1,4 +1,6 @@
 #include "JobTaskTable.h"
+#include "../utils/WriterLock.h"
+#include "../utils/ReaderLock.h"
 
 using namespace hpc::core;
 using namespace web;
@@ -21,18 +23,61 @@ json::value JobTaskTable::GetTaskJson(int jobId, int taskId) const
     return std::move(j);
 }
 
-void JobTaskTable::AddJobAndTask(int jobId, int taskId, TaskInfo&& taskInfo)
+std::shared_ptr<TaskInfo> JobTaskTable::AddJobAndTask(int jobId, int taskId)
 {
+    WriterLock writerLock(&this->lock);
+
+    std::shared_ptr<JobInfo> job;
+    auto j = this->nodeInfo.Jobs.find(jobId);
+    if (j == this->nodeInfo.Jobs.end())
+    {
+        job = std::shared_ptr<JobInfo>(new JobInfo(jobId));
+        this->nodeInfo.Jobs[jobId] = job;
+    }
+    else
+    {
+        job = j->second;
+    }
+
+    std::shared_ptr<TaskInfo> task;
+    auto t = job->Tasks.find(taskId);
+    if (t == job->Tasks.end())
+    {
+        task = std::shared_ptr<TaskInfo>(new TaskInfo(jobId, taskId));
+        job->Tasks[taskId] = task;
+    }
+    else
+    {
+        task = t->second;
+    }
+
+    return task;
 }
 
-JobInfo JobTaskTable::RemoveJob(int jobId)
+std::shared_ptr<JobInfo> JobTaskTable::RemoveJob(int jobId)
 {
-    JobInfo j(0);
-    return std::move(j);
+    WriterLock writerLock(&this->lock);
+
+    std::shared_ptr<JobInfo> job;
+    auto j = this->nodeInfo.Jobs.find(jobId);
+    if (j != this->nodeInfo.Jobs.end())
+    {
+        job = j->second;
+        this->nodeInfo.Jobs.erase(jobId);
+    }
+
+    return job;
 }
 
-TaskInfo JobTaskTable::RemoveTask(int jobId, int taskId)
+void JobTaskTable::RemoveTask(int jobId, int taskId)
 {
-    TaskInfo t(0, 0, 0);
-    return std::move(t);
+    WriterLock writerLock(&this->lock);
+
+    std::shared_ptr<JobInfo> job;
+    auto j = this->nodeInfo.Jobs.find(jobId);
+    if (j != this->nodeInfo.Jobs.end())
+    {
+        job = j->second;
+        job->Tasks.erase(taskId);
+    }
 }

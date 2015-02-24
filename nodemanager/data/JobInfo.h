@@ -18,7 +18,7 @@ namespace hpc
                 web::json::value ToJson() const;
 
                 int JobId;
-                std::map<int, TaskInfo> Tasks;
+                std::map<int, std::shared_ptr<TaskInfo>> Tasks;
             protected:
             private:
         };

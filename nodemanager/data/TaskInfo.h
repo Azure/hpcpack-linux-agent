@@ -13,8 +13,8 @@ namespace hpc
         struct TaskInfo
         {
             public:
-                TaskInfo(int jobId, int taskId, int taskRequeueCount) :
-                    JobId(jobId), TaskId(taskId), TaskRequeueCount(taskRequeueCount),
+                TaskInfo(int jobId, int taskId) :
+                    JobId(jobId), TaskId(taskId), TaskRequeueCount(0),
                     ExitCode(0), Exited(false), KernelProcessorTime(0), UserProcessorTime(0),
                     WorkingSet(0), NumberOfProcesses(0), IsPrimaryTask(true)
                 {
