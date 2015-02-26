@@ -56,6 +56,7 @@
 			<Add option="-lpthread" />
 			<Add library="../../casablanca/Release/build.debug/Binaries/libcpprest.so" />
 		</Linker>
+		<Unit filename="Makefile" />
 		<Unit filename="Readme.txt" />
 		<Unit filename="arguments/EndJobArgs.cpp" />
 		<Unit filename="arguments/EndJobArgs.h" />
@@ -70,21 +71,35 @@
 		<Unit filename="core/IRemoteExecutor.h" />
 		<Unit filename="core/JobTaskTable.cpp" />
 		<Unit filename="core/JobTaskTable.h" />
+		<Unit filename="core/Monitor.cpp" />
+		<Unit filename="core/Monitor.h" />
 		<Unit filename="core/Process.cpp" />
 		<Unit filename="core/Process.h" />
 		<Unit filename="core/RemoteCommunicator.cpp" />
 		<Unit filename="core/RemoteCommunicator.h" />
 		<Unit filename="core/RemoteExecutor.cpp" />
 		<Unit filename="core/RemoteExecutor.h" />
+		<Unit filename="core/Reporter.cpp" />
+		<Unit filename="core/Reporter.h" />
+		<Unit filename="data/JobInfo.cpp" />
+		<Unit filename="data/JobInfo.h" />
+		<Unit filename="data/NodeInfo.cpp" />
+		<Unit filename="data/NodeInfo.h" />
+		<Unit filename="data/TaskInfo.cpp" />
+		<Unit filename="data/TaskInfo.h" />
 		<Unit filename="main.cpp" />
 		<Unit filename="utils/JsonHelper.cpp" />
 		<Unit filename="utils/JsonHelper.h" />
 		<Unit filename="utils/Logger.cpp" />
 		<Unit filename="utils/Logger.h" />
+		<Unit filename="utils/ReaderLock.cpp" />
+		<Unit filename="utils/ReaderLock.h" />
 		<Unit filename="utils/String.cpp" />
 		<Unit filename="utils/String.h" />
 		<Unit filename="utils/System.cpp" />
 		<Unit filename="utils/System.h" />
+		<Unit filename="utils/WriterLock.cpp" />
+		<Unit filename="utils/WriterLock.h" />
 		<Extensions>
 			<code_completion />
 			<debugger />

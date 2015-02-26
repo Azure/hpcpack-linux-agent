@@ -16,10 +16,10 @@ namespace hpc
         {
             public:
                 JobTaskTable() : lock(PTHREAD_RWLOCK_INITIALIZER) { }
+                ~JobTaskTable() { pthread_rwlock_destroy(&this->lock); }
 
-                web::json::value GetNodeJson() const;
-                web::json::value GetMetricJson() const;
-                web::json::value GetTaskJson(int jobId, int taskId) const;
+                web::json::value ToJson();
+             //   web::json::value GetTaskJson(int jobId, int taskId) const;
 
                 std::shared_ptr<hpc::data::TaskInfo> AddJobAndTask(int jobId, int taskId);
                 std::shared_ptr<hpc::data::JobInfo> RemoveJob(int jobId);

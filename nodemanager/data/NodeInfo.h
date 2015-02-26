@@ -23,10 +23,10 @@ namespace hpc
             public:
                 NodeInfo();
 
-                web::json::value ToJson() const;
+                web::json::value ToJson();
 
                 NodeAvailability Availability;
-                bool JustStarted;
+                bool JustStarted = true;
                 std::string MacAddress;
                 std::string Name;
 

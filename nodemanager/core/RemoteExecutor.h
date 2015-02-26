@@ -3,7 +3,9 @@
 
 #include "IRemoteExecutor.h"
 #include "JobTaskTable.h"
+#include "Monitor.h"
 #include "Process.h"
+#include "Reporter.h"
 
 namespace hpc
 {
@@ -14,7 +16,7 @@ namespace hpc
             public:
                 RemoteExecutor();
                 // TODO: delete all processes in destructor.
-                ~RemoteExecutor() { }
+                ~RemoteExecutor() { pthread_rwlock_destroy(&this->lock); }
 
                 virtual bool StartJobAndTask(hpc::arguments::StartJobAndTaskArgs&& args, const std::string& callbackUri);
                 virtual bool StartTask(hpc::arguments::StartTaskArgs&& args, const std::string& callbackUri);
@@ -25,9 +27,19 @@ namespace hpc
 
             protected:
             private:
+                std::string LoadReportUri(const std::string& fileName);
+                void SaveReportUri(const std::string& fileName, const std::string& uri);
                 bool TerminateTask(int taskId);
 
                 JobTaskTable jobTaskTable;
+                Monitor monitor;
+
+                std::unique_ptr<Reporter> nodeInfoReporter;
+                std::unique_ptr<Reporter> metricReporter;
+                const int NodeInfoReportInterval = 30;
+                const int MetricReportInterval = 30;
+                const std::string NodeInfoUriFileName = "NodeInfoReportUri";
+                const std::string MetricUriFileName = "MetricReportUri";
 
                 // TODO: Make map hold Process directly.
                 std::map<int, std::shared_ptr<Process>> processes;

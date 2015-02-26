@@ -5,6 +5,7 @@
 #include "../utils/WriterLock.h"
 #include "../utils/ReaderLock.h"
 #include "../utils/Logger.h"
+#include "../utils/System.h"
 
 using namespace web::http;
 
@@ -13,9 +14,10 @@ using namespace hpc::utils;
 using namespace hpc::arguments;
 using namespace hpc::data;
 
-RemoteExecutor::RemoteExecutor() : lock(PTHREAD_RWLOCK_INITIALIZER)
+RemoteExecutor::RemoteExecutor() : monitor(System::GetNodeName()), lock(PTHREAD_RWLOCK_INITIALIZER)
 {
-    //ctor
+    this->Ping(this->LoadReportUri(this->NodeInfoUriFileName));
+    this->Metric(this->LoadReportUri(this->MetricUriFileName));
 }
 
 bool RemoteExecutor::StartJobAndTask(StartJobAndTaskArgs&& args, const std::string& callbackUri)
@@ -121,11 +123,17 @@ bool RemoteExecutor::EndTask(hpc::arguments::EndTaskArgs&& args)
 
 bool RemoteExecutor::Ping(const std::string& callbackUri)
 {
+    this->SaveReportUri(this->NodeInfoUriFileName, callbackUri);
+    this->nodeInfoReporter = std::unique_ptr<Reporter>(new Reporter(callbackUri, this->NodeInfoReportInterval, [this]() { return this->jobTaskTable.ToJson(); }));
+
     return true;
 }
 
 bool RemoteExecutor::Metric(const std::string& callbackUri)
 {
+    this->SaveReportUri(this->MetricUriFileName, callbackUri);
+    this->metricReporter = std::unique_ptr<Reporter>(new Reporter(callbackUri, this->MetricReportInterval, [this]() { return this->monitor.ToJson(); }));
+
     return true;
 }
 
@@ -146,3 +154,19 @@ bool RemoteExecutor::TerminateTask(int taskId)
     }
 }
 
+std::string RemoteExecutor::LoadReportUri(const std::string& fileName)
+{
+    std::ifstream fs(fileName, std::ios::in);
+    std::string uri;
+    fs >> uri;
+    fs.close();
+
+    return std::move(uri);
+}
+
+void RemoteExecutor::SaveReportUri(const std::string& fileName, const std::string& uri)
+{
+    std::ofstream fs(fileName, std::ios::trunc);
+    fs << uri;
+    fs.close();
+}

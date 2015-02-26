@@ -53,14 +53,16 @@ OBJ_DEBUG = $(OBJDIR_DEBUG)/main.o $(OBJDIR_DEBUG)/RemoteCommunicator.o $(OBJDIR
 	$(OBJDIR_DEBUG)/Logger.o $(OBJDIR_DEBUG)/String.o $(OBJDIR_DEBUG)/System.o $(OBJDIR_DEBUG)/ProcessStartInfo.o \
 	$(OBJDIR_DEBUG)/StartJobAndTaskArgs.o $(OBJDIR_DEBUG)/RemoteExecutor.o $(OBJDIR_DEBUG)/StartTaskArgs.o \
 	$(OBJDIR_DEBUG)/EndJobArgs.o $(OBJDIR_DEBUG)/EndTaskArgs.o $(OBJDIR_DEBUG)/Process.o $(OBJDIR_DEBUG)/JobInfo.o \
-	$(OBJDIR_DEBUG)/NodeInfo.o $(OBJDIR_DEBUG)/TaskInfo.o $(OBJDIR_DEBUG)/JobTaskTable.o
+	$(OBJDIR_DEBUG)/NodeInfo.o $(OBJDIR_DEBUG)/TaskInfo.o $(OBJDIR_DEBUG)/JobTaskTable.o $(OBJDIR_DEBUG)/Monitor.o \
+	$(OBJDIR_DEBUG)/Reporter.o $(OBJDIR_DEBUG)/ReaderLock.o $(OBJDIR_DEBUG)/WriterLock.o
 
 OBJ_RELEASE = $(OBJDIR_RELEASE)/main.o $(OBJDIR_RELEASE)/RemoteCommunicator.o $(OBJDIR_RELEASE)/JsonHelper.o \
 	$(OBJDIR_RELEASE)/Logger.o $(OBJDIR_RELEASE)/String.o $(OBJDIR_RELEASE)/System.o \
 	$(OBJDIR_RELEASE)/ProcessStartInfo.o $(OBJDIR_RELEASE)/StartJobAndTaskArgs.o $(OBJDIR_RELEASE)/RemoteExecutor.o \
 	$(OBJDIR_RELEASE)/StartTaskArgs.o $(OBJDIR_RELEASE)/EndJobArgs.o $(OBJDIR_RELEASE)/EndTaskArgs.o \
-	$(OBJDIR_RELEASE)/Process.o $(OBJDIR_DEBUG)/JobInfo.o $(OBJDIR_DEBUG)/NodeInfo.o $(OBJDIR_DEBUG)/TaskInfo.o \
-	$(OBJDIR_DEBUG)/JobTaskTable.o
+	$(OBJDIR_RELEASE)/Process.o $(OBJDIR_RELEASE)/JobInfo.o $(OBJDIR_RELEASE)/NodeInfo.o $(OBJDIR_RELEASE)/TaskInfo.o \
+	$(OBJDIR_RELEASE)/JobTaskTable.o $(OBJDIR_RELEASE)/Monitor.o $(OBJDIR_RELEASE)/Reporter.o $(OBJDIR_RELEASE)/ReaderLock.o \
+	$(OBJDIR_RELEASE)/WriterLock.o
 
 all: debug release
 
@@ -127,6 +129,18 @@ $(OBJDIR_DEBUG)/TaskInfo.o: data/TaskInfo.cpp
 
 $(OBJDIR_DEBUG)/NodeInfo.o: data/NodeInfo.cpp
 	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c data/NodeInfo.cpp -o $(OBJDIR_DEBUG)/NodeInfo.o
+
+$(OBJDIR_DEBUG)/Monitor.o: core/Monitor.cpp
+	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c core/Monitor.cpp -o $(OBJDIR_DEBUG)/Monitor.o
+
+$(OBJDIR_DEBUG)/Reporter.o: core/Reporter.cpp
+	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c core/Reporter.cpp -o $(OBJDIR_DEBUG)/Reporter.o
+
+$(OBJDIR_DEBUG)/ReaderLock.o: utils/ReaderLock.cpp
+	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c utils/ReaderLock.cpp -o $(OBJDIR_DEBUG)/ReaderLock.o
+
+$(OBJDIR_DEBUG)/WriterLock.o: utils/WriterLock.cpp
+	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c utils/WriterLock.cpp -o $(OBJDIR_DEBUG)/WriterLock.o
 
 
 clean_debug:
@@ -195,6 +209,18 @@ $(OBJDIR_RELEASE)/TaskInfo.o: data/TaskInfo.cpp
 
 $(OBJDIR_RELEASE)/NodeInfo.o: data/NodeInfo.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c data/NodeInfo.cpp -o $(OBJDIR_RELEASE)/NodeInfo.o
+
+$(OBJDIR_RELEASE)/Monitor.o: core/Monitor.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c core/Monitor.cpp -o $(OBJDIR_RELEASE)/Monitor.o
+
+$(OBJDIR_RELEASE)/Reporter.o: core/Reporter.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c core/Reporter.cpp -o $(OBJDIR_RELEASE)/Reporter.o
+
+$(OBJDIR_RELEASE)/ReaderLock.o: utils/ReaderLock.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c utils/ReaderLock.cpp -o $(OBJDIR_RELEASE)/ReaderLock.o
+
+$(OBJDIR_RELEASE)/WriterLock.o: utils/WriterLock.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c utils/WriterLock.cpp -o $(OBJDIR_RELEASE)/WriterLock.o
 
 clean_release:
 	rm -f $(OBJ_RELEASE) $(OUT_RELEASE)

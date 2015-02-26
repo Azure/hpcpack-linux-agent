@@ -6,20 +6,10 @@ using namespace hpc::core;
 using namespace web;
 using namespace hpc::data;
 
-json::value JobTaskTable::GetNodeJson() const
+json::value JobTaskTable::ToJson()
 {
-    return this->nodeInfo.ToJson();
-}
-
-json::value JobTaskTable::GetMetricJson() const
-{
-    auto j = json::value();
-    return std::move(j);
-}
-
-json::value JobTaskTable::GetTaskJson(int jobId, int taskId) const
-{
-    auto j = json::value();
+    ReaderLock readerLock(&this->lock);
+    auto j = this->nodeInfo.ToJson();
     return std::move(j);
 }
 

@@ -112,7 +112,7 @@ Final:
 
     p->OnCompleted();
 
-    pthread_exit(0);
+    pthread_exit(nullptr);
 }
 
 void Process::Monitor(int stdOutPipe[2], int stdErrPipe[2])
