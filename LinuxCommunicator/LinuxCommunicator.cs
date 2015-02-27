@@ -165,7 +165,18 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
             {
                 this.Tracer.TraceInfo("Compute node {0} pinged. Ex {1}", name, ex);
             }, null);
+
+            this.Metric(nodeName);
         }
+
+        public void Metric(string nodeName)
+        {
+            this.SendRequest<NodeCommunicatorCallBackArg>("metric", "metricreported", nodeName, (name, arg, ex) =>
+            {
+                this.Tracer.TraceInfo("Compute node {0} metric requested. Ex {1}", name, ex);
+            }, null);
+        }
+
 
         private void SendRequest<T>(string action, string callbackAction, string nodeName, NodeCommunicatorCallBack<T> callback, T arg) where T : NodeCommunicatorCallBackArg
         {
