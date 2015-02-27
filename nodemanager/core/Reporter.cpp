@@ -25,23 +25,17 @@ Reporter::~Reporter()
 
 pplx::task<void> Reporter::Report()
 {
-    std::string uri = this->reportUri;
+    const std::string& uri = this->reportUri;
     if (!uri.empty())
     {
         auto jsonBody = this->valueFetcher();
-        Logger::Debug("Report to {0} with {1}", uri, jsonBody);
+        Logger::Info("Report to {0} with {1}", uri, jsonBody);
 
-        http_client client(uri);
-//        client.request(methods::POST, "", jsonBody).then([](auto r){}).wait();
-//        client.request(methods::POST, "", jsonBody).then([&callbackUri](http_response response)
-//        {
-//            Logger::Info("Callback to {0} response code {1}", callbackUri, response.status_code());
-//        }).wait();
-        return pplx::task_from_result();
-        //.then([&uri](http_response response)
-//        {
-//            Logger::Info("Report to {0} response code {1}", uri, response.status_code());
-//        });
+        client::http_client client(uri);
+        return client.request(methods::POST, "", jsonBody).then([&uri](http_response response)
+        {
+            Logger::Debug("Report to {0} response code {1}", uri, response.status_code());
+        });
     }
     else
     {
@@ -58,7 +52,24 @@ void* Reporter::ReportingThread(void * arg)
 
     while (true)
     {
-        r->Report().wait();
+        try
+        {
+            r->Report().wait();
+        }
+        catch (const http_exception& httpEx)
+        {
+            Logger::Warn("HttpException occurred when report to {0}, ex {1}", r->reportUri, httpEx.what());
+        }
+        catch (const std::exception& ex)
+        {
+            Logger::Error("Exception occurred when report to {0}, ex {1}", r->reportUri, ex.what());
+            exit(-1);
+        }
+        catch (...)
+        {
+            Logger::Error("Unknown error occurred when report to {0}", r->reportUri);
+            exit(-1);
+        }
 
         sleep(r->intervalSeconds);
     }
