@@ -29,7 +29,7 @@ pplx::task<pid_t> Process::Start()
 {
     pthread_create(&this->threadId, nullptr, ForkThread, this);
 
-    Logger::Info("Created thread {0}", this->threadId);
+    Logger::Debug("Created thread {0}", this->threadId);
 
     return pplx::task<pid_t>(this->started);
 }
@@ -43,7 +43,7 @@ void Process::OnCompleted()
 {
     try
     {
-        this->callback(this->exitCode, std::move(this->message.str()), this->userTime, this->kernelTime);
+        this->callback(this->exitCode, this->message.str(), this->userTime, this->kernelTime);
     }
     catch (const std::exception& ex)
     {
@@ -117,7 +117,7 @@ Final:
 
 void Process::Monitor(int stdOutPipe[2], int stdErrPipe[2])
 {
-    Logger::Info("Monitor the forked process {0}", this->processId);
+    Logger::Debug("Monitor the forked process {0}", this->processId);
 
     int status;
     rusage usage;
@@ -215,7 +215,7 @@ std::string Process::BuildScript()
     }
 
     std::string path = scriptPath;
-    Logger::Info("Script path {0}", path);
+    Logger::Debug("Script path {0}", path);
 
     std::ofstream fs(path, std::ios::trunc);
     fs << "#!/bin/bash" << std::endl << std::endl;

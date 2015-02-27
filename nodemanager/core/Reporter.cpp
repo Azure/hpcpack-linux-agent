@@ -32,10 +32,16 @@ pplx::task<void> Reporter::Report()
         Logger::Debug("Report to {0} with {1}", uri, jsonBody);
 
         http_client client(uri);
-        return client.request(methods::POST, "", jsonBody).then([&uri](http_response response)
-        {
-            Logger::Info("Report to {0} response code {1}", uri, response.status_code());
-        });
+//        client.request(methods::POST, "", jsonBody).then([](auto r){}).wait();
+//        client.request(methods::POST, "", jsonBody).then([&callbackUri](http_response response)
+//        {
+//            Logger::Info("Callback to {0} response code {1}", callbackUri, response.status_code());
+//        }).wait();
+        return pplx::task_from_result();
+        //.then([&uri](http_response response)
+//        {
+//            Logger::Info("Report to {0} response code {1}", uri, response.status_code());
+//        });
     }
     else
     {

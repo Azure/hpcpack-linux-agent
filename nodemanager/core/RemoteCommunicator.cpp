@@ -17,12 +17,12 @@ RemoteCommunicator::RemoteCommunicator(IRemoteExecutor& exec) :
         methods::POST,
         [this](auto request) { this->HandlePost(request); });
 
-    this->processors["startjobandtask"] = [this] (const auto& j) { return this->StartJobAndTask(j); };
-    this->processors["starttask"] = [this] (const auto& j) { return this->StartTask(j); };
-    this->processors["endjob"] = [this] (const auto& j) { return this->EndJob(j); };
-    this->processors["endtask"] = [this] (const auto& j) { return this->EndTask(j); };
-    this->processors["ping"] = [this] (const auto& j) { return this->Ping(j); };
-    this->processors["metric"] = [this] (const auto& j) { return this->Metric(j); };
+    this->processors["startjobandtask"] = [this] (const auto& j, const auto& c) { return this->StartJobAndTask(j, c); };
+    this->processors["starttask"] = [this] (const auto& j, const auto& c) { return this->StartTask(j, c); };
+    this->processors["endjob"] = [this] (const auto& j, const auto& c) { return this->EndJob(j, c); };
+    this->processors["endtask"] = [this] (const auto& j, const auto& c) { return this->EndTask(j, c); };
+    this->processors["ping"] = [this] (const auto& j, const auto& c) { return this->Ping(j, c); };
+    this->processors["metric"] = [this] (const auto& j, const auto& c) { return this->Metric(j, c); };
 }
 
 RemoteCommunicator::~RemoteCommunicator()
@@ -83,21 +83,22 @@ void RemoteCommunicator::HandlePost(http_request request)
         return;
     }
 
+    std::string callbackUri;
     auto callbackHeader = request.headers().find(CallbackUriKey);
     if (callbackHeader != request.headers().end())
     {
-        this->callbackUri = callbackHeader->second;
-        Logger::Info("CallbackUri found {0}", this->callbackUri.c_str());
+        callbackUri = callbackHeader->second;
+        Logger::Debug("CallbackUri found {0}", callbackUri.c_str());
     }
 
     auto processor = this->processors.find(methodName);
 
     if (processor != this->processors.end())
     {
-        request.extract_json().then([processor](pplx::task<json::value> t)
+        request.extract_json().then([processor, callback = std::move(callbackUri)](pplx::task<json::value> t)
         {
             // todo: throw exception instead of using the return value.
-            processor->second(t.get());
+            processor->second(t.get(), callback);
         })
         .then([request, this](auto t)
         {
@@ -118,39 +119,39 @@ void RemoteCommunicator::HandlePost(http_request request)
     }
 }
 
-bool RemoteCommunicator::StartJobAndTask(const json::value& val)
+bool RemoteCommunicator::StartJobAndTask(const json::value& val, const std::string& callbackUri)
 {
     Logger::Info("Json: {0}", val.serialize());
     auto args = StartJobAndTaskArgs::FromJson(val);
-    return this->executor.StartJobAndTask(std::move(args), this->callbackUri);
+    return this->executor.StartJobAndTask(std::move(args), callbackUri);
 }
 
-bool RemoteCommunicator::StartTask(const json::value& val)
+bool RemoteCommunicator::StartTask(const json::value& val, const std::string& callbackUri)
 {
     auto args = StartTaskArgs::FromJson(val);
-    return this->executor.StartTask(std::move(args), this->callbackUri);
+    return this->executor.StartTask(std::move(args), callbackUri);
 }
 
-bool RemoteCommunicator::EndJob(const json::value& val)
+bool RemoteCommunicator::EndJob(const json::value& val, const std::string& callbackUri)
 {
     auto args = EndJobArgs::FromJson(val);
     return this->executor.EndJob(std::move(args));
 }
 
-bool RemoteCommunicator::EndTask(const json::value& val)
+bool RemoteCommunicator::EndTask(const json::value& val, const std::string& callbackUri)
 {
     auto args = EndTaskArgs::FromJson(val);
     return this->executor.EndTask(std::move(args));
 }
 
-bool RemoteCommunicator::Ping(const json::value& val)
+bool RemoteCommunicator::Ping(const json::value& val, const std::string& callbackUri)
 {
-    return this->executor.Ping(this->callbackUri);
+    return this->executor.Ping(callbackUri);
 }
 
-bool RemoteCommunicator::Metric(const json::value& val)
+bool RemoteCommunicator::Metric(const json::value& val, const std::string& callbackUri)
 {
-    return this->executor.Metric(this->callbackUri);
+    return this->executor.Metric(callbackUri);
 }
 
 const std::string RemoteCommunicator::ApiSpace = "api";

@@ -20,6 +20,8 @@ namespace hpc
                 {
                 }
 
+                ~TaskInfo() { std::cout << "TaskInfo destruct" << std::endl; }
+
                 TaskInfo(TaskInfo&& t) = default;
 
                 web::json::value ToJson() const;

@@ -50,15 +50,6 @@ bool RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& callback
                 {
                     try
                     {
-                        {
-                            Logger::Debug("Acquiring lock to erase the process");
-                            WriterLock writerLock(&this->lock);
-
-                            // Remove it here, since, the process will be deleted by itself after the callback.
-                            this->processes.erase(taskInfo->TaskId);
-                            Logger::Debug("erased process");
-                        }
-
                         this->jobTaskTable.RemoveTask(taskInfo->JobId, taskInfo->TaskId);
                         taskInfo->ExitCode = exitCode;
                         taskInfo->Message = std::move(message);
@@ -73,8 +64,13 @@ bool RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& callback
                             Logger::Info("Callback to {0} response code {1}", callbackUri, response.status_code());
                         }).wait();
 
-//                        client.request(request).get(); // This get doesn't affect the threadpool since it will be run in the dedicated thread in the Process.
-                        Logger::Debug("Callback success.");
+                        {
+                            WriterLock writerLock(&this->lock);
+
+                            // Process will be deleted here.
+                            this->processes.erase(taskInfo->TaskId);
+                            Logger::Debug("erased process");
+                        }
                     }
                     catch (const std::exception& ex)
                     {
@@ -88,13 +84,13 @@ bool RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& callback
             {
                 if (pid > 0)
                 {
-                    Logger::Info("Process started {0}", pid);
+                    Logger::Debug("Process started {0}", pid);
                 }
             });
         }
         else
         {
-            Logger::Info("The task {0} has started already.", args.TaskId);
+            Logger::Warn("The task {0} has started already.", args.TaskId);
             // Found the original process.
             // TODO: assert the job task table call is the same.
         }
