@@ -58,23 +58,25 @@ bool RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& callback
 
                         auto jsonBody = taskInfo->ToJson();
                         Logger::Debug("Callback to {0} with {1}", callbackUri, jsonBody);
-                        client::http_client client(callbackUri);
+                        client::http_client_config config;
+                        config.set_validate_certificates(false);
+                        client::http_client client(callbackUri, config);
                         client.request(methods::POST, "", jsonBody).then([&callbackUri](http_response response)
                         {
                             Logger::Info("Callback to {0} response code {1}", callbackUri, response.status_code());
                         }).wait();
-
-                        {
-                            WriterLock writerLock(&this->lock);
-
-                            // Process will be deleted here.
-                            this->processes.erase(taskInfo->TaskId);
-                            Logger::Debug("erased process");
-                        }
                     }
                     catch (const std::exception& ex)
                     {
                         Logger::Error("Exception when sending back task result. {0}", ex.what());
+                    }
+
+                    {
+                        WriterLock writerLock(&this->lock);
+
+                        // Process will be deleted here.
+                        this->processes.erase(taskInfo->TaskId);
+                        Logger::Debug("erased process");
                     }
                 }));
 

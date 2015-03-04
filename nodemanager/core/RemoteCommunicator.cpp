@@ -64,8 +64,15 @@ void RemoteCommunicator::Close()
 void RemoteCommunicator::HandlePost(http_request request)
 {
     auto uri = request.relative_uri().to_string();
+    Logger::Info("Request: Uri {0}", uri);
 
     std::vector<std::string> tokens = String::Split(uri, '/');
+
+    if (tokens.size() < 4)
+    {
+        Logger::Warn("Not supported uri {0}", uri);
+        return;
+    }
 
     // skip the first '/'.
     int p = 1;
@@ -73,7 +80,7 @@ void RemoteCommunicator::HandlePost(http_request request)
     auto nodeName = tokens[p++];
     auto methodName = tokens[p++];
 
-    Logger::Info("Request: Uri {0}, Node {1}, Method {2}", uri, nodeName, methodName);
+    Logger::Debug("Request: Uri {0}, Node {1}, Method {2}", uri, nodeName, methodName);
 
     if (apiSpace != ApiSpace)
     {
