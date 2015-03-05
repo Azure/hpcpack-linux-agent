@@ -105,9 +105,12 @@ bool RemoteExecutor::EndJob(hpc::arguments::EndJobArgs&& args)
 {
     auto jobInfo = this->jobTaskTable.RemoveJob(args.JobId);
 
-    for (auto& taskPair : jobInfo->Tasks)
+    if (jobInfo)
     {
-        this->TerminateTask(taskPair.first);
+        for (auto& taskPair : jobInfo->Tasks)
+        {
+            this->TerminateTask(taskPair.first);
+        }
     }
 
     return true;
