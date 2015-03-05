@@ -51,6 +51,7 @@ bool RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& callback
                     try
                     {
                         this->jobTaskTable.RemoveTask(taskInfo->JobId, taskInfo->TaskId);
+                        taskInfo->Exited = true;
                         taskInfo->ExitCode = exitCode;
                         taskInfo->Message = std::move(message);
                         taskInfo->KernelProcessorTime = kernelTime.tv_sec * 1000000 + kernelTime.tv_usec;
