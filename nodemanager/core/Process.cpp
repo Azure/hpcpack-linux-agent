@@ -11,11 +11,14 @@ using namespace hpc::core;
 using namespace hpc::utils;
 
 Process::Process(
+    int taskId,
     const std::string& cmdLine,
     const std::string& workDir,
     std::map<std::string, std::string>&& envi,
     const std::function<Callback> completed) :
-    commandLine(cmdLine), workDirectory(workDir), environments(envi), callback(completed), processId(0)
+    taskId(taskId),
+    commandLine(cmdLine), workDirectory(workDir),
+    environments(envi), callback(completed), processId(0)
 {
 
 }
@@ -202,7 +205,9 @@ void Process::Run(int stdOutPipe[2], int stdErrPipe[2], const std::string& path)
 
 std::string Process::BuildScript()
 {
-    char scriptPath[256] = "/tmp/nodemanager.XXXXXX";
+    char scriptPath[256];
+
+    sprintf(scriptPath, "/tmp/nodemanager_task_%d.XXXXXX", this->taskId);
 
     int fd;
     if ((fd = mkstemp(scriptPath)) < 0)
