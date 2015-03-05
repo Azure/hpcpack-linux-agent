@@ -16,7 +16,11 @@ namespace hpc
             public:
                 ProcessStartInfo(
                     std::string&& cmdLine,
+                    std::string&& stdIn,
+                    std::string&& stdOut,
+                    std::string&& stdErr,
                     std::string&& workDir,
+                    int taskRequeueCount,
                     std::vector<long>&& affinity,
                     std::map<std::string, std::string>&& enviVars);
 
