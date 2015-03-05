@@ -10,6 +10,7 @@ json::value TaskInfo::ToJson() const
 {
     json::value j;
 
+    j["TaskId"] = this->TaskId;
     j["TaskRequeueCount"] = this->TaskRequeueCount;
     j["ExitCode"] = this->JobId;
     j["Exited"] = this->Exited;
