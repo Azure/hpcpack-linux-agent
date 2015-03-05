@@ -195,8 +195,8 @@ void Process::Run(int stdOutPipe[2], int stdErrPipe[2], const std::string& path)
     close(stdOutPipe[0]);
     close(stdOutPipe[1]);
 
-//    int ret = execvpe(bashCmd, args, const_cast<char* const*>(envi.get()));
-    int ret = execvpe(bashCmd, args, nullptr);
+    int ret = execvpe(bashCmd, args, const_cast<char* const*>(envi.get()));
+//    int ret = execvpe(bashCmd, args, nullptr);
 
     assert(ret == -1);
 
@@ -263,6 +263,8 @@ std::unique_ptr<const char* []> Process::PrepareEnvironment()
         this->environmentsBuffer.cbegin(),
         this->environmentsBuffer.cend(),
         [&p, &envi](const auto& i) { envi[p++] = i.c_str(); });
+
+    envi[p] = nullptr;
 
     return std::move(envi);
 }
