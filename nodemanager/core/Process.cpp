@@ -68,7 +68,7 @@ void* Process::ForkThread(void* arg)
 
     if (-1 == pipe(stdOutPipe))
     {
-        p->message << "Error when creating stdout pipe, errno = " << errno << std::endl;
+        p->message << "Error when creating stdout pipe, errno = " << errno << "\r\n";
         Logger::Error("Error when creating stdout pipe, errno = {0}", errno);
 
         p->exitCode = errno;
@@ -77,7 +77,7 @@ void* Process::ForkThread(void* arg)
 
     if (-1 == pipe(stdErrPipe))
     {
-        p->message << "Error when creating stderr pipe, errno = " << errno << std::endl;
+        p->message << "Error when creating stderr pipe, errno = " << errno << "\r\n";
         Logger::Error("Error when creating stderr pipe, errno = {0}", errno);
 
         p->exitCode = errno;
@@ -92,7 +92,7 @@ void* Process::ForkThread(void* arg)
             errno == EAGAIN ? "number of process reached upper limit" : "not enough memory";
 
         p->message << "Failed to fork(), pid = " << p->processId << ", errno = " << errno
-            << ", msg = " << errorMessage << std::endl;
+            << ", msg = " << errorMessage << "\r\n";
         Logger::Error("Failed to fork(), pid = {0}, errno = {1}, msg = {2}", p->processId, errno, errorMessage);
 
         p->exitCode = errno;
@@ -128,7 +128,8 @@ void Process::Monitor(int stdOutPipe[2], int stdErrPipe[2])
     if (waitedPid == -1)
     {
         Logger::Error("wait4 for process {0} error {1}", this->processId, errno);
-        this->message << "wait4 for process " << " error " << errno << std::endl;
+        // TODO: move "\r\n" to a common place
+        this->message << "wait4 for process " << " error " << errno << "\r\n";
         this->exitCode = errno;
         return;
     }
@@ -143,14 +144,14 @@ void Process::Monitor(int stdOutPipe[2], int stdErrPipe[2])
     {
         Logger::Error("wait4 for process {0} status {1}", this->processId, status);
         this->exitCode = -1;
-        this->message << "wait4 for process " << this->processId << " status " << status << std::endl;
+        this->message << "wait4 for process " << this->processId << " status " << status << "\r\n";
     }
 
     ReadFromPipe(this->stdOut, stdOutPipe);
     ReadFromPipe(this->stdErr, stdErrPipe);
 
-    this->message << this->stdOut.str() << std::endl;
-    this->message << this->stdErr.str() << std::endl;
+    this->message << this->stdOut.str() << "\r\n";
+    this->message << this->stdErr.str() << "\r\n";
 
     this->userTime = usage.ru_utime;
     this->kernelTime = usage.ru_stime;
@@ -194,11 +195,12 @@ void Process::Run(int stdOutPipe[2], int stdErrPipe[2], const std::string& path)
     close(stdOutPipe[0]);
     close(stdOutPipe[1]);
 
-    int ret = execvpe(bashCmd, args, const_cast<char* const*>(envi.get()));
+//    int ret = execvpe(bashCmd, args, const_cast<char* const*>(envi.get()));
+    int ret = execvpe(bashCmd, args, nullptr);
 
     assert(ret == -1);
 
-    std::cout << "Error occurred when execvpe, errno = " << errno << std::endl;
+    std::cout << "Error occurred when execvpe, errno = " << errno << "\r\n";
 
     exit(errno);
 }
