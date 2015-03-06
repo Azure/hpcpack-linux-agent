@@ -67,9 +67,5 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
             return 5000;
         }
-
-
-        //    return -1;
-        //}
     }
 }

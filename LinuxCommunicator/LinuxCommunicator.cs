@@ -15,7 +15,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 {
     public class LinuxCommunicator : IUnmanagedResourceCommunicator, IDisposable
     {
-        private const string ResourceUriFormat = "http://{0}:50001/api/{1}/{2}";
+        private const string ResourceUriFormat = "http://{0}:50000/api/{1}/{2}";
         private const string CallbackUriHeaderName = "CallbackUri";
         private const string HpcFullKeyName = @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\HPC";
         private const string ClusterNameKeyName = "ClusterName";
@@ -85,6 +85,17 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
         public bool Initialize()
         {
             this.Tracer.TraceInfo("Initializing LinuxCommunicator.");
+
+            ServicePointManager.ServerCertificateValidationCallback += (s, cert, chain, sslPolicyErrors) =>
+            {
+                if (chain != null && chain.ChainStatus.Length == 1 && chain.ChainStatus[0].Status == System.Security.Cryptography.X509Certificates.X509ChainStatusFlags.UntrustedRoot)
+                {
+                    return true;
+                }
+
+                return sslPolicyErrors == System.Net.Security.SslPolicyErrors.None;
+            };
+
             this.client = new HttpClient();
             this.server = new WebServer();
 
@@ -258,7 +269,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
             Guid nodeid = GetNodeId(MetricInfo.Name);
             if (nodeid == Guid.Empty)
             {
-                this.Tracer.TraceWarning("Ignore MetricData from UNKNOWN Node {0}.", MetricInfo.Name);
+                this.Tracer.TraceWarning("Ignore MetricData from unknown Node {0}.", MetricInfo.Name);
                 return;
             }
 
