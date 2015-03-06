@@ -43,6 +43,7 @@ bool RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& callback
         if (this->processes.find(args.TaskId) == this->processes.end())
         {
             auto process = std::shared_ptr<Process>(new Process(
+                args.TaskId,
                 std::move(args.StartInfo.CommandLine),
                 std::move(args.StartInfo.WorkDirectory),
                 std::move(args.StartInfo.EnvironmentVariables),
@@ -51,6 +52,7 @@ bool RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& callback
                     try
                     {
                         this->jobTaskTable.RemoveTask(taskInfo->JobId, taskInfo->TaskId);
+                        taskInfo->Exited = true;
                         taskInfo->ExitCode = exitCode;
                         taskInfo->Message = std::move(message);
                         taskInfo->KernelProcessorTime = kernelTime.tv_sec * 1000000 + kernelTime.tv_usec;
@@ -105,9 +107,12 @@ bool RemoteExecutor::EndJob(hpc::arguments::EndJobArgs&& args)
 {
     auto jobInfo = this->jobTaskTable.RemoveJob(args.JobId);
 
-    for (auto& taskPair : jobInfo->Tasks)
+    if (jobInfo)
     {
-        this->TerminateTask(taskPair.first);
+        for (auto& taskPair : jobInfo->Tasks)
+        {
+            this->TerminateTask(taskPair.first);
+        }
     }
 
     return true;

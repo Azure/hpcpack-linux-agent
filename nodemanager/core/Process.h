@@ -20,6 +20,7 @@ namespace hpc
                 typedef void Callback(int, std::string&&, timeval userTime, timeval kernelTime);
 
                 Process(
+                    int taskId,
                     const std::string& cmdLine,
                     const std::string& workDir,
                     std::map<std::string, std::string>&& envi,
@@ -50,6 +51,7 @@ namespace hpc
                 timeval userTime;
                 timeval kernelTime;
 
+                const int taskId;
                 const std::string commandLine;
                 const std::string workDirectory;
                 const std::map<std::string, std::string> environments;

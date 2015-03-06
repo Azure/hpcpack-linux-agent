@@ -19,7 +19,7 @@ AR = ar
 LD = g++
 WINDRES = windres
 
-INC = -I$(CASA_INC) -I$(SPDLOG_INC) -Iinclude -I.
+INC = -I$(CASA_INC) -I$(SPDLOG_INC) -I.
 CFLAGS = -Wall -std=c++1y -Wno-unused-local-typedefs
 RESINC =
 LIBDIR =
