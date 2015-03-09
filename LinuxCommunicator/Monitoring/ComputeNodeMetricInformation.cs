@@ -81,5 +81,13 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.Monitoring
         {
             return Values.ToArray();
         }
+        
+        public string IpAddress { get; set; }
+
+        public int CoreCount { get; set; }
+
+        public int SocketCount { get; set; }
+
+        public int MemoryMegabytes { get; set; }
     }
 }
