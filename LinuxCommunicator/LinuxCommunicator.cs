@@ -76,7 +76,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
         public NodeLocation Location { get { return NodeLocation.Linux; } }
 
-        event EventHandler<NodeMetricReportedEventArgs> NodeMetricReported;
+        public event EventHandler<NodeMetricReportedEventArgs> NodeMetricReported;
 
         public void Accept(ISchedulerCallbacks listener) { this.Listener = listener; }
 
