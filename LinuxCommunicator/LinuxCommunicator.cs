@@ -261,7 +261,8 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
             var nodeMetricReported = this.NodeMetricReported;
             if (nodeMetricReported != null)
             {
-                this.Tracer.TraceWarning("Metric reported from linux node {0}.", metricInfo.Name);
+                this.Tracer.TraceInfo("Metric reported from linux node {0}.", metricInfo.Name);
+                this.Tracer.TraceInfo("Metric ip {0}, cores {1}, sockets {2}, memory {3}", metricInfo.IpAddress, metricInfo.CoreCount, metricInfo.SocketCount, metricInfo.MemoryMegabytes);
                 nodeMetricReported(this, new NodeMetricReportedEventArgs(metricInfo.Name, metricInfo.IpAddress, metricInfo.CoreCount, metricInfo.SocketCount, metricInfo.MemoryMegabytes));
             }
 
