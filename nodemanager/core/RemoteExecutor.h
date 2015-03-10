@@ -14,7 +14,7 @@ namespace hpc
         class RemoteExecutor : public IRemoteExecutor
         {
             public:
-                RemoteExecutor();
+                RemoteExecutor(const std::string& networkName);
                 // TODO: delete all processes in destructor.
                 ~RemoteExecutor() { pthread_rwlock_destroy(&this->lock); }
 

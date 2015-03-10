@@ -17,7 +17,7 @@ namespace hpc
         class RemoteCommunicator
         {
             public:
-                RemoteCommunicator(IRemoteExecutor& executor);
+                RemoteCommunicator(const std::string& networkName, IRemoteExecutor& executor);
                 ~RemoteCommunicator();
 
                 void Open();
@@ -43,7 +43,7 @@ namespace hpc
                     return true;
                 }
 
-                std::string GetListeningUri();
+                std::string GetListeningUri(const std::string& networkName);
 
                 bool StartJobAndTask(const json::value& val, const std::string&);
                 bool StartTask(const json::value& val, const std::string&);

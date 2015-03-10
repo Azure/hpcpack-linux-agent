@@ -20,7 +20,7 @@ namespace hpc
                 static void CPUUsage(long int &total, long int &idle);
                 static void Memory(unsigned long &available, unsigned long &total);
                 static void CPU(int &cores, int &sockets);
-                static void NetworkUsage(long int &network);
+                static void NetworkUsage(long int &network, const std::string& netName);
                 static const std::string& GetNodeName();
 
             protected:

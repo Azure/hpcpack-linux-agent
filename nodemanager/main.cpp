@@ -15,9 +15,10 @@ int main()
     std::cout << "Node manager started." << std::endl;
     Logger::Info("Log system works.");
 
-    RemoteExecutor executor;
+    const std::string networkName = "eth0";
+    RemoteExecutor executor(networkName);
 
-    RemoteCommunicator rc(executor);
+    RemoteCommunicator rc(networkName, executor);
     rc.Open();
 
     while (true)

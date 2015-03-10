@@ -107,15 +107,21 @@ void System::CPU(int &cores, int &sockets)
     fs.close();
 }
 
-void System::NetworkUsage(long int &network)
+void System::NetworkUsage(long int &network, const std::string& netName)
 {
-    std::ifstream fs("/proc/meminfo", std::ios::in);
+    std::ifstream fs("/proc/net/dev", std::ios::in);
     std::string name;
     int receive, send;
 
     fs.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     fs.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-    fs >> name >> receive >> send;
+
+    std::string tmp = netName + ":";
+    while (name != tmp)
+    {
+        fs >> name >> receive >> send;
+    }
+
     network = receive + send;
 
     fs.close();

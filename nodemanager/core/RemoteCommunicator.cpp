@@ -10,8 +10,8 @@ using namespace hpc::utils;
 using namespace hpc::arguments;
 using namespace hpc::core;
 
-RemoteCommunicator::RemoteCommunicator(IRemoteExecutor& exec) :
-    listeningUri(this->GetListeningUri()), isListening(false), executor(exec), listener(listeningUri)
+RemoteCommunicator::RemoteCommunicator(const std::string& networkName, IRemoteExecutor& exec) :
+    listeningUri(this->GetListeningUri(networkName)), isListening(false), executor(exec), listener(listeningUri)
 {
     this->listener.support(
         methods::POST,
@@ -164,8 +164,8 @@ bool RemoteCommunicator::Metric(const json::value& val, const std::string& callb
 const std::string RemoteCommunicator::ApiSpace = "api";
 const std::string RemoteCommunicator::CallbackUriKey = "CallbackURI";
 
-std::string RemoteCommunicator::GetListeningUri()
+std::string RemoteCommunicator::GetListeningUri(const std::string& networkName)
 {
-    return String::Join("", "http://", System::GetIpAddress(IpAddressVersion::V4, "eth0"), ":50000");
+    return String::Join("", "http://", System::GetIpAddress(IpAddressVersion::V4, networkName), ":50000");
 }
 

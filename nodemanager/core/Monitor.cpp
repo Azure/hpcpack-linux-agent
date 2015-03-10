@@ -9,8 +9,8 @@
 using namespace hpc::core;
 using namespace hpc::utils;
 
-Monitor::Monitor(const std::string& nodeName, int interval)
-    : name(nodeName), lock(PTHREAD_RWLOCK_INITIALIZER), intervalSeconds(interval),
+Monitor::Monitor(const std::string& nodeName, const std::string& netName, int interval)
+    : name(nodeName), networkName(netName), lock(PTHREAD_RWLOCK_INITIALIZER), intervalSeconds(interval),
     isCollected(false)
 {
     std::get<0>(this->metricData[1]) = 1;
@@ -92,7 +92,7 @@ void Monitor::Run()
         float totalMemoryMb = (float)total / 1024.0f;
 
         long int networkCurrent = 0;
-        System::NetworkUsage(networkCurrent);
+        System::NetworkUsage(networkCurrent, "eth0");
         float networkUsage = (float)(networkCurrent - networkLast) / this->intervalSeconds;
         networkLast = networkCurrent;
 
