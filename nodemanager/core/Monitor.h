@@ -32,6 +32,7 @@ namespace hpc
                 pthread_rwlock_t lock;
 
                 int intervalSeconds;
+                bool isCollected;
                 pthread_t threadId;
         };
     }

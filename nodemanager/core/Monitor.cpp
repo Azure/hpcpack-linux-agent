@@ -10,7 +10,8 @@ using namespace hpc::core;
 using namespace hpc::utils;
 
 Monitor::Monitor(const std::string& nodeName, int interval)
-    : name(nodeName), lock(PTHREAD_RWLOCK_INITIALIZER), intervalSeconds(interval)
+    : name(nodeName), lock(PTHREAD_RWLOCK_INITIALIZER), intervalSeconds(interval),
+    isCollected(false)
 {
     std::get<0>(this->metricData[1]) = 1;
     std::get<0>(this->metricData[3]) = 0;
@@ -33,6 +34,11 @@ Monitor::~Monitor()
 
 json::value Monitor::ToJson()
 {
+    if (!this->isCollected)
+    {
+        return json::value::null();
+    }
+
     ReaderLock lock(&this->lock);
     json::value j;
     j["Name"] = json::value::string(this->name);
@@ -102,6 +108,8 @@ void Monitor::Run()
             this->coreCount = cores;
             this->socketCount = sockets;
         }
+
+        this->isCollected = true;
 
         sleep(this->intervalSeconds);
     }

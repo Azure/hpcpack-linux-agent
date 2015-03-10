@@ -41,6 +41,12 @@ pplx::task<void> Reporter::Report()
     if (!uri.empty())
     {
         auto jsonBody = this->valueFetcher();
+        if (jsonBody.is_null())
+        {
+            Logger::Info("Skipped reporting to {0} because json is null", uri);
+            return pplx::task_from_result();
+        }
+
         Logger::Info("Report to {0} with {1}", uri, jsonBody);
 
         return this->client->request(methods::POST, "", jsonBody, this->cts.get_token()).then([&uri](http_response response)
