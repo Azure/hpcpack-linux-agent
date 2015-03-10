@@ -166,8 +166,6 @@ const std::string RemoteCommunicator::CallbackUriKey = "CallbackURI";
 
 std::string RemoteCommunicator::GetListeningUri()
 {
-    std::ostringstream oss;
-    oss << "http://" << System::GetIpAddress(IpAddressVersion::V4, "eth0") << ":50000";
-    return std::move(oss.str());
+    return String::Join("", "http://", System::GetIpAddress(IpAddressVersion::V4, "eth0"), ":50000");
 }
 

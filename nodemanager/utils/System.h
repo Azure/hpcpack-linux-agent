@@ -18,7 +18,8 @@ namespace hpc
             public:
                 static std::string GetIpAddress(IpAddressVersion version, const std::string& name);
                 static void CPUUsage(long int &total, long int &idle);
-                static void AvailableMemory(long int &memory);
+                static void Memory(unsigned long &available, unsigned long &total);
+                static void CPU(int &cores, int &sockets);
                 static void NetworkUsage(long int &network);
                 static const std::string& GetNodeName();
 

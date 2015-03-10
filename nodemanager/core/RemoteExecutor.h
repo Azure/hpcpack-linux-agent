@@ -37,7 +37,7 @@ namespace hpc
                 std::unique_ptr<Reporter> nodeInfoReporter;
                 std::unique_ptr<Reporter> metricReporter;
                 const int NodeInfoReportInterval = 30;
-                const int MetricReportInterval = 30;
+                const int MetricReportInterval = 2;
                 const std::string NodeInfoUriFileName = "NodeInfoReportUri";
                 const std::string MetricUriFileName = "MetricReportUri";
 

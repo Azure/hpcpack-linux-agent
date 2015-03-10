@@ -14,7 +14,8 @@ using namespace hpc::utils;
 using namespace hpc::arguments;
 using namespace hpc::data;
 
-RemoteExecutor::RemoteExecutor() : monitor(System::GetNodeName()), lock(PTHREAD_RWLOCK_INITIALIZER)
+RemoteExecutor::RemoteExecutor()
+    : monitor(System::GetNodeName(), MetricReportInterval), lock(PTHREAD_RWLOCK_INITIALIZER)
 {
     this->Ping(this->LoadReportUri(this->NodeInfoUriFileName));
     this->Metric(this->LoadReportUri(this->MetricUriFileName));

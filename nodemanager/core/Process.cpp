@@ -196,7 +196,6 @@ void Process::Run(int stdOutPipe[2], int stdErrPipe[2], const std::string& path)
     close(stdOutPipe[1]);
 
     int ret = execvpe(bashCmd, args, const_cast<char* const*>(envi.get()));
-//    int ret = execvpe(bashCmd, args, nullptr);
 
     assert(ret == -1);
 

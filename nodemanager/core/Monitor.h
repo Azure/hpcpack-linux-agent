@@ -13,7 +13,7 @@ namespace hpc
         class Monitor
         {
             public:
-                Monitor(const std::string& nodeName);
+                Monitor(const std::string& nodeName, int interval);
                 ~Monitor();
 
                 json::value ToJson();
@@ -22,10 +22,13 @@ namespace hpc
                 void Run();
                 static void* MonitoringThread(void* arg);
 
-                std::string Name;
-                std::string Time;
-                int TickCount;
+                std::string name;
+                std::string metricTime;
                 std::map<int, std::tuple<int, float>> metricData;
+                int coreCount;
+                int socketCount;
+                int totalMemoryMb;
+                std::string ipAddress;
                 pthread_rwlock_t lock;
 
                 int intervalSeconds;

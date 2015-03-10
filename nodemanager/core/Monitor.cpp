@@ -9,7 +9,8 @@
 using namespace hpc::core;
 using namespace hpc::utils;
 
-Monitor::Monitor(const std::string& nodeName) : Name(nodeName), lock(PTHREAD_RWLOCK_INITIALIZER)
+Monitor::Monitor(const std::string& nodeName, int interval)
+    : name(nodeName), lock(PTHREAD_RWLOCK_INITIALIZER), intervalSeconds(interval)
 {
     std::get<0>(this->metricData[1]) = 1;
     std::get<0>(this->metricData[3]) = 0;
@@ -34,8 +35,8 @@ json::value Monitor::ToJson()
 {
     ReaderLock lock(&this->lock);
     json::value j;
-    j["Name"] = json::value::string(this->Name);
-    j["Time"] = json::value::string(this->Time);
+    j["Name"] = json::value::string(this->name);
+    j["Time"] = json::value::string(this->metricTime);
 
     std::vector<json::value> umids;
     std::transform(this->metricData.cbegin(), this->metricData.cend(), std::back_inserter(umids), [](auto i)
@@ -47,11 +48,15 @@ json::value Monitor::ToJson()
     });
 
     std::vector<json::value> values;
-    std::transform(this->metricData.cbegin(), this->metricData.cend(), std::back_inserter(umids), [](auto i) { return std::get<1>(i.second); });
+    std::transform(this->metricData.cbegin(), this->metricData.cend(), std::back_inserter(values), [](auto i) { return std::get<1>(i.second); });
 
     j["Umids"] = json::value::array(umids);
     j["Values"] = json::value::array(values);
-    j["TickCount"] = this->TickCount;
+    j["TickCount"] = this->intervalSeconds;
+    j["IpAddress"] = json::value::string(this->ipAddress);
+    j["CoreCount"] = this->coreCount;
+    j["SocketCount"] = this->socketCount;
+    j["MemoryMegabytes"] = this->totalMemoryMb;
 
     return std::move(j);
 }
@@ -62,6 +67,10 @@ void Monitor::Run()
 
     while (true)
     {
+        time_t t;
+        time(&t);
+        this->metricTime = ctime(&t);
+
         long int cpuCurrent = 0, idleCurrent = 0;
 
         System::CPUUsage(cpuCurrent, idleCurrent);
@@ -69,19 +78,29 @@ void Monitor::Run()
         long int idleDiff = idleCurrent - idleLast;
         float cpuUsage = (float)(100.0f * (totalDiff - idleDiff) / totalDiff);
 
-        long int memory;
-        System::AvailableMemory(memory);
-        float availableMemory = (float)memory / 1024.0f;
+        unsigned long available, total;
+        System::Memory(available, total);
+        float availableMemoryMb = (float)available / 1024.0f;
+        float totalMemoryMb = (float)total / 1024.0f;
 
         long int networkCurrent = 0;
         System::NetworkUsage(networkCurrent);
         float networkUsage = (float)(networkCurrent - networkLast) / this->intervalSeconds;
 
+        std::string ipAddress = System::GetIpAddress(IpAddressVersion::V4, "eth0");
+        int cores, sockets;
+        System::CPU(cores, sockets);
+
         {
             WriterLock writerLock(&this->lock);
             std::get<1>(this->metricData[1]) = cpuUsage;
-            std::get<1>(this->metricData[3]) = availableMemory;
+            std::get<1>(this->metricData[3]) = availableMemoryMb;
             std::get<1>(this->metricData[12]) = networkUsage;
+
+            this->totalMemoryMb = totalMemoryMb;
+            this->ipAddress = ipAddress;
+            this->coreCount = cores;
+            this->socketCount = sockets;
         }
 
         sleep(this->intervalSeconds);

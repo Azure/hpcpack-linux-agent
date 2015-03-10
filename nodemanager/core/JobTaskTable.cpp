@@ -63,11 +63,9 @@ void JobTaskTable::RemoveTask(int jobId, int taskId)
 {
     WriterLock writerLock(&this->lock);
 
-    std::shared_ptr<JobInfo> job;
     auto j = this->nodeInfo.Jobs.find(jobId);
     if (j != this->nodeInfo.Jobs.end())
     {
-        job = j->second;
-        job->Tasks.erase(taskId);
+        j->second->Tasks.erase(taskId);
     }
 }

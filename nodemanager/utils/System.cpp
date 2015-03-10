@@ -6,8 +6,10 @@
 #include <iostream>
 #include <fstream>
 #include <unistd.h>
+#include <set>
 
 #include "System.h"
+#include "String.h"
 #include "Logger.h"
 
 using namespace hpc::utils;
@@ -50,26 +52,6 @@ std::string System::GetIpAddress(IpAddressVersion version, const std::string& na
 
 void System::CPUUsage(long int &total, long int &idle)
 {
-//    FILE *fp = fopen("/proc/stat", "r");
-//    if (fp == nullptr)
-//    {
-//        total = 0;
-//        idle = 0;
-//        return;
-//    }
-//
-//    char buffer[256];
-//
-//    if (fgets(buffer, sizeof(buffer), fp))
-//    {
-//        char cpu[5];
-//        long int user, nice, sys, iowait, irq, softirq;
-//        sscanf(buffer, "%s%ld%ld%ld%ld%ld%ld%ld", cpu, &user, &nice, &sys, &idle, &iowait, &irq, &softirq);
-//        total = user + nice + sys + idle + iowait + irq + softirq;
-//    }
-//
-//    fclose(fp);
-
     std::ifstream fs("/proc/stat", std::ios::in);
     std::string cpu;
     long int user, nice, sys, iowait, irq, softirq;
@@ -80,13 +62,41 @@ void System::CPUUsage(long int &total, long int &idle)
     total = user + nice + sys + idle + iowait + irq + softirq;
 }
 
-void System::AvailableMemory(long int &memory)
+void System::Memory(unsigned long &availableKb, unsigned long &totalKb)
 {
     std::ifstream fs("/proc/meminfo", std::ios::in);
     std::string name, unit;
 
-    fs.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-    fs >> name >> memory >> unit;
+    fs >> name >> totalKb >> unit;
+    fs >> name >> availableKb >> unit;
+
+    fs.close();
+}
+
+void System::CPU(int &cores, int &sockets)
+{
+    std::ifstream fs("/proc/cpuinfo", std::ios::in);
+    std::string name, unit;
+
+    std::set<std::string> physicalIds;
+    std::set<std::string> coreIds;
+
+    std::string line;
+    while (getline(fs, line))
+    {
+        auto tokens = String::Split(line, ':');
+        if (tokens[0] == "physical id")
+        {
+            physicalIds.insert(tokens[2]);
+        }
+        else if (tokens[0] == "core id")
+        {
+            coreIds.insert(tokens[2]);
+        }
+    }
+
+    cores = coreIds.size();
+    sockets = physicalIds.size();
 
     fs.close();
 }
