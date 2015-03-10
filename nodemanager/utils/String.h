@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <algorithm>
 
 namespace hpc
 {
@@ -40,6 +41,18 @@ namespace hpc
 
                     return std::move(oss.str());
                 }
+
+                static inline std::string Trim(const std::string& s)
+                {
+                    auto front = std::find_if_not(s.cbegin(), s.cend(), [](int c) { return std::isspace(c); });
+                    return std::string(
+                        front,
+                        std::find_if_not(
+                            s.crbegin(),
+                            std::string::const_reverse_iterator(front),
+                            [](int c) { return std::isspace(c); }).base());
+                }
+
             protected:
             private:
         };

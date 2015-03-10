@@ -85,18 +85,24 @@ void System::CPU(int &cores, int &sockets)
     while (getline(fs, line))
     {
         auto tokens = String::Split(line, ':');
-        if (tokens[0] == "physical id")
+
+        if (tokens.size() >= 2)
         {
-            physicalIds.insert(tokens[2]);
-        }
-        else if (tokens[0] == "core id")
-        {
-            coreIds.insert(tokens[2]);
+            if (String::Trim(tokens[0]) == "physical id")
+            {
+                physicalIds.insert(tokens[1]);
+            }
+            else if (String::Trim(tokens[0]) == "core id")
+            {
+                coreIds.insert(tokens[1]);
+            }
         }
     }
 
     cores = coreIds.size();
     sockets = physicalIds.size();
+
+    Logger::Debug("Detected core count {0}, socket count {1}", cores, sockets);
 
     fs.close();
 }
