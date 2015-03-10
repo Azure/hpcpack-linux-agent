@@ -83,6 +83,8 @@ void Monitor::Run()
         long int totalDiff = cpuCurrent - cpuLast;
         long int idleDiff = idleCurrent - idleLast;
         float cpuUsage = (float)(100.0f * (totalDiff - idleDiff) / totalDiff);
+        cpuLast = cpuCurrent;
+        idleLast = idleCurrent;
 
         unsigned long available, total;
         System::Memory(available, total);
@@ -92,6 +94,7 @@ void Monitor::Run()
         long int networkCurrent = 0;
         System::NetworkUsage(networkCurrent);
         float networkUsage = (float)(networkCurrent - networkLast) / this->intervalSeconds;
+        networkLast = networkCurrent;
 
         std::string ipAddress = System::GetIpAddress(IpAddressVersion::V4, "eth0");
         int cores, sockets;
