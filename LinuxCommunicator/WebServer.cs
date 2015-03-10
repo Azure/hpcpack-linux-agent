@@ -14,7 +14,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
     {
         private CancellationTokenSource source = new CancellationTokenSource();
 
-        public const string LinuxCommunicatorUriTemplate = "http://{0}:50000";
+        public const string LinuxCommunicatorUriTemplate = "http://{0}:50001";
 
         public WebServer()
         {

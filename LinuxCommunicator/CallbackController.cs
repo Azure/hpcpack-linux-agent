@@ -56,7 +56,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
             try
             {
                 LinuxCommunicator.Instance.Tracer.TraceInfo("Linux MetricReported. NodeName {0}, Metric Time {1} ", metricInfo.Name, metricInfo.Time);
-                LinuxCommunicator.Instance.MetricReported(metricInfo);
+                LinuxCommunicator.Instance.OnNodeMetricReported(metricInfo);
 
                 return -1;
             }
@@ -67,9 +67,5 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
             return 5000;
         }
-
-
-        //    return -1;
-        //}
     }
 }

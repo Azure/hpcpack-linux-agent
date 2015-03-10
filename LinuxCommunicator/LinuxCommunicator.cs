@@ -10,12 +10,13 @@ using Microsoft.Hpc.Activation;
 using Microsoft.Hpc.Scheduler;
 using Microsoft.Hpc.Scheduler.Communicator;
 using System.Net;
+using Microsoft.Hpc.Scheduler.Properties;
 
 namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 {
-    public class LinuxCommunicator : IUnmanagedResourceCommunicator, IDisposable
+    public class LinuxCommunicator : IManagedResourceCommunicator, IDisposable
     {
-        private const string ResourceUriFormat = "http://{0}:50001/api/{1}/{2}";
+        private const string ResourceUriFormat = "http://{0}:50000/api/{1}/{2}";
         private const string CallbackUriHeaderName = "CallbackUri";
         private const string HpcFullKeyName = @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\HPC";
         private const string ClusterNameKeyName = "ClusterName";
@@ -73,7 +74,9 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
             private set;
         }
 
-        public string NodeGroupName { get { return "LinuxNodes"; } }
+        public NodeLocation Location { get { return NodeLocation.Linux; } }
+
+        public event EventHandler<NodeMetricReportedEventArgs> NodeMetricReported;
 
         public void Accept(ISchedulerCallbacks listener) { this.Listener = listener; }
 
@@ -85,6 +88,17 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
         public bool Initialize()
         {
             this.Tracer.TraceInfo("Initializing LinuxCommunicator.");
+
+            ServicePointManager.ServerCertificateValidationCallback += (s, cert, chain, sslPolicyErrors) =>
+            {
+                if (chain != null && chain.ChainStatus.Length == 1 && chain.ChainStatus[0].Status == System.Security.Cryptography.X509Certificates.X509ChainStatusFlags.UntrustedRoot)
+                {
+                    return true;
+                }
+
+                return sslPolicyErrors == System.Net.Security.SslPolicyErrors.None;
+            };
+
             this.client = new HttpClient();
             this.server = new WebServer();
 
@@ -177,7 +191,6 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
             }, null);
         }
 
-
         private void SendRequest<T>(string action, string callbackAction, string nodeName, NodeCommunicatorCallBack<T> callback, T arg) where T : NodeCommunicatorCallBackArg
         {
             var request = new HttpRequestMessage(HttpMethod.Post, this.GetResoureUri(nodeName, action));
@@ -236,35 +249,32 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
         {
             var hostName = this.LinuxServiceHost ?? nodeName;
             return new Uri(string.Format(ResourceUriFormat, hostName, nodeName, action));
-            //if (hostName.Contains("."))
-            //{
-            //    return new Uri(string.Format(ResourceUriFormat, hostName, nodeName, action));
-            //}
-            //else
-            //{
-            //    return new Uri(string.Format(ResourceUriWithDomainFormat, hostName, nodeName, action)); ;
-            //}
         }
 
         private string GetCallbackUri(string nodeName, string action)
         {
-      //      var callbackUri = "http://10.0.0.4:50000/api/{1}/{2}";
-
             return string.Format("{0}/api/{1}/{2}", this.server.ListeningUri, nodeName, action);
         }
 
-        public void MetricReported(Monitoring.ComputeNodeMetricInformation MetricInfo)
+        public void OnNodeMetricReported(Monitoring.ComputeNodeMetricInformation metricInfo)
         {
-            Guid nodeid = GetNodeId(MetricInfo.Name);
+            var nodeMetricReported = this.NodeMetricReported;
+            if (nodeMetricReported != null)
+            {
+                this.Tracer.TraceWarning("Metric reported from linux node {0}.", metricInfo.Name);
+                nodeMetricReported(this, new NodeMetricReportedEventArgs(metricInfo.Name, metricInfo.IpAddress, metricInfo.CoreCount, metricInfo.SocketCount, metricInfo.MemoryMegabytes));
+            }
+
+            Guid nodeid = GetNodeId(metricInfo.Name);
             if (nodeid == Guid.Empty)
             {
-                this.Tracer.TraceWarning("Ignore MetricData from UNKNOWN Node {0}.", MetricInfo.Name);
+                this.Tracer.TraceWarning("Ignore MetricData from unknown Node {0}.", metricInfo.Name);
                 return;
             }
 
-            this.sender.SendData(nodeid, MetricInfo.GetUmids(), MetricInfo.GetValues(), MetricInfo.TickCount);
+            this.sender.SendData(nodeid, metricInfo.GetUmids(), metricInfo.GetValues(), metricInfo.TickCount);
 
-            this.Tracer.TraceInfo("Send MetricData from Node {0} ({1}).", MetricInfo.Name, nodeid);
+            this.Tracer.TraceInfo("Send MetricData from Node {0} ({1}).", metricInfo.Name, nodeid);
         }
 
         private Guid GetNodeId(string nodeName)
