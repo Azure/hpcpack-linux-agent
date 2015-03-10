@@ -31,15 +31,16 @@ namespace hpc
                 void SaveReportUri(const std::string& fileName, const std::string& uri);
                 bool TerminateTask(int taskId);
 
+                const int NodeInfoReportInterval = 30;
+                const int MetricReportInterval = 2;
+                const std::string NodeInfoUriFileName = "NodeInfoReportUri";
+                const std::string MetricUriFileName = "MetricReportUri";
+
                 JobTaskTable jobTaskTable;
                 Monitor monitor;
 
                 std::unique_ptr<Reporter> nodeInfoReporter;
                 std::unique_ptr<Reporter> metricReporter;
-                const int NodeInfoReportInterval = 30;
-                const int MetricReportInterval = 2;
-                const std::string NodeInfoUriFileName = "NodeInfoReportUri";
-                const std::string MetricUriFileName = "MetricReportUri";
 
                 // TODO: Make map hold Process directly.
                 std::map<int, std::shared_ptr<Process>> processes;
