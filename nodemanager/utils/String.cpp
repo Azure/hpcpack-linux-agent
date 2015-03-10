@@ -2,7 +2,7 @@
 
 #include "String.h"
 
-using namespace hpc::utils
+using namespace hpc::utils;
 
 std::vector<std::string> String::Split(const std::string& str, char delim)
 {
