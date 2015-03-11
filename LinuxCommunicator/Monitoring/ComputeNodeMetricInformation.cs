@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using Microsoft.Hpc.Activation;
 using System.Runtime.Serialization;
 
@@ -70,24 +71,24 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.Monitoring
 
         public UMID[] GetUmids()
         {
-            List<UMID> list = new List<UMID>(Umids.Count);
-            foreach(var v in Umids){
-                list.Add(v.ToUMID());
-            }
-            return list.ToArray();
+            return this.Umids.Select(u => u.ToUMID()).ToArray();
         }
 
         public float[] GetValues()
         {
             return Values.ToArray();
         }
-        
+
+        [DataMember]
         public string IpAddress { get; set; }
 
+        [DataMember]
         public int CoreCount { get; set; }
 
+        [DataMember]
         public int SocketCount { get; set; }
 
-        public int MemoryMegabytes { get; set; }
+        [DataMember]
+        public ulong MemoryMegabytes { get; set; }
     }
 }
