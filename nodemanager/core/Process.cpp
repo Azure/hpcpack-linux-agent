@@ -41,7 +41,7 @@ void Process::Kill()
 {
     if (this->processId != 0)
     {
-        Process p(-1, "")
+      //  Process p(-1, "")
         if (-1 == kill(this->processId, SIGKILL))
         {
             Logger::Error("Process {0}: Kill errno {1}", this->processId, errno);
