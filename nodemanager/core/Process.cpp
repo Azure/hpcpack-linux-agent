@@ -39,7 +39,18 @@ pplx::task<pid_t> Process::Start()
 
 void Process::Kill()
 {
-    if (this->processId != 0) { kill(this->processId, SIGQUIT); this->processId = 0; }
+    if (this->processId != 0)
+    {
+        Process p(-1, "")
+        if (-1 == kill(this->processId, SIGKILL))
+        {
+            Logger::Error("Process {0}: Kill errno {1}", this->processId, errno);
+            this->message << "Process " << this->processId << ": Kill errno " << errno << "\r\n";
+        }
+
+        Logger::Info("Process {0}: killed", this->processId);
+        this->processId = 0;
+    }
 }
 
 void Process::OnCompleted()
@@ -129,16 +140,39 @@ void Process::Monitor(int stdOutPipe[2], int stdErrPipe[2])
     {
         Logger::Error("wait4 for process {0} error {1}", this->processId, errno);
         // TODO: move "\r\n" to a common place
-        this->message << "wait4 for process " << " error " << errno << "\r\n";
+        this->message << "wait4 for process " << this->processId << " error " << errno << "\r\n";
         this->exitCode = errno;
         return;
     }
 
-    assert(this->processId == waitedPid);
+    if (waitedPid != this->processId)
+    {
+        Logger::Error("Process {0}: waited {1}, errno {2}", this->processId, waitedPid, errno);
+
+        int tmp;
+        if (WIFEXITED(status)) Logger::Info("Process {0}: WIFEXITED", this->processId);
+        if ((tmp = WEXITSTATUS(status))) Logger::Info("Process {0}: WEXITSTATUS: {1}", this->processId, tmp);
+        if (WIFSIGNALED(status)) Logger::Info("Process {0}: WIFSIGNALED", this->processId);
+        if ((tmp = WTERMSIG(status))) Logger::Info("Process {0}: WTERMSIG: {1}", this->processId, tmp);
+        if (WCOREDUMP(status)) Logger::Info("Process {0}: Core dumped.", this->processId);
+        if (WIFSTOPPED(status)) Logger::Info("Process {0}: WIFSTOPPED", this->processId);
+        if (WSTOPSIG(status)) Logger::Info("Process {0}: WSTOPSIG", this->processId);
+        if (WIFCONTINUED(status)) Logger::Info("Process {0}: WIFCONTINUED", this->processId);
+
+        this->message << "Process " << this->processId << ": waited " << waitedPid << ", errno " << errno << "\r\n";
+        this->exitCode = errno;
+        return;
+    }
 
     if (WIFEXITED(status))
     {
         this->exitCode = WEXITSTATUS(status);
+
+        ReadFromPipe(this->stdOut, stdOutPipe);
+        ReadFromPipe(this->stdErr, stdErrPipe);
+
+        this->message << this->stdOut.str() << "\r\n";
+        this->message << this->stdErr.str() << "\r\n";
     }
     else
     {
@@ -147,14 +181,10 @@ void Process::Monitor(int stdOutPipe[2], int stdErrPipe[2])
         this->message << "wait4 for process " << this->processId << " status " << status << "\r\n";
     }
 
-    ReadFromPipe(this->stdOut, stdOutPipe);
-    ReadFromPipe(this->stdErr, stdErrPipe);
-
-    this->message << this->stdOut.str() << "\r\n";
-    this->message << this->stdErr.str() << "\r\n";
-
     this->userTime = usage.ru_utime;
     this->kernelTime = usage.ru_stime;
+
+    Logger::Debug("Process {0}: Monitor ended", this->processId);
     // TODO: Number of process;
     // TODO: ProcessIds
     // TODO: WorkingSet

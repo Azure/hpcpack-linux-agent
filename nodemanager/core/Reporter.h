@@ -28,6 +28,7 @@ namespace hpc
                 pthread_t threadId;
                 pplx::cancellation_token_source cts;
                 bool isRunning;
+                bool inRequest;
                 std::shared_ptr<http::client::http_client> client;
         };
     }

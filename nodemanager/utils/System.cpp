@@ -41,7 +41,7 @@ std::string System::GetIpAddress(IpAddressVersion version, const std::string& na
             inet_ntop(Family, tmp, buffer, BufferLength);
 
             ip = buffer;
-            Logger::Debug("Found IPAddress {0}, name {1}", ip, name);
+       //     Logger::Debug("Found IPAddress {0}, name {1}", ip, name);
         }
     }
 
@@ -102,7 +102,7 @@ void System::CPU(int &cores, int &sockets)
     cores = coreIds.size();
     sockets = physicalIds.size();
 
-    Logger::Debug("Detected core count {0}, socket count {1}", cores, sockets);
+   // Logger::Debug("Detected core count {0}, socket count {1}", cores, sockets);
 
     fs.close();
 }

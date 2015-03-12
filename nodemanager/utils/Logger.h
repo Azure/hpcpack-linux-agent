@@ -93,58 +93,6 @@ namespace hpc
                 static Logger instance;
                 std::vector<std::shared_ptr<spdlog::logger>> loggers;
         };
-
-//        class Logger
-//        {
-//            public:
-//                static void Info(const char* format, ...)
-//                {
-//                    va_list args;
-//                    va_start(args, format);
-//
-//                    Log(LogLevel::Info, format, args);
-//
-//                    va_end(args);
-//                }
-//
-//                static void Warning(const char* format, ...)
-//                {
-//                    va_list args;
-//                    va_start(args, format);
-//
-//                    Log(LogLevel::Warning, format, args);
-//
-//                    va_end(args);
-//                }
-//
-//                static void Error(const char* format, ...)
-//                {
-//                    va_list args;
-//                    va_start(args, format);
-//
-//                    Log(LogLevel::Error, format, args);
-//
-//                    va_end(args);
-//                }
-//            protected:
-//            private:
-//                // TODO: using syslog;
-//                static void Log(LogLevel level, const char* format, ...)
-//                {
-//                    va_list args;
-//                    va_start(args, format);
-//
-//                    if (level >= (LogLevel)LOG_NOTICE)
-//                    {
-//                        std::cout << format << std::endl;
-//                        printf(format, args);
-//                    }
-//                    else
-//                    {
-//                        fprintf(stderr, format, args);
-//                    }
-//                }
-//        };
     }
 }
 

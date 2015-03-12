@@ -10,7 +10,7 @@ using namespace web::http;
 
 Reporter::Reporter(const std::string& uri, int interval, std::function<json::value()> fetcher)
     : reportUri(uri), intervalSeconds(interval), valueFetcher(fetcher),
-    isRunning(true)
+    isRunning(true), inRequest(false)
 {
     if (!uri.empty())
     {
@@ -33,6 +33,8 @@ Reporter::~Reporter()
         pthread_join(this->threadId, nullptr);
         Logger::Debug("Destructed Reporter {0}", this->reportUri);
     }
+
+    while (this->inRequest);
 }
 
 pplx::task<void> Reporter::Report()
@@ -47,11 +49,17 @@ pplx::task<void> Reporter::Report()
             return pplx::task_from_result();
         }
 
-        Logger::Info("Report to {0} with {1}", uri, jsonBody);
-
-        return this->client->request(methods::POST, "", jsonBody, this->cts.get_token()).then([&uri](http_response response)
+        if (this->intervalSeconds > 10)
         {
-            Logger::Debug("Report to {0} response code {1}", uri, response.status_code());
+            Logger::Info("---------> Report to {0} with {1}", uri, jsonBody);
+        }
+
+        return this->client->request(methods::POST, "", jsonBody, this->cts.get_token()).then([&uri, this](http_response response)
+        {
+            if (this->intervalSeconds > 10)
+            {
+                Logger::Debug("---------> Reported to {0} response code {1}", uri, response.status_code());
+            }
         });
     }
     else
@@ -69,6 +77,7 @@ void* Reporter::ReportingThread(void * arg)
 
     while (r->isRunning)
     {
+        r->inRequest = true;
         r->Report().then([r](auto t)
         {
             try
@@ -82,13 +91,15 @@ void* Reporter::ReportingThread(void * arg)
             catch (const std::exception& ex)
             {
                 Logger::Error("Exception occurred when report to {0}, ex {1}", r->reportUri, ex.what());
-                exit(-1);
+                //exit(-1);
             }
             catch (...)
             {
                 Logger::Error("Unknown error occurred when report to {0}", r->reportUri);
-                exit(-1);
+                //exit(-1);
             }
+
+            r->inRequest = false;
         });
 
         sleep(r->intervalSeconds);
