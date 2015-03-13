@@ -50,7 +50,6 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
         [HttpPost]
         [Route("api/{nodename}/metricreported")]
-        //public int MetricReported(string nodeName, [FromBody] ComputeClusterNodeInformation metricInfo)
         public int MetricReported(string nodeName, [FromBody] ComputeNodeMetricInformation metricInfo)
         {
             try
