@@ -48,8 +48,8 @@ namespace hpc
                 std::ostringstream stdErr;
                 std::ostringstream message;
                 int exitCode;
-                timeval userTime;
-                timeval kernelTime;
+                timeval userTime = { 0, 0 };
+                timeval kernelTime = { 0, 0 };
 
                 const int taskId;
                 const std::string commandLine;
