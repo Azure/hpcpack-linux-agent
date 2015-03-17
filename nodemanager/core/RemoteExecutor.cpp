@@ -50,12 +50,12 @@ bool RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& callback
                 std::move(args.StartInfo.StdErrText),
                 std::move(args.StartInfo.StdInText),
                 std::move(args.StartInfo.WorkDirectory),
+                std::move(args.StartInfo.Affinity),
                 std::move(args.StartInfo.EnvironmentVariables),
                 [taskInfo, callbackUri, this] (int exitCode, std::string&& message, timeval userTime, timeval kernelTime)
                 {
                     try
                     {
-                        this->jobTaskTable.RemoveTask(taskInfo->JobId, taskInfo->TaskId);
                         taskInfo->Exited = true;
                         taskInfo->ExitCode = exitCode;
                         taskInfo->Message = std::move(message);
@@ -67,9 +67,10 @@ bool RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& callback
                         client::http_client_config config;
                         config.set_validate_certificates(false);
                         client::http_client client(callbackUri, config);
-                        client.request(methods::POST, "", jsonBody).then([&callbackUri](http_response response)
+                        client.request(methods::POST, "", jsonBody).then([&callbackUri, this, taskInfo](http_response response)
                         {
                             Logger::Info("Callback to {0} response code {1}", callbackUri, response.status_code());
+                            this->jobTaskTable.RemoveTask(taskInfo->JobId, taskInfo->TaskId);
                         }).wait();
                     }
                     catch (const std::exception& ex)

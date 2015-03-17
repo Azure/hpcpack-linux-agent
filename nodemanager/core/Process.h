@@ -32,6 +32,7 @@ namespace hpc
                     const std::string& standardErr,
                     const std::string& standardIn,
                     const std::string& workDir,
+                    std::vector<long>&& cpuAffinity,
                     std::map<std::string, std::string>&& envi,
                     const std::function<Callback> completed);
 
@@ -100,6 +101,7 @@ namespace hpc
                 std::string stdErrFile;
                 const std::string stdInFile;
                 const std::string workDirectory;
+                const std::vector<long> affinity;
                 const std::map<std::string, std::string> environments;
                 std::vector<std::string> environmentsBuffer;
 

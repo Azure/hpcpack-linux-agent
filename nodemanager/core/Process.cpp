@@ -17,11 +17,12 @@ Process::Process(
     const std::string& standardErr,
     const std::string& standardIn,
     const std::string& workDir,
+    std::vector<long>&& cpuAffinity,
     std::map<std::string, std::string>&& envi,
     const std::function<Callback> completed) :
     taskId(taskId),
     commandLine(cmdLine), stdOutFile(standardOut), stdErrFile(standardErr), stdInFile(standardIn),
-    workDirectory(workDir), environments(envi), callback(completed), processId(0)
+    workDirectory(workDir), affinity(cpuAffinity), environments(envi), callback(completed), processId(0)
 {
 
 }
