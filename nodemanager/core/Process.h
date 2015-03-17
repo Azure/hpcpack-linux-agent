@@ -9,6 +9,12 @@
 #include <unistd.h>
 #include <sys/signal.h>
 #include <pplx/pplxtasks.h>
+#include <sys/wait.h>
+#include <sys/resource.h>
+
+#include "../utils/String.h"
+
+using namespace hpc::utils;
 
 namespace hpc
 {
@@ -22,6 +28,9 @@ namespace hpc
                 Process(
                     int taskId,
                     const std::string& cmdLine,
+                    const std::string& standardOut,
+                    const std::string& standardErr,
+                    const std::string& standardIn,
                     const std::string& workDir,
                     std::map<std::string, std::string>&& envi,
                     const std::function<Callback> completed);
@@ -36,10 +45,43 @@ namespace hpc
             protected:
             private:
                 void OnCompleted();
+                int CreateTaskFolder();
+                int DeleteTaskFolder();
                 static void* ForkThread(void*);
                 static void ReadFromPipe(std::ostringstream& stream, int pipe[2]);
-                void Run(int stdOutPipe[2], int stdErrPipe[2], const std::string& path);
-                void Monitor(int stdOutPipe[2], int stdErrPipe[2]);
+
+                template <typename ... Args>
+                static int ExecuteCommand(std::string& output, const std::string& cmd, const Args& ... args)
+                {
+                    std::string command = String::Join(" ", cmd, args...);
+                    FILE* stream = popen(command.c_str(), "r");
+
+                    std::ostringstream result;
+                    int exitCode = -1;
+
+                    if (stream)
+                    {
+                        char buffer[512];
+                        while (fgets(buffer, sizeof(buffer), stream) != nullptr)
+                        {
+                            result << buffer;
+                        }
+
+                        int ret = pclose(stream);
+                        exitCode = WEXITSTATUS(ret);
+                    }
+                    else
+                    {
+                        result << "error when popen " << command << std::endl;
+                    }
+
+                    output = result.str();
+
+                    return exitCode;
+                }
+
+                void Run(const std::string& path);
+                void Monitor();
                 std::string BuildScript();
                 void CleanupScript(const std::string& path);
                 std::unique_ptr<const char* []> PrepareEnvironment();
@@ -50,9 +92,13 @@ namespace hpc
                 int exitCode;
                 timeval userTime = { 0, 0 };
                 timeval kernelTime = { 0, 0 };
+                std::string taskFolder;
 
                 const int taskId;
                 const std::string commandLine;
+                std::string stdOutFile;
+                std::string stdErrFile;
+                const std::string stdInFile;
                 const std::string workDirectory;
                 const std::map<std::string, std::string> environments;
                 std::vector<std::string> environmentsBuffer;

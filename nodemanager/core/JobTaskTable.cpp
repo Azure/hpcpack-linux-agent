@@ -33,7 +33,7 @@ std::shared_ptr<TaskInfo> JobTaskTable::AddJobAndTask(int jobId, int taskId)
     auto t = job->Tasks.find(taskId);
     if (t == job->Tasks.end())
     {
-        task = std::shared_ptr<TaskInfo>(new TaskInfo(jobId, taskId));
+        task = std::shared_ptr<TaskInfo>(new TaskInfo(jobId, taskId, nodeInfo.Name));
         job->Tasks[taskId] = task;
     }
     else

@@ -13,12 +13,15 @@ using namespace hpc::utils;
 Process::Process(
     int taskId,
     const std::string& cmdLine,
+    const std::string& standardOut,
+    const std::string& standardErr,
+    const std::string& standardIn,
     const std::string& workDir,
     std::map<std::string, std::string>&& envi,
     const std::function<Callback> completed) :
     taskId(taskId),
-    commandLine(cmdLine), workDirectory(workDir),
-    environments(envi), callback(completed), processId(0)
+    commandLine(cmdLine), stdOutFile(standardOut), stdErrFile(standardErr), stdInFile(standardIn),
+    workDirectory(workDir), environments(envi), callback(completed), processId(0)
 {
 
 }
@@ -41,14 +44,25 @@ void Process::Kill()
 {
     if (this->processId != 0)
     {
-      //  Process p(-1, "")
-        if (-1 == kill(this->processId, SIGKILL))
+        std::string output;
+        int ret = Process::ExecuteCommand(output, "/bin/bash", "EndTask.sh", this->taskId);
+
+        if (0 != ret)
         {
-            Logger::Error("Process {0}: Kill errno {1}", this->processId, errno);
-            this->message << "Process " << this->processId << ": Kill errno " << errno << "\r\n";
+            Logger::Error("EndTask {0}, exitCode {1}, output {2}", this->taskId, ret, output);
+        }
+        else
+        {
+            Logger::Info("EndTask {0}, output {1}", this->taskId, output);
         }
 
-        Logger::Info("Process {0}: killed", this->processId);
+//        if (-1 == kill(this->processId, SIGKILL))
+//        {
+//            Logger::Error("Process {0}: Kill errno {1}", this->processId, errno);
+//            this->message << "Process " << this->processId << ": Kill errno " << errno << "\r\n";
+//        }
+//
+//        Logger::Info("Process {0}: killed", this->processId);
         this->processId = 0;
     }
 }
@@ -72,28 +86,50 @@ void Process::OnCompleted()
 void* Process::ForkThread(void* arg)
 {
     Process* const p = static_cast<Process* const>(arg);
+    std::string path;
 
-    const std::string path = p->BuildScript();
-
-    int stdOutPipe[2], stdErrPipe[2];
-
-    if (-1 == pipe(stdOutPipe))
+    int ret = p->CreateTaskFolder();
+    if (ret != 0)
     {
-        p->message << "Error when creating stdout pipe, errno = " << errno << "\r\n";
-        Logger::Error("Error when creating stdout pipe, errno = {0}", errno);
+        p->message << "Task " << p->taskId << ": error when create task folder, ret " << ret << ". \r\n";
+        Logger::Error("Task {0}: error when create task folder, ret {1}", p->taskId, ret);
 
-        p->exitCode = errno;
+        // TODO fetch the errno.
+        p->exitCode = ret;
         goto Final;
     }
 
-    if (-1 == pipe(stdErrPipe))
-    {
-        p->message << "Error when creating stderr pipe, errno = " << errno << "\r\n";
-        Logger::Error("Error when creating stderr pipe, errno = {0}", errno);
+    path = p->BuildScript();
 
-        p->exitCode = errno;
+    if (path.empty())
+    {
+        p->message << "Error when build script. \r\n";
+        Logger::Error("Error when build script.");
+
+        // TODO fetch the errno.
+        p->exitCode = -1;
         goto Final;
     }
+//
+//    int stdOutPipe[2], stdErrPipe[2];
+//
+//    if (-1 == pipe(stdOutPipe))
+//    {
+//        p->message << "Error when creating stdout pipe, errno = " << errno << "\r\n";
+//        Logger::Error("Error when creating stdout pipe, errno = {0}", errno);
+//
+//        p->exitCode = errno;
+//        goto Final;
+//    }
+//
+//    if (-1 == pipe(stdErrPipe))
+//    {
+//        p->message << "Error when creating stderr pipe, errno = " << errno << "\r\n";
+//        Logger::Error("Error when creating stderr pipe, errno = {0}", errno);
+//
+//        p->exitCode = errno;
+//        goto Final;
+//    }
 
     p->processId = fork();
 
@@ -112,24 +148,24 @@ void* Process::ForkThread(void* arg)
 
     if (p->processId == 0)
     {
-        p->Run(stdOutPipe, stdErrPipe, path);
+        p->Run(path);
     }
     else
     {
         p->started.set(p->processId);
-        p->Monitor(stdOutPipe, stdErrPipe);
+        p->Monitor();
     }
 
 Final:
     p->processId = 0;
     p->CleanupScript(path);
-
+    p->DeleteTaskFolder();
     p->OnCompleted();
 
     pthread_exit(nullptr);
 }
 
-void Process::Monitor(int stdOutPipe[2], int stdErrPipe[2])
+void Process::Monitor()
 {
     Logger::Debug("Monitor the forked process {0}", this->processId);
 
@@ -168,11 +204,25 @@ void Process::Monitor(int stdOutPipe[2], int stdErrPipe[2])
     {
         this->exitCode = WEXITSTATUS(status);
 
-        ReadFromPipe(this->stdOut, stdOutPipe);
-        ReadFromPipe(this->stdErr, stdErrPipe);
 
-        this->message << this->stdOut.str() << "\r\n";
-        this->message << this->stdErr.str() << "\r\n";
+        std::string output;
+        int ret = Process::ExecuteCommand(output, "head -c 1024", this->stdOutFile);
+        if (ret == 0)
+        {
+            this->message << "STDOUT: " << output << "\r\n";
+        }
+
+        ret = Process::ExecuteCommand(output, "head -c 1024", this->stdErrFile);
+        if (ret == 0)
+        {
+            this->message << "STDERR: " << output << "\r\n";
+        }
+//
+//        ReadFromPipe(this->stdOut, stdOutPipe);
+//        ReadFromPipe(this->stdErr, stdErrPipe);
+//
+//        this->message << this->stdOut.str() << "\r\n";
+//        this->message << this->stdErr.str() << "\r\n";
     }
     else
     {
@@ -207,7 +257,7 @@ void Process::ReadFromPipe(std::ostringstream& stream, int pipe[2])
     close(pipe[0]);
 }
 
-void Process::Run(int stdOutPipe[2], int stdErrPipe[2], const std::string& path)
+void Process::Run(const std::string& path)
 {
     std::vector<char> pathBuffer(path.cbegin(), path.cend());
     pathBuffer.push_back('\0');
@@ -218,12 +268,12 @@ void Process::Run(int stdOutPipe[2], int stdErrPipe[2], const std::string& path)
 
     auto envi = this->PrepareEnvironment();
 
-    dup2(stdOutPipe[1], 1);
-    close(stdOutPipe[0]);
-    close(stdOutPipe[1]);
-    dup2(stdErrPipe[1], 2);
-    close(stdOutPipe[0]);
-    close(stdOutPipe[1]);
+//    dup2(stdOutPipe[1], 1);
+//    close(stdOutPipe[0]);
+//    close(stdOutPipe[1]);
+//    dup2(stdErrPipe[1], 2);
+//    close(stdOutPipe[0]);
+//    close(stdOutPipe[1]);
 
     int ret = execvpe(bashCmd, args, const_cast<char* const*>(envi.get()));
 
@@ -234,36 +284,73 @@ void Process::Run(int stdOutPipe[2], int stdErrPipe[2], const std::string& path)
     exit(errno);
 }
 
-std::string Process::BuildScript()
+int Process::CreateTaskFolder()
 {
-    char scriptPath[256];
+    char folder[256];
 
-    sprintf(scriptPath, "/tmp/nodemanager_task_%d.XXXXXX", this->taskId);
+    sprintf(folder, "/tmp/nodemanager_task_%d.XXXXXX", this->taskId);
 
-    int fd;
-    if ((fd = mkstemp(scriptPath)) < 0)
+    char* p = mkdtemp(folder);
+
+    if (p)
     {
-        return std::string();
+        this->taskFolder = p;
+        return 0;
     }
     else
     {
-        close(fd);
+        return errno;
+    }
+}
+
+int Process::DeleteTaskFolder()
+{
+    std::string output;
+    int ret = Process::ExecuteCommand(output, "rm -rf", this->taskFolder);
+    if (ret != 0)
+    {
+        Logger::Error("Task {0}: Unable to dir -rf {1}, ret {2}", this->taskId, this->taskFolder, ret);
+        this->message << "Task " << this->taskId << ": Unable to rmdir -rf " << this->taskFolder << ", ret " << ret << "\r\n";
     }
 
-    std::string path = scriptPath;
-    Logger::Debug("Script path {0}", path);
+    return ret;
+}
+
+std::string Process::BuildScript()
+{
+    std::string path = this->taskFolder + "/run.sh";
 
     std::ofstream fs(path, std::ios::trunc);
     fs << "#!/bin/bash" << std::endl << std::endl;
-    if (!this->workDirectory.empty() && access(this->workDirectory.c_str(), 0) != -1)
+
+    fs << "cd ";
+    if (this->workDirectory.empty() || access(this->workDirectory.c_str(), 0) == -1)
     {
-        fs << "cd " << this->workDirectory << std::endl << std::endl;
+        fs << this->taskFolder;
     }
+    else
+    {
+        fs << this->workDirectory;
+    }
+
+    fs << std::endl << std::endl;
+
+    if (this->stdOutFile.empty()) this->stdOutFile = this->taskFolder + "/stdout.txt";
+    if (this->stdErrFile.empty()) this->stdErrFile = this->taskFolder + "/stderr.txt";
 
     if (!this->commandLine.empty())
     {
-        fs << this->commandLine << std::endl;
+        fs << this->commandLine
+            << " >" << this->stdOutFile
+            << " 2>" << this->stdErrFile;
     }
+
+    if (!this->stdInFile.empty())
+    {
+        fs << " <" << this->stdInFile;
+    }
+
+    fs << std::endl << std::endl;
 
     fs.close();
 

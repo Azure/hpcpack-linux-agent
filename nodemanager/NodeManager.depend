@@ -249,25 +249,25 @@
 	<sstream>
 	"String.h"
 
-1424944176 /home/evanc/spdlog/include/spdlog/spdlog.h
+1423549800 /home/evanc/spdlog/include/spdlog/spdlog.h
 	"common.h"
 	"logger.h"
 	"details/spdlog_impl.h"
 
-1424944176 /home/evanc/spdlog/include/spdlog/common.h
+1423549800 /home/evanc/spdlog/include/spdlog/common.h
 	<string>
 	<initializer_list>
 	<chrono>
 	<memory>
 
-1424944176 /home/evanc/spdlog/include/spdlog/logger.h
+1423549800 /home/evanc/spdlog/include/spdlog/logger.h
 	<vector>
 	<memory>
 	"sinks/base_sink.h"
 	"common.h"
 	"./details/logger_impl.h"
 
-1424944176 /home/evanc/spdlog/include/spdlog/sinks/base_sink.h
+1423549800 /home/evanc/spdlog/include/spdlog/sinks/base_sink.h
 	<string>
 	<mutex>
 	<atomic>
@@ -276,14 +276,14 @@
 	"../common.h"
 	"../details/log_msg.h"
 
-1424944176 /home/evanc/spdlog/include/spdlog/sinks/sink.h
+1423549800 /home/evanc/spdlog/include/spdlog/sinks/sink.h
 	"../details/log_msg.h"
 
-1424944176 /home/evanc/spdlog/include/spdlog/details/log_msg.h
+1423549800 /home/evanc/spdlog/include/spdlog/details/log_msg.h
 	"../common.h"
 	"./format.h"
 
-1424944176 /home/evanc/spdlog/include/spdlog/details/format.h
+1423549800 /home/evanc/spdlog/include/spdlog/details/format.h
 	<stdint.h>
 	<cassert>
 	<cmath>
@@ -298,7 +298,7 @@
 	<utility>
 	"format.cc"
 
-1424944176 /home/evanc/spdlog/include/spdlog/details/format.cc
+1423549800 /home/evanc/spdlog/include/spdlog/details/format.cc
 	<string.h>
 	<cctype>
 	<cerrno>
@@ -308,11 +308,11 @@
 	<cstring>
 	<windows.h>
 
-1424944176 /home/evanc/spdlog/include/spdlog/formatter.h
+1423549800 /home/evanc/spdlog/include/spdlog/formatter.h
 	"details/log_msg.h"
 	"details/pattern_formatter_impl.h"
 
-1424944176 /home/evanc/spdlog/include/spdlog/details/pattern_formatter_impl.h
+1423549800 /home/evanc/spdlog/include/spdlog/details/pattern_formatter_impl.h
 	<string>
 	<chrono>
 	<memory>
@@ -322,28 +322,28 @@
 	"./log_msg.h"
 	"./os.h"
 
-1424944176 /home/evanc/spdlog/include/spdlog/details/os.h
+1423549800 /home/evanc/spdlog/include/spdlog/details/os.h
 	<string>
 	<cstdio>
 	<ctime>
 	<Windows.h>
 	"../common.h"
 
-1424944176 /home/evanc/spdlog/include/spdlog/details/logger_impl.h
+1423549800 /home/evanc/spdlog/include/spdlog/details/logger_impl.h
 	"./line_logger.h"
 
-1424944176 /home/evanc/spdlog/include/spdlog/details/line_logger.h
+1423549800 /home/evanc/spdlog/include/spdlog/details/line_logger.h
 	<type_traits>
 	"../common.h"
 	"../logger.h"
 
-1424944176 /home/evanc/spdlog/include/spdlog/details/spdlog_impl.h
+1423549800 /home/evanc/spdlog/include/spdlog/details/spdlog_impl.h
 	"registry.h"
 	"../sinks/file_sinks.h"
 	"../sinks/stdout_sinks.h"
 	"../sinks/syslog_sink.h"
 
-1424944176 /home/evanc/spdlog/include/spdlog/details/registry.h
+1423549800 /home/evanc/spdlog/include/spdlog/details/registry.h
 	<string>
 	<mutex>
 	<unordered_map>
@@ -352,7 +352,7 @@
 	"../async_logger.h"
 	"../common.h"
 
-1424944176 /home/evanc/spdlog/include/spdlog/async_logger.h
+1423549800 /home/evanc/spdlog/include/spdlog/async_logger.h
 	<chrono>
 	<functional>
 	"common.h"
@@ -360,10 +360,10 @@
 	"spdlog.h"
 	"./details/async_logger_impl.h"
 
-1424944176 /home/evanc/spdlog/include/spdlog/details/async_logger_impl.h
+1423549800 /home/evanc/spdlog/include/spdlog/details/async_logger_impl.h
 	"./async_log_helper.h"
 
-1424944176 /home/evanc/spdlog/include/spdlog/details/async_log_helper.h
+1423549800 /home/evanc/spdlog/include/spdlog/details/async_log_helper.h
 	<chrono>
 	<thread>
 	<atomic>
@@ -374,39 +374,39 @@
 	"./log_msg.h"
 	"./format.h"
 
-1424944176 /home/evanc/spdlog/include/spdlog/details/mpmc_bounded_q.h
+1423549800 /home/evanc/spdlog/include/spdlog/details/mpmc_bounded_q.h
 	<atomic>
 	"../common.h"
 
-1424944176 /home/evanc/spdlog/include/spdlog/sinks/file_sinks.h
+1423549800 /home/evanc/spdlog/include/spdlog/sinks/file_sinks.h
 	<mutex>
 	"base_sink.h"
 	"../details/null_mutex.h"
 	"../details/file_helper.h"
 	"../details/format.h"
 
-1424944176 /home/evanc/spdlog/include/spdlog/details/null_mutex.h
+1423549800 /home/evanc/spdlog/include/spdlog/details/null_mutex.h
 
-1424944176 /home/evanc/spdlog/include/spdlog/details/file_helper.h
+1423549800 /home/evanc/spdlog/include/spdlog/details/file_helper.h
 	<string>
 	<thread>
 	<chrono>
 	"os.h"
 
-1424944176 /home/evanc/spdlog/include/spdlog/sinks/stdout_sinks.h
+1423549800 /home/evanc/spdlog/include/spdlog/sinks/stdout_sinks.h
 	<iostream>
 	<mutex>
 	"./ostream_sink.h"
 	"../details/null_mutex.h"
 
-1424944176 /home/evanc/spdlog/include/spdlog/sinks/ostream_sink.h
+1423549800 /home/evanc/spdlog/include/spdlog/sinks/ostream_sink.h
 	<ostream>
 	<mutex>
 	<memory>
 	"../details/null_mutex.h"
 	"./base_sink.h"
 
-1424944176 /home/evanc/spdlog/include/spdlog/sinks/syslog_sink.h
+1423549800 /home/evanc/spdlog/include/spdlog/sinks/syslog_sink.h
 	<array>
 	<string>
 	<syslog.h>
@@ -414,7 +414,7 @@
 	"../common.h"
 	"../details/log_msg.h"
 
-1424783879 source:/home/evanc/whpc-linux-communicator/nodemanager/main.cpp
+1426473053 source:/home/evanc/whpc-linux-communicator/nodemanager/main.cpp
 	<iostream>
 	<cpprest/http_listener.h>
 	<cpprest/json.h>
@@ -422,14 +422,14 @@
 	"core/RemoteCommunicator.h"
 	"core/RemoteExecutor.h"
 
-1424944079 /home/evanc/whpc-linux-communicator/nodemanager/utils/Logger.h
+1426473053 /home/evanc/whpc-linux-communicator/nodemanager/utils/Logger.h
 	<syslog.h>
 	<stdio.h>
 	<stdarg.h>
 	<iostream>
 	<spdlog/spdlog.h>
 
-1424929892 /home/evanc/whpc-linux-communicator/nodemanager/core/RemoteCommunicator.h
+1426473053 /home/evanc/whpc-linux-communicator/nodemanager/core/RemoteCommunicator.h
 	<cpprest/http_listener.h>
 	<cpprest/json.h>
 	"../utils/Logger.h"
@@ -441,7 +441,7 @@
 	"../arguments/EndJobArgs.h"
 	"../arguments/EndTaskArgs.h"
 
-1424947647 /home/evanc/whpc-linux-communicator/nodemanager/core/RemoteExecutor.h
+1426473053 /home/evanc/whpc-linux-communicator/nodemanager/core/RemoteExecutor.h
 	"IRemoteExecutor.h"
 	"JobTaskTable.h"
 	"Monitor.h"
@@ -471,7 +471,7 @@
 	"ProcessStartInfo.h"
 	"../utils/JsonHelper.h"
 
-1424929892 /home/evanc/whpc-linux-communicator/nodemanager/arguments/ProcessStartInfo.h
+1426473053 /home/evanc/whpc-linux-communicator/nodemanager/arguments/ProcessStartInfo.h
 	<string>
 	<vector>
 	<map>
@@ -493,7 +493,7 @@
 	<cpprest/json.h>
 	"ProcessStartInfo.h"
 
-1424934262 source:/home/evanc/whpc-linux-communicator/nodemanager/core/Process.cpp
+1426594111 source:/home/evanc/whpc-linux-communicator/nodemanager/core/Process.cpp
 	<memory.h>
 	<sys/wait.h>
 	<sys/resource.h>
@@ -502,7 +502,7 @@
 	"../utils/Logger.h"
 	"../utils/String.h"
 
-1424929892 /home/evanc/whpc-linux-communicator/nodemanager/core/Process.h
+1426593932 /home/evanc/whpc-linux-communicator/nodemanager/core/Process.h
 	<string>
 	<sstream>
 	<vector>
@@ -511,8 +511,11 @@
 	<unistd.h>
 	<sys/signal.h>
 	<pplx/pplxtasks.h>
+	<sys/wait.h>
+	<sys/resource.h>
+	"../utils/String.h"
 
-1425981770 /home/evanc/whpc-linux-communicator/nodemanager/utils/String.h
+1426473053 /home/evanc/whpc-linux-communicator/nodemanager/utils/String.h
 	<string>
 	<vector>
 	<sstream>
@@ -525,7 +528,7 @@
 	"../utils/System.h"
 	"../arguments/StartJobAndTaskArgs.h"
 
-1425976256 /home/evanc/whpc-linux-communicator/nodemanager/utils/System.h
+1426473053 /home/evanc/whpc-linux-communicator/nodemanager/utils/System.h
 	<string>
 
 1424948109 source:/home/evanc/whpc-linux-communicator/nodemanager/core/RemoteExecutor.cpp
@@ -638,10 +641,10 @@
 1424929892 /home/evanc/whpc-linux-communicator/nodemanager/utils/ReaderLock.h
 	<pthread.h>
 
-1424525016 source:/home/evanc/whpc-linux-communicator/nodemanager/utils/WriterLock.cpp
+1424929892 source:/home/evanc/whpc-linux-communicator/nodemanager/utils/WriterLock.cpp
 	"WriterLock.h"
 
-1424946976 /home/evanc/whpc-linux-communicator/nodemanager/core/Monitor.h
+1426473053 /home/evanc/whpc-linux-communicator/nodemanager/core/Monitor.h
 	<cpprest/json.h>
 	<map>
 
@@ -653,7 +656,7 @@
 	"../utils/Logger.h"
 	"../utils/System.h"
 
-1424939834 /home/evanc/whpc-linux-communicator/nodemanager/core/Reporter.h
+1426473053 /home/evanc/whpc-linux-communicator/nodemanager/core/Reporter.h
 	<cpprest/json.h>
 	<functional>
 

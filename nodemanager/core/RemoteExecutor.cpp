@@ -46,6 +46,9 @@ bool RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& callback
             auto process = std::shared_ptr<Process>(new Process(
                 args.TaskId,
                 std::move(args.StartInfo.CommandLine),
+                std::move(args.StartInfo.StdOutText),
+                std::move(args.StartInfo.StdErrText),
+                std::move(args.StartInfo.StdInText),
                 std::move(args.StartInfo.WorkDirectory),
                 std::move(args.StartInfo.EnvironmentVariables),
                 [taskInfo, callbackUri, this] (int exitCode, std::string&& message, timeval userTime, timeval kernelTime)

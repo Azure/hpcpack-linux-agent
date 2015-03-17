@@ -14,11 +14,6 @@
 				<Compiler>
 					<Add option="-Wall" />
 					<Add option="-g" />
-					<Add option="-fexceptions" />
-					<Add option="-Wno-unused-local-typedefs" />
-					<Add option="-std=c++1y" />
-					<Add directory="../../casablanca/Release/include" />
-					<Add directory="../../spdlog/include" />
 				</Compiler>
 				<Linker>
 					<Add option="-lpthread" />
@@ -32,11 +27,6 @@
 				<Option compiler="gcc" />
 				<Compiler>
 					<Add option="-O2" />
-					<Add option="-fexceptions" />
-					<Add option="-Wno-unused-local-typedefs" />
-					<Add option="-std=c++1y" />
-					<Add directory="../../casablanca/Release/include" />
-					<Add directory="../../spdlog/include" />
 				</Compiler>
 				<Linker>
 					<Add option="-lpthread" />
@@ -45,17 +35,12 @@
 			</Target>
 		</Build>
 		<Compiler>
-			<Add option="-Wall" />
 			<Add option="-fexceptions" />
 			<Add option="-Wno-unused-local-typedefs" />
 			<Add option="-std=c++1y" />
 			<Add directory="../../casablanca/Release/include" />
 			<Add directory="../../spdlog/include" />
 		</Compiler>
-		<Linker>
-			<Add option="-lpthread" />
-			<Add library="../../casablanca/Release/build.debug/Binaries/libcpprest.so" />
-		</Linker>
 		<Unit filename="Makefile" />
 		<Unit filename="Readme.txt" />
 		<Unit filename="arguments/EndJobArgs.cpp" />
@@ -88,6 +73,8 @@
 		<Unit filename="data/TaskInfo.cpp" />
 		<Unit filename="data/TaskInfo.h" />
 		<Unit filename="main.cpp" />
+		<Unit filename="scripts/EndTask.sh" />
+		<Unit filename="scripts/common.sh" />
 		<Unit filename="utils/JsonHelper.cpp" />
 		<Unit filename="utils/JsonHelper.h" />
 		<Unit filename="utils/Logger.cpp" />
