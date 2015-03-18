@@ -13,6 +13,8 @@
 #include <sys/resource.h>
 
 #include "../utils/String.h"
+#include "../utils/Logger.h"
+#include "../utils/System.h"
 
 using namespace hpc::utils;
 
@@ -47,44 +49,31 @@ namespace hpc
             private:
                 void OnCompleted();
                 int CreateTaskFolder();
-                int DeleteTaskFolder();
-                static void* ForkThread(void*);
-                static void ReadFromPipe(std::ostringstream& stream, int pipe[2]);
 
                 template <typename ... Args>
-                static int ExecuteCommand(std::string& output, const std::string& cmd, const Args& ... args)
+                bool ExecuteCommand(const std::string& cmd, const Args& ... args)
                 {
-                    std::string command = String::Join(" ", cmd, args...);
-                    FILE* stream = popen(command.c_str(), "r");
-
-                    std::ostringstream result;
-                    int exitCode = -1;
-
-                    if (stream)
+                    std::string output;
+                    int ret = System::ExecuteCommand(output, cmd, args...);
+                    if (ret != 0)
                     {
-                        char buffer[512];
-                        while (fgets(buffer, sizeof(buffer), stream) != nullptr)
-                        {
-                            result << buffer;
-                        }
+                        std::string cmdLine = String::Join(" ", cmd, args...);
+                        this->message << "Task " << this->taskId << ": '" << cmdLine << "' failed. exitCode " << ret << "\r\n";
+                        Logger::Error("Task {0}: '{1}' failed. exitCode {2}, output {3}.", this->taskId, cmdLine, ret, output);
+                        this->exitCode = ret;
 
-                        int ret = pclose(stream);
-                        exitCode = WEXITSTATUS(ret);
-                    }
-                    else
-                    {
-                        result << "error when popen " << command << std::endl;
+                        return false;
                     }
 
-                    output = result.str();
-
-                    return exitCode;
+                    return true;
                 }
 
+                static void* ForkThread(void*);
+
+                std::string GetAffinity();
                 void Run(const std::string& path);
                 void Monitor();
                 std::string BuildScript();
-                void CleanupScript(const std::string& path);
                 std::unique_ptr<const char* []> PrepareEnvironment();
 
                 std::ostringstream stdOut;

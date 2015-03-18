@@ -19,6 +19,9 @@
 					<Add option="-lpthread" />
 					<Add library="../../casablanca/Release/build.debug/Binaries/libcpprest.so" />
 				</Linker>
+				<ExtraCommands>
+					<Add after="cp scripts/* bin/Debug/" />
+				</ExtraCommands>
 			</Target>
 			<Target title="Release">
 				<Option output="bin/Release/NodeManager" prefix_auto="1" extension_auto="1" />
@@ -32,6 +35,9 @@
 					<Add option="-lpthread" />
 					<Add library="../../casablanca/Release/build.release/Binaries/libcpprest.so" />
 				</Linker>
+				<ExtraCommands>
+					<Add after="cp scripts/* bin/Release/" />
+				</ExtraCommands>
 			</Target>
 		</Build>
 		<Compiler>
@@ -73,7 +79,10 @@
 		<Unit filename="data/TaskInfo.cpp" />
 		<Unit filename="data/TaskInfo.h" />
 		<Unit filename="main.cpp" />
+		<Unit filename="scripts/CleanupTask.sh" />
 		<Unit filename="scripts/EndTask.sh" />
+		<Unit filename="scripts/PrepareTask.sh" />
+		<Unit filename="scripts/StartTask.sh" />
 		<Unit filename="scripts/common.sh" />
 		<Unit filename="utils/JsonHelper.cpp" />
 		<Unit filename="utils/JsonHelper.h" />

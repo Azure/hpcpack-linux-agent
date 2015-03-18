@@ -45,17 +45,7 @@ void Process::Kill()
 {
     if (this->processId != 0)
     {
-        std::string output;
-        int ret = Process::ExecuteCommand(output, "/bin/bash", "EndTask.sh", this->taskId);
-
-        if (0 != ret)
-        {
-            Logger::Error("EndTask {0}, exitCode {1}, output {2}", this->taskId, ret, output);
-        }
-        else
-        {
-            Logger::Info("EndTask {0}, output {1}", this->taskId, output);
-        }
+        this->ExecuteCommand("/bin/bash", "EndTask.sh", this->taskId, this->processId);
 
 //        if (-1 == kill(this->processId, SIGKILL))
 //        {
@@ -111,26 +101,11 @@ void* Process::ForkThread(void* arg)
         p->exitCode = -1;
         goto Final;
     }
-//
-//    int stdOutPipe[2], stdErrPipe[2];
-//
-//    if (-1 == pipe(stdOutPipe))
-//    {
-//        p->message << "Error when creating stdout pipe, errno = " << errno << "\r\n";
-//        Logger::Error("Error when creating stdout pipe, errno = {0}", errno);
-//
-//        p->exitCode = errno;
-//        goto Final;
-//    }
-//
-//    if (-1 == pipe(stdErrPipe))
-//    {
-//        p->message << "Error when creating stderr pipe, errno = " << errno << "\r\n";
-//        Logger::Error("Error when creating stderr pipe, errno = {0}", errno);
-//
-//        p->exitCode = errno;
-//        goto Final;
-//    }
+
+    if (!p->ExecuteCommand("/bin/bash", "PrepareTask.sh", p->taskId, p->GetAffinity()))
+    {
+        goto Final;
+    }
 
     p->processId = fork();
 
@@ -159,8 +134,8 @@ void* Process::ForkThread(void* arg)
 
 Final:
     p->processId = 0;
-    p->CleanupScript(path);
-    p->DeleteTaskFolder();
+    p->ExecuteCommand("/bin/bash", "CleanupTask.sh", p->taskId, p->processId);
+    p->ExecuteCommand("rm -rf", p->taskFolder);
     p->OnCompleted();
 
     pthread_exit(nullptr);
@@ -205,25 +180,18 @@ void Process::Monitor()
     {
         this->exitCode = WEXITSTATUS(status);
 
-
         std::string output;
-        int ret = Process::ExecuteCommand(output, "head -c 1024", this->stdOutFile);
+        int ret = System::ExecuteCommand(output, "head -c 1024", this->stdOutFile);
         if (ret == 0)
         {
             this->message << "STDOUT: " << output << "\r\n";
         }
 
-        ret = Process::ExecuteCommand(output, "head -c 1024", this->stdErrFile);
+        ret = System::ExecuteCommand(output, "head -c 1024", this->stdErrFile);
         if (ret == 0)
         {
             this->message << "STDERR: " << output << "\r\n";
         }
-//
-//        ReadFromPipe(this->stdOut, stdOutPipe);
-//        ReadFromPipe(this->stdErr, stdErrPipe);
-//
-//        this->message << this->stdOut.str() << "\r\n";
-//        this->message << this->stdErr.str() << "\r\n";
     }
     else
     {
@@ -232,6 +200,7 @@ void Process::Monitor()
         this->message << "wait4 for process " << this->processId << " status " << status << "\r\n";
     }
 
+    // TODO: use cgroup to report.
     this->userTime = usage.ru_utime;
     this->kernelTime = usage.ru_stime;
 
@@ -241,48 +210,36 @@ void Process::Monitor()
     // TODO: WorkingSet
 }
 
-void Process::ReadFromPipe(std::ostringstream& stream, int pipe[2])
-{
-    close(pipe[1]);
-
-    ssize_t bytesRead;
-    const int BufferSize = 1024;
-    char buf[BufferSize] = { 0 };
-
-    while ((bytesRead = read(pipe[0], buf, sizeof(buf) - 1)) > 0)
-    {
-        buf[bytesRead] = 0;
-        stream << buf;
-    }
-
-    close(pipe[0]);
-}
-
 void Process::Run(const std::string& path)
 {
     std::vector<char> pathBuffer(path.cbegin(), path.cend());
     pathBuffer.push_back('\0');
 
-    char* const bashCmd = const_cast<char* const>("/bin/bash");
+    std::string taskIdString = String::Join("", this->taskId);
 
-    char* const args[3] = { bashCmd, &pathBuffer[0], nullptr };
+    char* const args[] =
+    {
+        const_cast<char* const>("/bin/bash"),
+        const_cast<char* const>("StartTask.sh"),
+        const_cast<char* const>(taskIdString.c_str()),
+        &pathBuffer[0],
+        nullptr
+    };
 
     auto envi = this->PrepareEnvironment();
 
-//    dup2(stdOutPipe[1], 1);
-//    close(stdOutPipe[0]);
-//    close(stdOutPipe[1]);
-//    dup2(stdErrPipe[1], 2);
-//    close(stdOutPipe[0]);
-//    close(stdOutPipe[1]);
-
-    int ret = execvpe(bashCmd, args, const_cast<char* const*>(envi.get()));
+    int ret = execvpe(args[0], args, const_cast<char* const*>(envi.get()));
 
     assert(ret == -1);
 
     std::cout << "Error occurred when execvpe, errno = " << errno << "\r\n";
 
     exit(errno);
+}
+
+std::string Process::GetAffinity()
+{
+    return "0-3";
 }
 
 int Process::CreateTaskFolder()
@@ -302,19 +259,6 @@ int Process::CreateTaskFolder()
     {
         return errno;
     }
-}
-
-int Process::DeleteTaskFolder()
-{
-    std::string output;
-    int ret = Process::ExecuteCommand(output, "rm -rf", this->taskFolder);
-    if (ret != 0)
-    {
-        Logger::Error("Task {0}: Unable to dir -rf {1}, ret {2}", this->taskId, this->taskFolder, ret);
-        this->message << "Task " << this->taskId << ": Unable to rmdir -rf " << this->taskFolder << ", ret " << ret << "\r\n";
-    }
-
-    return ret;
 }
 
 std::string Process::BuildScript()
@@ -356,14 +300,6 @@ std::string Process::BuildScript()
     fs.close();
 
     return std::move(path);
-}
-
-void Process::CleanupScript(const std::string& path)
-{
-    if (!path.empty())
-    {
-        unlink(path.c_str());
-    }
 }
 
 std::unique_ptr<const char* []> Process::PrepareEnvironment()

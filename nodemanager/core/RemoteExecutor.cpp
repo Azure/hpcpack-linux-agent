@@ -147,16 +147,12 @@ bool RemoteExecutor::Metric(const std::string& callbackUri)
 
 bool RemoteExecutor::TerminateTask(int taskId)
 {
-    Logger::Info("Kill 1 {0}", taskId);
-
     ReaderLock readerLock(&this->lock);
 
-    Logger::Info("Kill 2 {0}", taskId);
     auto p = this->processes.find(taskId);
 
     if (p != this->processes.end())
     {
-        Logger::Info("Kill 3 {0}", taskId);
         p->second->Kill();
 
         return true;
