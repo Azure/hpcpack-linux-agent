@@ -90,6 +90,7 @@ endef
 indent=@echo -n "    "
 
 define prepare
+	@echo ""
 	@tput bold;
 	@echo -n "Preparing to build [ ";
 	@tput setaf 2;
@@ -97,17 +98,18 @@ define prepare
 	@tput setaf 7;
 	@echo " ] target";
 	@tput sgr0;
-	$(indent); 
+	$(indent);
 	[ -d $(2) ] || mkdir -p $(2)
-	$(indent); 
+	$(indent);
 	[ -d $(3) ] || mkdir -p $(3)
+	@echo ""
 	@tput bold;
 	@echo -n "Start to build [ ";
 	@tput setaf 2;
 	@echo -n $(1);
 	@tput setaf 7;
 	@echo " ] target";
-	@tput sgr0;	
+	@tput sgr0;
 endef
 
 define finish
@@ -121,7 +123,7 @@ define finish
 	@echo -n $(1);
 	@tput setaf 7;
 	@echo " ] target";
-	@tput sgr0;	
+	@tput sgr0;
 endef
 
 # debug targets
@@ -175,7 +177,7 @@ $(OBJDIR_RELEASE)/%.o: */%.cpp
 
 $(OBJDIR_RELEASE)/%.o: %.cpp
 	$(call compile,$(CFLAGS_RELEASE),$(INC_RELEASE))
-	
+
 # phony targets
 .PHONY: before_debug after_debug clean_debug before_release after_release clean_release
 
