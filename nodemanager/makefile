@@ -22,6 +22,7 @@ WINDRES = windres
 INC = -I$(CASA_INC) -I$(SPDLOG_INC)
 CFLAGS = -Wall -std=c++1y -Wno-unused-local-typedefs
 LIB = -lcpprest -lpthread
+LDFLAGS = -Wl,-rpath,\\$$ORIGIN,--enable-new-dtags,-I./ld-linux-x86-64.so.2
 BINARY = nodemanager
 DEBUG = debug
 RELEASE = release
@@ -35,7 +36,7 @@ INC_DEBUG = $(INC)
 CFLAGS_DEBUG = $(CFLAGS) -g
 LIBDIR_DEBUG = -L$(CASA_LIB_DEBUG)
 LIB_DEBUG = $(LIB)
-LDFLAGS_DEBUG =
+LDFLAGS_DEBUG = $(LDFLAGS)
 OBJDIR_DEBUG = $(OBJDIR)/$(DEBUG)
 OUTDIR_DEBUG = $(OUTDIR)/$(DEBUG)
 OUT_DEBUG = $(OUTDIR_DEBUG)/$(BINARY)
@@ -46,7 +47,7 @@ INC_RELEASE = $(INC)
 CFLAGS_RELEASE = $(CFLAGS) -O2
 LIBDIR_RELEASE = -L$(CASA_LIB_RELEASE)
 LIB_RELEASE = $(LIB)
-LDFLAGS_RELEASE = -s
+LDFLAGS_RELEASE = $(LDFLAGS) -s
 OBJDIR_RELEASE = $(OBJDIR)/$(RELEASE)
 OUTDIR_RELEASE = $(OUTDIR)/$(RELEASE)
 OUT_RELEASE = $(OUTDIR_RELEASE)/$(BINARY)
@@ -87,7 +88,7 @@ define building =
 	@tput sgr0
 endef
 
-indent=@echo -n "    "
+indent=@printf '\t'
 
 define prepare
 	@echo ""
@@ -117,6 +118,8 @@ define finish
 	cp scripts/* $(2)/
 	$(indent);
 	[ -d $(2)/logs ] || mkdir $(2)/logs
+	$(indent);
+	cp $(shell ldd $(3) | cut -f3 -d' ') ./
 	@tput bold;
 	@echo -n "Finished to build [ ";
 	@tput setaf 2;
@@ -131,7 +134,7 @@ before_debug:
 	$(call prepare,$(DEBUG),$(OUTDIR_DEBUG),$(OBJDIR_DEBUG))
 
 after_debug:
-	$(call finish,$(DEBUG),$(OUTDIR_DEBUG))
+	$(call finish,$(DEBUG),$(OUTDIR_DEBUG),$(OUT_DEBUG))
 
 out_debug: before_debug $(OUT_DEBUG)
 
@@ -155,7 +158,7 @@ before_release:
 	$(call prepare,$(RELEASE),$(OUTDIR_RELEASE),$(OBJDIR_RELEASE))
 
 after_release:
-	$(call finish,$(RELEASE),$(OUTDIR_RELEASE))
+	$(call finish,$(RELEASE),$(OUTDIR_RELEASE),$(OUT_RELEASE))
 
 out_release: before_release $(OUT_RELEASE)
 
