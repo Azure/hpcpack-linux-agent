@@ -2,7 +2,10 @@
 
 CGroupSubSys=cpuset,freezer
 CGroupRoot=/sys/fs/cgroup
-CGInstalled=$([ -f /usr/bin/cgexec ])
+CGInstalled=false
+if [ -f /usr/bin/cgexec ]; then
+	CGInstalled=true
+fi
 
 function GetCGroupName
 {
