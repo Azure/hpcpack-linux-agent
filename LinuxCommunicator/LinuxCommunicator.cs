@@ -68,17 +68,15 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
             private set;
         }
 
-        public ISchedulerCallbacks Listener
+        public ISchedulerCallbacks SchedulerCallbacks
         {
             get;
-            private set;
+            set;
         }
 
         public NodeLocation Location { get { return NodeLocation.Linux; } }
 
         public event EventHandler<NodeMetricReportedEventArgs> NodeMetricReported;
-
-        public void Accept(ISchedulerCallbacks listener) { this.Listener = listener; }
 
         public void SetTracer(INodeCommTracing tracer)
         {
@@ -112,14 +110,19 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
             this.sender = new Monitoring.CounterDataSender();
             this.sender.OpenConnection(this.HeadNode, this.MonitoringPort);
 
-            IScheduler scheduler = new Scheduler.Scheduler();
-            scheduler.Connect(this.HeadNode);
-            this.nodeMap = new Dictionary<string, Guid>();
-            foreach (ISchedulerNode node in scheduler.GetNodeList(null, null))
+            using (IScheduler scheduler = new Scheduler.Scheduler())
             {
-                this.nodeMap.Add(node.Name.ToLower(), node.Guid);
+                scheduler.Connect(this.HeadNode);
+                this.nodeMap = new Dictionary<string, Guid>();
+                FilterCollection fc = new FilterCollection();
+                fc.Add(FilterOperator.Equal, NodePropertyIds.Location, NodeLocation.Linux);
+                foreach (ISchedulerNode node in scheduler.GetNodeList(fc, null))
+                {
+                    this.nodeMap.Add(node.Name.ToLower(), node.Guid);
+                }
+
+                scheduler.Close();
             }
-            scheduler.Close();
 
             this.Tracer.TraceInfo("Initialized LinuxCommunicator.");
             return true;
@@ -294,21 +297,26 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
             else
             {
                 // new node added ? refresh the nodemap
-                IScheduler scheduler = new Scheduler.Scheduler();
-                scheduler.Connect(this.HeadNode);
-                foreach (ISchedulerNode node in scheduler.GetNodeList(null, null))
+                using (IScheduler scheduler = new Scheduler.Scheduler())
                 {
-                    string l = node.Name.ToLower();
-                    if (!this.nodeMap.ContainsKey(l))
+                    scheduler.Connect(this.HeadNode);
+                    FilterCollection fc = new FilterCollection();
+                    fc.Add(FilterOperator.Equal, NodePropertyIds.Location, NodeLocation.Linux);
+                    foreach (ISchedulerNode node in scheduler.GetNodeList(fc, null))
                     {
-                        nodeMap.Add(l, node.Guid);
+                        string l = node.Name.ToLower();
+                        if (!this.nodeMap.ContainsKey(l))
+                        {
+                            nodeMap.Add(l, node.Guid);
+                        }
+                        if (l.Equals(lower))
+                        {
+                            guid = node.Guid;
+                        }
                     }
-                    if (l.Equals(lower))
-                    {
-                        guid = node.Guid;
-                    }
+
+                    scheduler.Close();
                 }
-                scheduler.Close();
             }
 
             return guid;

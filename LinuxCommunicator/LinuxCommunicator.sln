@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RequestTest", "..\RequestTe
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MonitoringTest", "..\MonitoringTest\MonitoringTest\MonitoringTest.csproj", "{C10856A3-ED71-4A26-83F1-0529A5049DC3}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FuncTest", "..\FuncTest\FuncTest.csproj", "{A7E995F9-4C5C-4D65-91C6-8E09DF8FDC47}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -61,6 +63,16 @@ Global
 		{C10856A3-ED71-4A26-83F1-0529A5049DC3}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{C10856A3-ED71-4A26-83F1-0529A5049DC3}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{C10856A3-ED71-4A26-83F1-0529A5049DC3}.Release|Win32.ActiveCfg = Release|Any CPU
+		{A7E995F9-4C5C-4D65-91C6-8E09DF8FDC47}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{A7E995F9-4C5C-4D65-91C6-8E09DF8FDC47}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{A7E995F9-4C5C-4D65-91C6-8E09DF8FDC47}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{A7E995F9-4C5C-4D65-91C6-8E09DF8FDC47}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{A7E995F9-4C5C-4D65-91C6-8E09DF8FDC47}.Debug|Win32.ActiveCfg = Debug|Any CPU
+		{A7E995F9-4C5C-4D65-91C6-8E09DF8FDC47}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{A7E995F9-4C5C-4D65-91C6-8E09DF8FDC47}.Release|Any CPU.Build.0 = Release|Any CPU
+		{A7E995F9-4C5C-4D65-91C6-8E09DF8FDC47}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{A7E995F9-4C5C-4D65-91C6-8E09DF8FDC47}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{A7E995F9-4C5C-4D65-91C6-8E09DF8FDC47}.Release|Win32.ActiveCfg = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
