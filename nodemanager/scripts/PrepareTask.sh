@@ -12,5 +12,6 @@ if $CGInstalled; then
     group=$CGroupSubSys:$groupName
     cgcreate -g $group
     echo "$2" > $CGroupRoot/cpuset/$groupName/cpuset.cpus
+    echo 0 > $CGroupRoot/cpuset/$groupName/cpuset.mems
 fi
 
