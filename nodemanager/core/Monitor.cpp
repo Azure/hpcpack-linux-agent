@@ -63,6 +63,8 @@ json::value Monitor::ToJson()
     j["CoreCount"] = this->coreCount;
     j["SocketCount"] = this->socketCount;
     j["MemoryMegabytes"] = this->totalMemoryMb;
+    j["DistroInfo"] = json::value::string(this->distroInfo);
+    j["NetworkNames"] = json::value::string(this->networkNames);
 
     return std::move(j);
 }
@@ -96,9 +98,18 @@ void Monitor::Run()
         float networkUsage = (float)(networkCurrent - networkLast) / this->intervalSeconds;
         networkLast = networkCurrent;
 
+        // ip address;
         std::string ipAddress = System::GetIpAddress(IpAddressVersion::V4, "eth0");
+
+        // cpu type;
         int cores, sockets;
         System::CPU(cores, sockets);
+
+        // distro;
+        const std::string& distro = System::GetDistroInfo();
+
+        // networks;
+        const std::string names = String::Join<' '>(System::GetNetworkNames());
 
         {
             WriterLock writerLock(&this->lock);
@@ -110,6 +121,8 @@ void Monitor::Run()
             this->ipAddress = ipAddress;
             this->coreCount = cores;
             this->socketCount = sockets;
+            this->distroInfo = distro;
+            this->networkNames = names;
         }
 
         this->isCollected = true;

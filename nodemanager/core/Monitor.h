@@ -30,6 +30,8 @@ namespace hpc
                 int socketCount;
                 int totalMemoryMb;
                 std::string ipAddress;
+                std::string distroInfo;
+                std::string networkNames;
                 pthread_rwlock_t lock;
 
                 int intervalSeconds;

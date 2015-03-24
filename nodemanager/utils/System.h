@@ -19,6 +19,7 @@ namespace hpc
         struct System
         {
             public:
+                static std::vector<std::string> GetNetworkNames();
                 static std::string GetIpAddress(IpAddressVersion version, const std::string& name);
                 static void CPUUsage(long int &total, long int &idle);
                 static void Memory(unsigned long &available, unsigned long &total);
@@ -26,6 +27,8 @@ namespace hpc
                 static void NetworkUsage(long int &network, const std::string& netName);
                 static const std::string& GetNodeName();
                 static bool IsCGroupInstalled();
+
+                static const std::string& GetDistroInfo();
 
                 template <typename ... Args>
                 static int ExecuteCommand(std::string& output, const std::string& cmd, const Args& ... args)

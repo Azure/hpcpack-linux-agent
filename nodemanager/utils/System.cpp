@@ -14,6 +14,24 @@
 
 using namespace hpc::utils;
 
+std::vector<std::string> System::GetNetworkNames()
+{
+    std::vector<std::string> names;
+
+    ifaddrs *ifAddr = nullptr;
+    getifaddrs(&ifAddr);
+
+    for (ifaddrs *i = ifAddr; i != nullptr; i = i->ifa_next)
+    {
+        std::string name = i->ifa_name;
+        names.push_back(name);
+    }
+
+    if (ifAddr != nullptr) freeifaddrs(ifAddr);
+
+    return std::move(names);
+}
+
 std::string System::GetIpAddress(IpAddressVersion version, const std::string& name)
 {
     ifaddrs *ifAddr = nullptr;
@@ -143,4 +161,19 @@ const std::string& System::GetNodeName()
     }
 
     return nodeName;
+}
+
+const std::string& System::GetDistroInfo()
+{
+    static std::string distroInfo;
+    if (distroInfo.empty())
+    {
+        int ret = System::ExecuteCommand(distroInfo, "cat", "/proc/version");
+        if (ret != 0)
+        {
+            Logger::Error("cat /proc/version error code {0}", ret);
+        }
+    }
+
+    return distroInfo;
 }
