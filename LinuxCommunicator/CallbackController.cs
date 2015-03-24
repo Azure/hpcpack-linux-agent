@@ -20,7 +20,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
             {
                 var arg = new ComputeNodeInfoEventArg(nodeInfo.Name, nodeInfo);
                  LinuxCommunicator.Instance.Tracer.TraceInfo("Linux ComputeNodeReported. NodeName {0}, JobCount {1}", arg.NodeName, arg.NodeInfo.Jobs.Count);
-                int nextPing = LinuxCommunicator.Instance.Listener.ComputeNodeReported(arg);
+                int nextPing = LinuxCommunicator.Instance.SchedulerCallbacks.ComputeNodeReported(arg);
 
                 return nextPing;
             }
@@ -39,7 +39,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
             try
             {
                 LinuxCommunicator.Instance.Tracer.TraceInfo("Linux TaskCompleted. NodeName {0}, TaskMessage {1}", taskInfo.NodeName, taskInfo.TaskInfo.Message);
-                return LinuxCommunicator.Instance.Listener.TaskCompleted(taskInfo);
+                return LinuxCommunicator.Instance.SchedulerCallbacks.TaskCompleted(taskInfo);
             }
             catch (Exception ex)
             {
