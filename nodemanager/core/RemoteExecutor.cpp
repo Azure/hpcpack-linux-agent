@@ -38,6 +38,11 @@ bool RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& callback
         taskInfo->TaskRequeueCount = args.StartInfo.TaskRequeueCount;
     }
 
+    if (args.StartInfo.CommandLine.empty())
+    {
+        Logger::Info("Job {0}, task {1} MPI non-master task found, skip creating the process.", args.JobId, args.TaskId);
+    }
+    else
     {
         WriterLock writerLock(&this->lock);
 
