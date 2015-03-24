@@ -47,7 +47,6 @@
 			<Add directory="../../casablanca/Release/include" />
 			<Add directory="../../spdlog/include" />
 		</Compiler>
-		<Unit filename="Makefile" />
 		<Unit filename="Readme.txt" />
 		<Unit filename="arguments/EndJobArgs.cpp" />
 		<Unit filename="arguments/EndJobArgs.h" />
@@ -79,6 +78,7 @@
 		<Unit filename="data/TaskInfo.cpp" />
 		<Unit filename="data/TaskInfo.h" />
 		<Unit filename="main.cpp" />
+		<Unit filename="makefile" />
 		<Unit filename="scripts/CleanupTask.sh" />
 		<Unit filename="scripts/EndTask.sh" />
 		<Unit filename="scripts/PrepareTask.sh" />

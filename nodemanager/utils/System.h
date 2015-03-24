@@ -4,6 +4,7 @@
 #include <string>
 
 #include "String.h"
+#include "Logger.h"
 
 namespace hpc
 {
@@ -30,6 +31,8 @@ namespace hpc
                 static int ExecuteCommand(std::string& output, const std::string& cmd, const Args& ... args)
                 {
                     std::string command = String::Join(" ", cmd, args...);
+
+                    Logger::Debug("Executing cmd: {0}", command);
                     FILE* stream = popen(command.c_str(), "r");
 
                     std::ostringstream result;

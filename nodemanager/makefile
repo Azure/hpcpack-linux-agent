@@ -19,10 +19,12 @@ LD = g++
 WINDRES = windres
 
 # common
+LIBOUTDIR = lib
+INSTALLDIR = /opt/hpcnodemanager
 INC = -I$(CASA_INC) -I$(SPDLOG_INC)
 CFLAGS = -Wall -std=c++1y -Wno-unused-local-typedefs
 LIB = -lcpprest -lpthread
-LDFLAGS = -Wl,-rpath,\\$$ORIGIN,--enable-new-dtags,-I./ld-linux-x86-64.so.2
+LDFLAGS = -Wl,-rpath,\$$ORIGIN/$(LIBOUTDIR),-I$(INSTALLDIR)/$(LIBOUTDIR)/ld-linux-x86-64.so.2
 BINARY = nodemanager
 DEBUG = debug
 RELEASE = release
@@ -119,7 +121,9 @@ define finish
 	$(indent);
 	[ -d $(2)/logs ] || mkdir $(2)/logs
 	$(indent);
-	cp $(shell ldd $(3) | cut -f3 -d' ') ./
+	[ -d $(2)/$(LIBOUTDIR) ] || mkdir $(2)/$(LIBOUTDIR)
+	$(indent);
+	cp $(shell ldd $(3) | cut -f3 -d' ') $(2)/$(LIBOUTDIR) 2> /dev/null || :
 	@tput bold;
 	@echo -n "Finished to build [ ";
 	@tput setaf 2;
