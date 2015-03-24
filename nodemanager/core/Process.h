@@ -9,6 +9,14 @@
 #include <unistd.h>
 #include <sys/signal.h>
 #include <pplx/pplxtasks.h>
+#include <sys/wait.h>
+#include <sys/resource.h>
+
+#include "../utils/String.h"
+#include "../utils/Logger.h"
+#include "../utils/System.h"
+
+using namespace hpc::utils;
 
 namespace hpc
 {
@@ -22,7 +30,11 @@ namespace hpc
                 Process(
                     int taskId,
                     const std::string& cmdLine,
+                    const std::string& standardOut,
+                    const std::string& standardErr,
+                    const std::string& standardIn,
                     const std::string& workDir,
+                    std::vector<long>&& cpuAffinity,
                     std::map<std::string, std::string>&& envi,
                     const std::function<Callback> completed);
 
@@ -36,12 +48,32 @@ namespace hpc
             protected:
             private:
                 void OnCompleted();
+                int CreateTaskFolder();
+
+                template <typename ... Args>
+                bool ExecuteCommand(const std::string& cmd, const Args& ... args)
+                {
+                    std::string output;
+                    int ret = System::ExecuteCommand(output, cmd, args...);
+                    if (ret != 0)
+                    {
+                        std::string cmdLine = String::Join(" ", cmd, args...);
+                        this->message << "Task " << this->taskId << ": '" << cmdLine << "' failed. exitCode " << ret << "\r\n";
+                        Logger::Error("Task {0}: '{1}' failed. exitCode {2}, output {3}.", this->taskId, cmdLine, ret, output);
+                        this->exitCode = ret;
+
+                        return false;
+                    }
+
+                    return true;
+                }
+
                 static void* ForkThread(void*);
-                static void ReadFromPipe(std::ostringstream& stream, int pipe[2]);
-                void Run(int stdOutPipe[2], int stdErrPipe[2], const std::string& path);
-                void Monitor(int stdOutPipe[2], int stdErrPipe[2]);
+
+                std::string GetAffinity();
+                void Run(const std::string& path);
+                void Monitor();
                 std::string BuildScript();
-                void CleanupScript(const std::string& path);
                 std::unique_ptr<const char* []> PrepareEnvironment();
 
                 std::ostringstream stdOut;
@@ -50,10 +82,15 @@ namespace hpc
                 int exitCode;
                 timeval userTime = { 0, 0 };
                 timeval kernelTime = { 0, 0 };
+                std::string taskFolder;
 
                 const int taskId;
                 const std::string commandLine;
+                std::string stdOutFile;
+                std::string stdErrFile;
+                const std::string stdInFile;
                 const std::string workDirectory;
+                const std::vector<long> affinity;
                 const std::map<std::string, std::string> environments;
                 std::vector<std::string> environmentsBuffer;
 

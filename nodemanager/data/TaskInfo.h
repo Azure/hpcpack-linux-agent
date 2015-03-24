@@ -13,8 +13,8 @@ namespace hpc
         struct TaskInfo
         {
             public:
-                TaskInfo(int jobId, int taskId) :
-                    JobId(jobId), TaskId(taskId), TaskRequeueCount(0),
+                TaskInfo(int jobId, int taskId, const std::string& nodeName) :
+                    NodeName(nodeName), JobId(jobId), TaskId(taskId), TaskRequeueCount(0),
                     ExitCode(0), Exited(false), KernelProcessorTime(0), UserProcessorTime(0),
                     WorkingSet(0), NumberOfProcesses(0), IsPrimaryTask(true)
                 {
@@ -23,6 +23,8 @@ namespace hpc
                 TaskInfo(TaskInfo&& t) = default;
 
                 web::json::value ToJson() const;
+
+                const std::string& NodeName;
 
                 int JobId;
                 int TaskId;

@@ -25,6 +25,7 @@ json::value TaskInfo::ToJson() const
     json::value jobIdArg;
     jobIdArg["JobId"] = this->JobId;
     jobIdArg["TaskInfo"] = j;
+    jobIdArg["NodeName"] = json::value::string(this->NodeName);
 
     return jobIdArg;
 }
