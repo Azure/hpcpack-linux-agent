@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Microsoft.Hpc.Activation;
 using System.Runtime.Serialization;
+using Microsoft.Hpc.Scheduler.Communicator;
 
 namespace Microsoft.Hpc.Communicators.LinuxCommunicator.Monitoring
 {
@@ -80,9 +81,6 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.Monitoring
         }
 
         [DataMember]
-        public string IpAddress { get; set; }
-
-        [DataMember]
         public int CoreCount { get; set; }
 
         [DataMember]
@@ -90,5 +88,11 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.Monitoring
 
         [DataMember]
         public ulong MemoryMegabytes { get; set; }
+
+        [DataMember]
+        public string DistroInfo { get; set; }
+
+        [DataMember]
+        public NetworkInfo[] NetworkInfo { get; set; }
     }
 }
