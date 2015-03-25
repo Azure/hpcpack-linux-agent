@@ -63,7 +63,7 @@ release: before_release out_release after_release
 debug: before_debug out_debug after_debug
 
 # color output
-define compile =
+define compile
 	$(indent);
 	@tput bold;
 	@echo -n "Compiling [ ";
@@ -79,7 +79,7 @@ define compile =
 	@$(CXX) $(1) $(2) -c $< -o $@
 endef
 
-define building =
+define building
 	$(indent);
 	@tput bold;
 	@echo -n "Building [ ";
