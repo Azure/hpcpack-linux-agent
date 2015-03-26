@@ -19,7 +19,9 @@ namespace hpc
         struct System
         {
             public:
-                static std::vector<std::string> GetNetworkNames();
+                typedef std::tuple<std::string, std::string, std::string, std::string, bool> NetInfo;
+
+                static std::vector<NetInfo> GetNetworkInfo();
                 static std::string GetIpAddress(IpAddressVersion version, const std::string& name);
                 static void CPUUsage(long int &total, long int &idle);
                 static void Memory(unsigned long &available, unsigned long &total);
@@ -35,7 +37,7 @@ namespace hpc
                 {
                     std::string command = String::Join(" ", cmd, args...);
 
-                    Logger::Debug("Executing cmd: {0}", command);
+                    //Logger::Debug("Executing cmd: {0}", command);
                     FILE* stream = popen(command.c_str(), "r");
 
                     std::ostringstream result;

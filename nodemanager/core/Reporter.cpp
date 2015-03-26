@@ -34,7 +34,7 @@ Reporter::~Reporter()
         Logger::Debug("Destructed Reporter {0}", this->reportUri);
     }
 
-    while (this->inRequest);
+    while (this->inRequest) usleep(1);
 }
 
 pplx::task<void> Reporter::Report()
@@ -103,7 +103,7 @@ void* Reporter::ReportingThread(void * arg)
         });
 
         sleep(r->intervalSeconds);
-   }
+    }
 
     pthread_exit(nullptr);
 }

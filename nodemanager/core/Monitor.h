@@ -4,6 +4,8 @@
 #include <cpprest/json.h>
 #include <map>
 
+#include "../utils/System.h"
+
 using namespace web;
 
 namespace hpc
@@ -31,7 +33,7 @@ namespace hpc
                 int totalMemoryMb;
                 std::string ipAddress;
                 std::string distroInfo;
-                std::string networkNames;
+                std::vector<hpc::utils::System::NetInfo> networkInfo;
                 pthread_rwlock_t lock;
 
                 int intervalSeconds;

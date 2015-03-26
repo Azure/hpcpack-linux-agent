@@ -64,7 +64,22 @@ json::value Monitor::ToJson()
     j["SocketCount"] = this->socketCount;
     j["MemoryMegabytes"] = this->totalMemoryMb;
     j["DistroInfo"] = json::value::string(this->distroInfo);
-    j["NetworkNames"] = json::value::string(this->networkNames);
+
+    std::vector<json::value> networkValues;
+
+    for (const auto& info : this->networkInfo)
+    {
+        json::value v;
+        v["Name"] = json::value::string(std::get<0>(info));
+        v["MacAddress"] = json::value::string(std::get<1>(info));
+        v["IpV4"] = json::value::string(std::get<2>(info));
+        v["IpV6"] = json::value::string(std::get<3>(info));
+        v["IsIB"] = std::get<4>(info);
+
+        networkValues.push_back(v);
+    }
+
+    j["NetworkInfo"] = json::value::array(networkValues);
 
     return std::move(j);
 }
@@ -109,7 +124,7 @@ void Monitor::Run()
         const std::string& distro = System::GetDistroInfo();
 
         // networks;
-        const std::string names = String::Join<' '>(System::GetNetworkNames());
+        auto netInfo = System::GetNetworkInfo();
 
         {
             WriterLock writerLock(&this->lock);
@@ -122,7 +137,7 @@ void Monitor::Run()
             this->coreCount = cores;
             this->socketCount = sockets;
             this->distroInfo = distro;
-            this->networkNames = names;
+            this->networkInfo = std::move(netInfo);
         }
 
         this->isCollected = true;

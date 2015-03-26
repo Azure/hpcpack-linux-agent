@@ -455,7 +455,7 @@
 1424929892 /home/evanc/whpc-linux-communicator/nodemanager/arguments/EndJobArgs.h
 	<cpprest/json.h>
 
-1424929892 /home/evanc/whpc-linux-communicator/nodemanager/utils/JsonHelper.h
+1427272086 /home/evanc/whpc-linux-communicator/nodemanager/utils/JsonHelper.h
 	<vector>
 	<map>
 	<cpprest/json.h>
@@ -493,7 +493,7 @@
 	<cpprest/json.h>
 	"ProcessStartInfo.h"
 
-1426673096 source:/home/evanc/whpc-linux-communicator/nodemanager/core/Process.cpp
+1427187933 source:/home/evanc/whpc-linux-communicator/nodemanager/core/Process.cpp
 	<memory.h>
 	<sys/wait.h>
 	<sys/resource.h>
@@ -530,11 +530,12 @@
 	"../utils/System.h"
 	"../arguments/StartJobAndTaskArgs.h"
 
-1426672637 /home/evanc/whpc-linux-communicator/nodemanager/utils/System.h
+1427269495 /home/evanc/whpc-linux-communicator/nodemanager/utils/System.h
 	<string>
 	"String.h"
+	"Logger.h"
 
-1426673791 source:/home/evanc/whpc-linux-communicator/nodemanager/core/RemoteExecutor.cpp
+1427192138 source:/home/evanc/whpc-linux-communicator/nodemanager/core/RemoteExecutor.cpp
 	<cpprest/http_client.h>
 	<memory>
 	"RemoteExecutor.h"
@@ -553,13 +554,14 @@
 	<sstream>
 	"String.h"
 
-1426668045 source:/home/evanc/whpc-linux-communicator/nodemanager/utils/System.cpp
+1427269578 source:/home/evanc/whpc-linux-communicator/nodemanager/utils/System.cpp
 	<string>
 	<sys/types.h>
 	<ifaddrs.h>
 	<netinet/in.h>
 	<arpa/inet.h>
 	<iostream>
+	<sstream>
 	<fstream>
 	<unistd.h>
 	<set>
@@ -647,11 +649,12 @@
 1424929892 source:/home/evanc/whpc-linux-communicator/nodemanager/utils/WriterLock.cpp
 	"WriterLock.h"
 
-1426473053 /home/evanc/whpc-linux-communicator/nodemanager/core/Monitor.h
+1427272469 /home/evanc/whpc-linux-communicator/nodemanager/core/Monitor.h
 	<cpprest/json.h>
 	<map>
+	"../utils/System.h"
 
-1426473053 source:/home/evanc/whpc-linux-communicator/nodemanager/core/Monitor.cpp
+1427272649 source:/home/evanc/whpc-linux-communicator/nodemanager/core/Monitor.cpp
 	<pthread.h>
 	"Monitor.h"
 	"../utils/ReaderLock.h"

@@ -4,6 +4,7 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <iostream>
+#include <sstream>
 #include <fstream>
 #include <unistd.h>
 #include <set>
@@ -14,22 +15,72 @@
 
 using namespace hpc::utils;
 
-std::vector<std::string> System::GetNetworkNames()
+std::vector<System::NetInfo> System::GetNetworkInfo()
 {
-    std::vector<std::string> names;
+    std::vector<System::NetInfo> info;
 
-    ifaddrs *ifAddr = nullptr;
-    getifaddrs(&ifAddr);
+    std::string rawData;
 
-    for (ifaddrs *i = ifAddr; i != nullptr; i = i->ifa_next)
+    int ret = System::ExecuteCommand(rawData, "ip", "addr");
+    if (ret == 0)
     {
-        std::string name = i->ifa_name;
-        names.push_back(name);
+        std::string name, mac, ipV4, ipV6;
+        bool isIB = false;
+
+        std::istringstream iss(rawData);
+        std::string line;
+        while (getline(iss, line))
+        {
+            std::istringstream lineStream(line);
+            if (line.empty()) continue;
+
+            if (line[0] >= '0' && line[0] <= '9')
+            {
+                if (!name.empty())
+                {
+                    info.push_back(System::NetInfo(name, mac, ipV4, ipV6, isIB));
+                    name.clear();
+                    mac.clear();
+                    ipV4.clear();
+                    ipV6.clear();
+                    isIB = false;
+                }
+
+                lineStream >> name >> name;
+
+                // temporarily identify IB
+                if (name == "eth1:")
+                {
+                    isIB = true;
+                }
+
+                continue;
+            }
+
+            std::string head, value;
+            lineStream >> head >> value;
+
+            if (head.compare(0, 4, "link") == 0)
+            {
+                mac = value;
+            }
+            else if (head == "inet")
+            {
+                ipV4 = value;
+            }
+            else if (head == "inet6")
+            {
+                ipV6 = value;
+            }
+        }
+
+        if (!name.empty())
+        {
+            info.push_back(System::NetInfo(name, mac, ipV4, ipV6, isIB));
+        }
     }
 
-    if (ifAddr != nullptr) freeifaddrs(ifAddr);
-
-    return std::move(names);
+    return std::move(info);
 }
 
 std::string System::GetIpAddress(IpAddressVersion version, const std::string& name)
