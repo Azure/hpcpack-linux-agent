@@ -30,6 +30,8 @@ bool RemoteExecutor::StartJobAndTask(StartJobAndTaskArgs&& args, const std::stri
 
 bool RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& callbackUri)
 {
+    WriterLock writerLock(&this->lock);
+
     std::shared_ptr<TaskInfo> taskInfo = this->jobTaskTable.AddJobAndTask(args.JobId, args.TaskId);
 
     if (taskInfo->TaskRequeueCount < args.StartInfo.TaskRequeueCount)
@@ -44,8 +46,6 @@ bool RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& callback
     }
     else
     {
-        WriterLock writerLock(&this->lock);
-
         if (this->processes.find(args.TaskId) == this->processes.end())
         {
             auto process = std::shared_ptr<Process>(new Process(
@@ -59,6 +59,8 @@ bool RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& callback
                 std::move(args.StartInfo.EnvironmentVariables),
                 [taskInfo, callbackUri, this] (int exitCode, std::string&& message, timeval userTime, timeval kernelTime)
                 {
+                    WriterLock writerLock(&this->lock);
+
                     try
                     {
                         taskInfo->Exited = true;
@@ -83,13 +85,9 @@ bool RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& callback
                         Logger::Error("Exception when sending back task result. {0}", ex.what());
                     }
 
-                    {
-                        WriterLock writerLock(&this->lock);
-
-                        // Process will be deleted here.
-                        this->processes.erase(taskInfo->TaskId);
-                        Logger::Debug("erased process");
-                    }
+                    // Process will be deleted here.
+                    this->processes.erase(taskInfo->TaskId);
+                    Logger::Debug("erased process");
                 }));
 
             this->processes[args.TaskId] = process;
