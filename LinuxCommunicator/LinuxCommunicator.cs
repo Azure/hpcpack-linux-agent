@@ -264,8 +264,14 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
             var nodeMetricReported = this.NodeMetricReported;
             if (nodeMetricReported != null)
             {
-                this.Tracer.TraceInfo("Metric reported from linux node {0}.", metricInfo.Name);
-                this.Tracer.TraceInfo("Metric ip {0}, cores {1}, sockets {2}, memory {3}", metricInfo.CoreCount, metricInfo.SocketCount, metricInfo.MemoryMegabytes);
+                //this.Tracer.TraceDetail("Metric Name {0}, ip {1}, cores {2}, sockets {3}, memory {4}", metricInfo.Name, metricInfo.NetworkInfo.First().IpV4, metricInfo.CoreCount, metricInfo.SocketCount, metricInfo.MemoryMegabytes);
+                //foreach (var net in metricInfo.NetworkInfo)
+                //{
+                //    this.Tracer.TraceDetail("Network {0}, {1}, {2}, {3}, {4}", net.Name, net.MacAddress, net.IpV4, net.IpV6, net.IsIB);
+                //}
+
+                //this.Tracer.TraceInfo("Distro Info {0}", metricInfo.DistroInfo);
+
                 nodeMetricReported(this, new NodeMetricReportedEventArgs(metricInfo.Name, metricInfo.CoreCount, metricInfo.SocketCount, metricInfo.MemoryMegabytes)
                 {
                      DistroInfo = metricInfo.DistroInfo,
