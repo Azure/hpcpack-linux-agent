@@ -209,6 +209,11 @@ const std::string& System::GetNodeName()
         }
 
         nodeName = buffer;
+        std::transform(
+            nodeName.begin(),
+            nodeName.end(),
+            nodeName.begin(),
+            ::toupper);
     }
 
     return nodeName;
