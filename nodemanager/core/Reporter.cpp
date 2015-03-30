@@ -49,18 +49,26 @@ pplx::task<void> Reporter::Report()
             return pplx::task_from_result();
         }
 
-        if (this->intervalSeconds > 10)
+        if (this->intervalSeconds > 0)
         {
             Logger::Info("---------> Report to {0} with {1}", uri, jsonBody);
         }
 
-        return this->client->request(methods::POST, "", jsonBody, this->cts.get_token()).then([&uri, this](http_response response)
+        try
         {
-            if (this->intervalSeconds > 10)
+            return this->client->request(methods::POST, "", jsonBody, this->cts.get_token()).then([&uri, this](http_response response)
             {
-                Logger::Debug("---------> Reported to {0} response code {1}", uri, response.status_code());
-            }
-        });
+                if (this->intervalSeconds > 10)
+                {
+                    Logger::Debug("---------> Reported to {0} response code {1}", uri, response.status_code());
+                }
+            });
+        }
+        catch (std::exception& ex)
+        {
+            Logger::Error("Reporting exception occurred {0}, {1}", ex.what(), jsonBody);
+            return pplx::task_from_result();
+        }
     }
     else
     {
@@ -78,6 +86,7 @@ void* Reporter::ReportingThread(void * arg)
     while (r->isRunning)
     {
         r->inRequest = true;
+
         r->Report().then([r](auto t)
         {
             try
