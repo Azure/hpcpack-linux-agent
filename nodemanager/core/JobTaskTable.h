@@ -24,6 +24,7 @@ namespace hpc
                 std::shared_ptr<hpc::data::TaskInfo> AddJobAndTask(int jobId, int taskId);
                 std::shared_ptr<hpc::data::JobInfo> RemoveJob(int jobId);
                 void RemoveTask(int jobId, int taskId);
+                std::shared_ptr<hpc::data::TaskInfo> GetTask(int jobId, int taskId);
 
             protected:
             private:

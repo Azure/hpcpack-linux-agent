@@ -43,11 +43,21 @@ namespace hpc
                 virtual ~Process();
 
                 pplx::task<pid_t> Start();
-                void Kill();
+                void Kill(int forcedExitCode = 0x0FFFFFFF);
 
             protected:
             private:
+                void SetExitCode(int exitCode)
+                {
+                    if (!this->exitCodeSet)
+                    {
+                        this->exitCode = exitCode;
+                        this->exitCodeSet = true;
+                    }
+                }
+
                 void OnCompleted();
+                void GetStatisticsFromCGroup();
                 int CreateTaskFolder();
 
                 template <typename ... Args>
@@ -60,7 +70,8 @@ namespace hpc
                         std::string cmdLine = String::Join(" ", cmd, args...);
                         this->message << "Task " << this->taskId << ": '" << cmdLine << "' failed. exitCode " << ret << "\r\n";
                         Logger::Error("Task {0}: '{1}' failed. exitCode {2}, output {3}.", this->taskId, cmdLine, ret, output);
-                        this->exitCode = ret;
+
+                        this->SetExitCode(ret);
 
                         return false;
                     }
@@ -79,7 +90,8 @@ namespace hpc
                 std::ostringstream stdOut;
                 std::ostringstream stdErr;
                 std::ostringstream message;
-                int exitCode;
+                int exitCode = -1;
+                bool exitCodeSet = false;
                 timeval userTime = { 0, 0 };
                 timeval kernelTime = { 0, 0 };
                 std::string taskFolder;

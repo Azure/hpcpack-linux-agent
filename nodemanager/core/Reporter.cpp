@@ -49,7 +49,7 @@ pplx::task<void> Reporter::Report()
             return pplx::task_from_result();
         }
 
-        if (this->intervalSeconds > 0)
+        if (this->intervalSeconds > 10)
         {
             Logger::Info("---------> Report to {0} with {1}", uri, jsonBody);
         }

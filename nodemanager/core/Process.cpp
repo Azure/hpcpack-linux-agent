@@ -41,8 +41,13 @@ pplx::task<pid_t> Process::Start()
     return pplx::task<pid_t>(this->started);
 }
 
-void Process::Kill()
+void Process::Kill(int forcedExitCode)
 {
+    if (forcedExitCode != 0x0FFFFFFF)
+    {
+        this->SetExitCode(forcedExitCode);
+    }
+
     if (this->processId != 0)
     {
         this->ExecuteCommand("/bin/bash", "EndTask.sh", this->taskId, this->processId);
@@ -56,6 +61,13 @@ void Process::Kill()
 //        Logger::Info("Process {0}: killed", this->processId);
         this->processId = 0;
     }
+
+    this->GetStatisticsFromCGroup();
+}
+
+void Process::GetStatisticsFromCGroup()
+{
+    // TODO: protect this section.
 }
 
 void Process::OnCompleted()
@@ -86,7 +98,7 @@ void* Process::ForkThread(void* arg)
         Logger::Error("Task {0}: error when create task folder, ret {1}", p->taskId, ret);
 
         // TODO fetch the errno.
-        p->exitCode = ret;
+        p->SetExitCode(ret);
         goto Final;
     }
 
@@ -98,7 +110,7 @@ void* Process::ForkThread(void* arg)
         Logger::Error("Error when build script.");
 
         // TODO fetch the errno.
-        p->exitCode = -1;
+        p->SetExitCode(-1);
         goto Final;
     }
 
@@ -118,7 +130,7 @@ void* Process::ForkThread(void* arg)
             << ", msg = " << errorMessage << "\r\n";
         Logger::Error("Failed to fork(), pid = {0}, errno = {1}, msg = {2}", p->processId, errno, errorMessage);
 
-        p->exitCode = errno;
+        p->SetExitCode(errno);
         goto Final;
     }
 
@@ -153,7 +165,8 @@ void Process::Monitor()
         Logger::Error("wait4 for process {0} error {1}", this->processId, errno);
         // TODO: move "\r\n" to a common place
         this->message << "wait4 for process " << this->processId << " error " << errno << "\r\n";
-        this->exitCode = errno;
+        this->SetExitCode(errno);
+
         return;
     }
 
@@ -172,22 +185,23 @@ void Process::Monitor()
         if (WIFCONTINUED(status)) Logger::Info("Process {0}: WIFCONTINUED", this->processId);
 
         this->message << "Process " << this->processId << ": waited " << waitedPid << ", errno " << errno << "\r\n";
-        this->exitCode = errno;
+        this->SetExitCode(errno);
+
         return;
     }
 
     if (WIFEXITED(status))
     {
-        this->exitCode = WEXITSTATUS(status);
+        this->SetExitCode(WEXITSTATUS(status));
 
         std::string output;
-        int ret = System::ExecuteCommand(output, "head -c 1024", this->stdOutFile);
+        int ret = System::ExecuteCommand(output, "head -c 1500", this->stdOutFile);
         if (ret == 0)
         {
             this->message << "STDOUT: " << output << "\r\n";
         }
 
-        ret = System::ExecuteCommand(output, "head -c 1024", this->stdErrFile);
+        ret = System::ExecuteCommand(output, "head -c 1500", this->stdErrFile);
         if (ret == 0)
         {
             this->message << "STDERR: " << output << "\r\n";
@@ -196,7 +210,8 @@ void Process::Monitor()
     else
     {
         Logger::Error("wait4 for process {0} status {1}", this->processId, status);
-        this->exitCode = -1;
+        this->SetExitCode(-1);
+
         this->message << "wait4 for process " << this->processId << " status " << status << "\r\n";
     }
 

@@ -45,12 +45,12 @@ namespace hpc
 
                 std::string GetListeningUri(const std::string& networkName);
 
-                bool StartJobAndTask(const json::value& val, const std::string&);
-                bool StartTask(const json::value& val, const std::string&);
-                bool EndJob(const json::value& val, const std::string&);
-                bool EndTask(const json::value& val, const std::string&);
-                bool Ping(const json::value& val, const std::string&);
-                bool Metric(const json::value& val, const std::string&);
+                json::value StartJobAndTask(const json::value& val, const std::string&);
+                json::value StartTask(const json::value& val, const std::string&);
+                json::value EndJob(const json::value& val, const std::string&);
+                json::value EndTask(const json::value& val, const std::string&);
+                json::value Ping(const json::value& val, const std::string&);
+                json::value Metric(const json::value& val, const std::string&);
 
                 static const std::string ApiSpace;
                 static const std::string CallbackUriKey;
@@ -58,7 +58,7 @@ namespace hpc
 
                 bool isListening;
 
-                std::map<std::string, std::function<bool(const json::value&, const std::string&)>> processors;
+                std::map<std::string, std::function<json::value(const json::value&, const std::string&)>> processors;
 
                 IRemoteExecutor& executor;
 
