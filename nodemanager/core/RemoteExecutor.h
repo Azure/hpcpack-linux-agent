@@ -18,12 +18,12 @@ namespace hpc
                 // TODO: delete all processes in destructor.
                 ~RemoteExecutor() { pthread_rwlock_destroy(&this->lock); }
 
-                virtual bool StartJobAndTask(hpc::arguments::StartJobAndTaskArgs&& args, const std::string& callbackUri);
-                virtual bool StartTask(hpc::arguments::StartTaskArgs&& args, const std::string& callbackUri);
-                virtual bool EndJob(hpc::arguments::EndJobArgs&& args);
-                virtual bool EndTask(hpc::arguments::EndTaskArgs&& args);
-                virtual bool Ping(const std::string& callbackUri);
-                virtual bool Metric(const std::string& callbackUri);
+                virtual web::json::value StartJobAndTask(hpc::arguments::StartJobAndTaskArgs&& args, const std::string& callbackUri);
+                virtual web::json::value StartTask(hpc::arguments::StartTaskArgs&& args, const std::string& callbackUri);
+                virtual web::json::value EndJob(hpc::arguments::EndJobArgs&& args);
+                virtual web::json::value EndTask(hpc::arguments::EndTaskArgs&& args);
+                virtual web::json::value Ping(const std::string& callbackUri);
+                virtual web::json::value Metric(const std::string& callbackUri);
 
             protected:
             private:

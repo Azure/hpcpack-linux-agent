@@ -92,9 +92,8 @@ void Monitor::Run()
     {
         time_t t;
         time(&t);
-        this->metricTime = ctime(&t);
 
-        long int cpuCurrent = 0, idleCurrent = 0;
+        long int cpuCurrent = cpuLast + 1, idleCurrent = idleLast;
 
         System::CPUUsage(cpuCurrent, idleCurrent);
         long int totalDiff = cpuCurrent - cpuLast;
@@ -128,6 +127,9 @@ void Monitor::Run()
 
         {
             WriterLock writerLock(&this->lock);
+
+            this->metricTime = ctime(&t);
+
             std::get<1>(this->metricData[1]) = cpuUsage;
             std::get<1>(this->metricData[3]) = availableMemoryMb;
             std::get<1>(this->metricData[12]) = networkUsage;

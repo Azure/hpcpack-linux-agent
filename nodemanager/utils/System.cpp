@@ -121,14 +121,21 @@ std::string System::GetIpAddress(IpAddressVersion version, const std::string& na
 
 void System::CPUUsage(long int &total, long int &idle)
 {
-    std::ifstream fs("/proc/stat", std::ios::in);
-    std::string cpu;
-    long int user, nice, sys, iowait, irq, softirq;
+    try
+    {
+        std::ifstream fs("/proc/stat", std::ios::in);
+        std::string cpu;
+        long int user, nice, sys, iowait, irq, softirq;
 
-    fs >> cpu >> user >> nice >> sys >> idle >> iowait >> irq >> softirq;
-    fs.close();
+        fs >> cpu >> user >> nice >> sys >> idle >> iowait >> irq >> softirq;
+        fs.close();
 
-    total = user + nice + sys + idle + iowait + irq + softirq;
+        total = user + nice + sys + idle + iowait + irq + softirq;
+    }
+    catch (std::exception& ex)
+    {
+        Logger::Error("CPUUsage get exception {0}", ex.what());
+    }
 }
 
 void System::Memory(unsigned long &availableKb, unsigned long &totalKb)
@@ -209,6 +216,11 @@ const std::string& System::GetNodeName()
         }
 
         nodeName = buffer;
+        std::transform(
+            nodeName.begin(),
+            nodeName.end(),
+            nodeName.begin(),
+            ::toupper);
     }
 
     return nodeName;

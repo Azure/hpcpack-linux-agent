@@ -44,6 +44,25 @@ std::shared_ptr<TaskInfo> JobTaskTable::AddJobAndTask(int jobId, int taskId)
     return task;
 }
 
+std::shared_ptr<TaskInfo> JobTaskTable::GetTask(int jobId, int taskId)
+{
+    ReaderLock readerLock(&this->lock);
+
+    std::shared_ptr<TaskInfo> task;
+
+    auto j = this->nodeInfo.Jobs.find(jobId);
+    if (j != this->nodeInfo.Jobs.end())
+    {
+        auto t = j->second->Tasks.find(taskId);
+        if (t != j->second->Tasks.end())
+        {
+            task = t->second;
+        }
+    }
+
+    return task;
+}
+
 std::shared_ptr<JobInfo> JobTaskTable::RemoveJob(int jobId)
 {
     WriterLock writerLock(&this->lock);

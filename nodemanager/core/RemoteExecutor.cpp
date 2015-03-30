@@ -8,7 +8,7 @@
 #include "../utils/System.h"
 
 using namespace web::http;
-
+using namespace web;
 using namespace hpc::core;
 using namespace hpc::utils;
 using namespace hpc::arguments;
@@ -21,14 +21,14 @@ RemoteExecutor::RemoteExecutor(const std::string& networkName)
     this->Metric(this->LoadReportUri(this->MetricUriFileName));
 }
 
-bool RemoteExecutor::StartJobAndTask(StartJobAndTaskArgs&& args, const std::string& callbackUri)
+json::value RemoteExecutor::StartJobAndTask(StartJobAndTaskArgs&& args, const std::string& callbackUri)
 {
     // TODO: Prepare Job execution envi.
 
     return this->StartTask(StartTaskArgs(args.JobId, args.TaskId, std::move(args.StartInfo)), callbackUri);
 }
 
-bool RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& callbackUri)
+json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& callbackUri)
 {
     WriterLock writerLock(&this->lock);
 
@@ -108,55 +108,73 @@ bool RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& callback
         }
     }
 
-    return true;
+    return json::value();
 }
 
-bool RemoteExecutor::EndJob(hpc::arguments::EndJobArgs&& args)
+json::value RemoteExecutor::EndJob(hpc::arguments::EndJobArgs&& args)
 {
+    ReaderLock readerLock(&this->lock);
+
     auto jobInfo = this->jobTaskTable.RemoveJob(args.JobId);
 
+    json::value jsonBody;
     if (jobInfo)
     {
         for (auto& taskPair : jobInfo->Tasks)
         {
             this->TerminateTask(taskPair.first);
         }
+
+        jsonBody = jobInfo->ToJson();
     }
 
-    return true;
+    return jsonBody;
 }
 
-bool RemoteExecutor::EndTask(hpc::arguments::EndTaskArgs&& args)
+json::value RemoteExecutor::EndTask(hpc::arguments::EndTaskArgs&& args)
 {
+    ReaderLock readerLock(&this->lock);
+
+    auto taskInfo = this->jobTaskTable.GetTask(args.JobId, args.TaskId);
+
     this->TerminateTask(args.TaskId);
-    return true;
+
+    json::value jsonBody;
+    if (taskInfo)
+    {
+        taskInfo->Exited = true;
+        taskInfo->ExitCode = -1;
+
+        jsonBody = taskInfo->ToJson();
+    }
+
+    return jsonBody;
+
 }
 
-bool RemoteExecutor::Ping(const std::string& callbackUri)
+json::value RemoteExecutor::Ping(const std::string& callbackUri)
 {
     this->SaveReportUri(this->NodeInfoUriFileName, callbackUri);
     this->nodeInfoReporter = std::unique_ptr<Reporter>(new Reporter(callbackUri, this->NodeInfoReportInterval, [this]() { return this->jobTaskTable.ToJson(); }));
 
-    return true;
+    return json::value();
 }
 
-bool RemoteExecutor::Metric(const std::string& callbackUri)
+json::value RemoteExecutor::Metric(const std::string& callbackUri)
 {
     this->SaveReportUri(this->MetricUriFileName, callbackUri);
     this->metricReporter = std::unique_ptr<Reporter>(new Reporter(callbackUri, this->MetricReportInterval, [this]() { return this->monitor.ToJson(); }));
 
-    return true;
+    return json::value();
 }
 
 bool RemoteExecutor::TerminateTask(int taskId)
 {
-    ReaderLock readerLock(&this->lock);
-
     auto p = this->processes.find(taskId);
 
     if (p != this->processes.end())
     {
-        p->second->Kill();
+        p->second->Kill(-1);
 
         return true;
     }

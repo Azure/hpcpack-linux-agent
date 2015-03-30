@@ -6,6 +6,7 @@
 #include "../arguments/StartJobAndTaskArgs.h"
 
 using namespace web::http;
+using namespace web;
 using namespace hpc::utils;
 using namespace hpc::arguments;
 using namespace hpc::core;
@@ -105,13 +106,14 @@ void RemoteCommunicator::HandlePost(http_request request)
         request.extract_json().then([processor, callback = std::move(callbackUri)](pplx::task<json::value> t)
         {
             // todo: throw exception instead of using the return value.
-            processor->second(t.get(), callback);
+            return processor->second(t.get(), callback);
         })
-        .then([request, this](auto t)
+        .then([request, this](pplx::task<json::value> t)
         {
             if (!this->IsError(t))
             {
-                request.reply(status_codes::OK, "").then([this](auto t) { this->IsError(t); });
+                auto jsonBody = t.get();
+                request.reply(status_codes::OK, jsonBody).then([this](auto t) { this->IsError(t); });
             }
             else
             {
@@ -126,37 +128,37 @@ void RemoteCommunicator::HandlePost(http_request request)
     }
 }
 
-bool RemoteCommunicator::StartJobAndTask(const json::value& val, const std::string& callbackUri)
+json::value RemoteCommunicator::StartJobAndTask(const json::value& val, const std::string& callbackUri)
 {
     Logger::Info("Json: {0}", val.serialize());
     auto args = StartJobAndTaskArgs::FromJson(val);
     return this->executor.StartJobAndTask(std::move(args), callbackUri);
 }
 
-bool RemoteCommunicator::StartTask(const json::value& val, const std::string& callbackUri)
+json::value RemoteCommunicator::StartTask(const json::value& val, const std::string& callbackUri)
 {
     auto args = StartTaskArgs::FromJson(val);
     return this->executor.StartTask(std::move(args), callbackUri);
 }
 
-bool RemoteCommunicator::EndJob(const json::value& val, const std::string& callbackUri)
+json::value RemoteCommunicator::EndJob(const json::value& val, const std::string& callbackUri)
 {
     auto args = EndJobArgs::FromJson(val);
     return this->executor.EndJob(std::move(args));
 }
 
-bool RemoteCommunicator::EndTask(const json::value& val, const std::string& callbackUri)
+json::value RemoteCommunicator::EndTask(const json::value& val, const std::string& callbackUri)
 {
     auto args = EndTaskArgs::FromJson(val);
     return this->executor.EndTask(std::move(args));
 }
 
-bool RemoteCommunicator::Ping(const json::value& val, const std::string& callbackUri)
+json::value RemoteCommunicator::Ping(const json::value& val, const std::string& callbackUri)
 {
     return this->executor.Ping(callbackUri);
 }
 
-bool RemoteCommunicator::Metric(const json::value& val, const std::string& callbackUri)
+json::value RemoteCommunicator::Metric(const json::value& val, const std::string& callbackUri)
 {
     return this->executor.Metric(callbackUri);
 }
