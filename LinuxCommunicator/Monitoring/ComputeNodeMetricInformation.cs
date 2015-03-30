@@ -58,6 +58,9 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.Monitoring
         public string Time { get; set; }
 
         [DataMember]
+        public string IpAddress { get; set; }
+
+        [DataMember]
         public List<ComputeNodeMetricInformationUMID> Umids { get; set; }
 
         [DataMember]

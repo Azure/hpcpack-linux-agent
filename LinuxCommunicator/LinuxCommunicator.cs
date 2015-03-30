@@ -11,6 +11,8 @@ using Microsoft.Hpc.Scheduler;
 using Microsoft.Hpc.Scheduler.Communicator;
 using System.Net;
 using Microsoft.Hpc.Scheduler.Properties;
+using Microsoft.Hpc.Communicators.LinuxCommunicator.Monitoring;
+using System.IO;
 
 namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 {
@@ -153,34 +155,93 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
         public void EndJob(string nodeName, EndJobArg arg, NodeCommunicatorCallBack<EndJobArg> callback)
         {
-            this.SendRequest("endjob", "taskcompleted", nodeName, callback, arg);
+            this.SendRequest("endjob", "taskcompleted", nodeName, async (content, ex) =>
+            {
+                Exception readEx = null;
+
+                try
+                {
+                    arg.JobInfo = await content.ReadAsAsync<ComputeClusterJobInformation>();
+                }
+                catch (Exception e)
+                {
+                    this.Tracer.TraceError("Exception while read the task info {0}", e);
+
+                    readEx = e;
+                }
+
+                if (ex != null && readEx != null)
+                {
+                    ex = new AggregateException(ex, readEx);
+                }
+                else
+                {
+                    ex = ex ?? readEx;
+                }
+
+                callback(nodeName, arg, ex);
+            }, arg);
         }
 
         public void EndTask(string nodeName, EndTaskArg arg, NodeCommunicatorCallBack<EndTaskArg> callback)
         {
-            this.SendRequest("endtask", "taskcompleted", nodeName, callback, arg);
+            this.SendRequest("endtask", "taskcompleted", nodeName, async (content, ex) =>
+            {
+                Exception readEx = null;
+
+                try
+                {
+                    arg.TaskInfo = await content.ReadAsAsync<ComputeClusterTaskInformation>();
+                }
+                catch(Exception e)
+                {
+                    this.Tracer.TraceError("Exception while read the task info {0}", e);
+
+                    readEx = e;
+                }
+
+                if (ex != null && readEx != null)
+                {
+                    ex = new AggregateException(ex, readEx);
+                }
+                else
+                {
+                    ex = ex ?? readEx;
+                }
+
+                callback(nodeName, arg, ex);
+            }, arg);
         }
 
         public void StartJobAndTask(string nodeName, StartJobAndTaskArg arg, string userName, string password, ProcessStartInfo startInfo, NodeCommunicatorCallBack<StartJobAndTaskArg> callback)
         {
-            this.SendRequest("startjobandtask", "taskcompleted", nodeName, callback, Tuple.Create(arg, startInfo));
+            this.SendRequest("startjobandtask", "taskcompleted", nodeName, (content, ex) =>
+            {
+                callback(nodeName, arg, ex);
+            }, Tuple.Create(arg, startInfo));
         }
 
         public void StartJobAndTaskSoftCardCred(string nodeName, StartJobAndTaskArg arg, string userName, string password, byte[] certificate, ProcessStartInfo startInfo, NodeCommunicatorCallBack<StartJobAndTaskArg> callback)
         {
-            this.SendRequest("startjobandtask", "taskcompleted", nodeName, callback, Tuple.Create(arg, startInfo));
+            this.SendRequest("startjobandtask", "taskcompleted", nodeName, (content, ex) =>
+            {
+                callback(nodeName, arg, ex);
+            }, Tuple.Create(arg, startInfo));
         }
 
         public void StartTask(string nodeName, StartTaskArg arg, ProcessStartInfo startInfo, NodeCommunicatorCallBack<StartTaskArg> callback)
         {
-            this.SendRequest("starttask", "taskcompleted", nodeName, callback, Tuple.Create(arg, startInfo));
+            this.SendRequest("starttask", "taskcompleted", nodeName, (content, ex) =>
+            {
+                callback(nodeName, arg, ex);
+            }, Tuple.Create(arg, startInfo));
         }
 
         public void Ping(string nodeName)
         {
-            this.SendRequest<NodeCommunicatorCallBackArg>("ping", "computenodereported", nodeName, (name, arg, ex) =>
+            this.SendRequest<NodeCommunicatorCallBackArg>("ping", "computenodereported", nodeName, (content, ex) =>
             {
-                this.Tracer.TraceInfo("Compute node {0} pinged. Ex {1}", name, ex);
+                this.Tracer.TraceInfo("Compute node {0} pinged. Ex {1}", nodeName, ex);
             }, null);
 
             this.Metric(nodeName);
@@ -188,13 +249,13 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
         public void Metric(string nodeName)
         {
-            this.SendRequest<NodeCommunicatorCallBackArg>("metric", "metricreported", nodeName, (name, arg, ex) =>
+            this.SendRequest<NodeCommunicatorCallBackArg>("metric", "metricreported", nodeName, (content, ex) =>
             {
-                this.Tracer.TraceInfo("Compute node {0} metric requested. Ex {1}", name, ex);
+                this.Tracer.TraceInfo("Compute node {0} metric requested. Ex {1}", nodeName, ex);
             }, null);
         }
 
-        private void SendRequest<T>(string action, string callbackAction, string nodeName, NodeCommunicatorCallBack<T> callback, T arg) where T : NodeCommunicatorCallBackArg
+        private void SendRequest<T>(string action, string callbackAction, string nodeName, Action<HttpContent, Exception> callback, T arg) where T : NodeCommunicatorCallBackArg
         {
             var request = new HttpRequestMessage(HttpMethod.Post, this.GetResoureUri(nodeName, action));
             request.Headers.Add(CallbackUriHeaderName, this.GetCallbackUri(nodeName, callbackAction));
@@ -217,11 +278,11 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
                     }
                 }
 
-                callback(nodeName, arg, ex);
+                callback(t.Result.Content, ex);
             }, this.cancellationTokenSource.Token);
         }
 
-        private void SendRequest<T, T1>(string action, string callbackAction, string nodeName, NodeCommunicatorCallBack<T> callback, Tuple<T, T1> arg) where T : NodeCommunicatorCallBackArg
+        private void SendRequest<T, T1>(string action, string callbackAction, string nodeName, Action<HttpContent, Exception> callback, Tuple<T, T1> arg) where T : NodeCommunicatorCallBackArg
         {
             var request = new HttpRequestMessage(HttpMethod.Post, this.GetResoureUri(nodeName, action));
             request.Headers.Add(CallbackUriHeaderName, this.GetCallbackUri(nodeName, callbackAction));
@@ -244,7 +305,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
                     }
                 }
 
-                callback(nodeName, arg.Item1, ex);
+                callback(t.Result.Content, ex);
             }, this.cancellationTokenSource.Token);
         }
 
@@ -264,12 +325,17 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
             var nodeMetricReported = this.NodeMetricReported;
             if (nodeMetricReported != null)
             {
-                //this.Tracer.TraceDetail("Metric Name {0}, ip {1}, cores {2}, sockets {3}, memory {4}", metricInfo.Name, metricInfo.NetworkInfo.First().IpV4, metricInfo.CoreCount, metricInfo.SocketCount, metricInfo.MemoryMegabytes);
-                //foreach (var net in metricInfo.NetworkInfo)
+                //this.Tracer.TraceDetail("Metric Name {0}, cores {1}, sockets {2}, memory {3}, ipaddress {4}", metricInfo.Name, metricInfo.CoreCount, metricInfo.SocketCount, metricInfo.MemoryMegabytes, metricInfo.IpAddress);
+
+                //if (metricInfo.NetworkInfo != null)
                 //{
-                //    this.Tracer.TraceDetail("Network {0}, {1}, {2}, {3}, {4}", net.Name, net.MacAddress, net.IpV4, net.IpV6, net.IsIB);
+                //    foreach (var net in metricInfo.NetworkInfo)
+                //    {
+                //        this.Tracer.TraceDetail("Network {0}, {1}, {2}, {3}, {4}, {5}", net.Name, net.MacAddress, net.IpV4, net.IpV6, net.IsIB, metricInfo.Name);
+                //    }
                 //}
 
+                //this.Tracer.TraceDetail("Umids Count {0}", metricInfo.Umids.Count);
                 //this.Tracer.TraceInfo("Distro Info {0}", metricInfo.DistroInfo);
 
                 nodeMetricReported(this, new NodeMetricReportedEventArgs(metricInfo.Name, metricInfo.CoreCount, metricInfo.SocketCount, metricInfo.MemoryMegabytes)
@@ -298,7 +364,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
             {
                 return guid;
             }
-            
+
             string lower = nodeName.ToLower();
             if (this.nodeMap.ContainsKey(lower))
             {
