@@ -13,6 +13,7 @@ using System.Net;
 using Microsoft.Hpc.Scheduler.Properties;
 using Microsoft.Hpc.Communicators.LinuxCommunicator.Monitoring;
 using System.IO;
+using System.Collections.Concurrent;
 
 namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 {
@@ -25,15 +26,18 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
         private readonly string HeadNode = (string)Microsoft.Win32.Registry.GetValue(HpcFullKeyName, ClusterNameKeyName, null);
         private readonly int MonitoringPort = 9894;
+        private readonly TimeSpan ResyncPeriod = TimeSpan.FromSeconds(30.0);
 
         private HttpClient client;
         private WebServer server;
         private Monitoring.CounterDataSender sender;
-        private Dictionary<string, Guid> nodeMap;
+        private ConcurrentDictionary<string, Guid> nodeMap;
 
         private CancellationTokenSource cancellationTokenSource;
 
         private static LinuxCommunicator instance;
+
+        private Timer resyncNodeGuid;
 
         public LinuxCommunicator()
         {
@@ -112,15 +116,20 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
             this.sender = new Monitoring.CounterDataSender();
             this.sender.OpenConnection(this.HeadNode, this.MonitoringPort);
 
+            this.resyncNodeGuid = new Timer(o =>
+            {
+                this.nodeMap.Clear();
+            }, null, ResyncPeriod, ResyncPeriod);
+
             using (IScheduler scheduler = new Scheduler.Scheduler())
             {
                 scheduler.Connect(this.HeadNode);
-                this.nodeMap = new Dictionary<string, Guid>();
+                this.nodeMap = new ConcurrentDictionary<string, Guid>();
                 FilterCollection fc = new FilterCollection();
                 fc.Add(FilterOperator.Equal, NodePropertyIds.Location, NodeLocation.Linux);
                 foreach (ISchedulerNode node in scheduler.GetNodeList(fc, null))
                 {
-                    this.nodeMap.Add(node.Name.ToLower(), node.Guid);
+                    this.nodeMap.TryAdd(node.Name.ToLower(), node.Guid);
                 }
 
                 scheduler.Close();
@@ -366,11 +375,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
             }
 
             string lower = nodeName.ToLower();
-            if (this.nodeMap.ContainsKey(lower))
-            {
-                guid = this.nodeMap[lower];
-            }
-            else
+            if (!this.nodeMap.TryGetValue(lower, out guid))
             {
                 // new node added ? refresh the nodemap
                 using (IScheduler scheduler = new Scheduler.Scheduler())
@@ -381,10 +386,8 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
                     foreach (ISchedulerNode node in scheduler.GetNodeList(fc, null))
                     {
                         string l = node.Name.ToLower();
-                        if (!this.nodeMap.ContainsKey(l))
-                        {
-                            nodeMap.Add(l, node.Guid);
-                        }
+                        this.nodeMap.AddOrUpdate(l, node.Guid, (k, g) => node.Guid);
+
                         if (l.Equals(lower))
                         {
                             guid = node.Guid;
