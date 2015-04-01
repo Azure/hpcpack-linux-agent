@@ -168,7 +168,7 @@ void System::CPU(int &cores, int &sockets)
             {
                 physicalIds.insert(tokens[1]);
             }
-            else if (String::Trim(tokens[0]) == "core id")
+            else if (String::Trim(tokens[0]) == "processor")
             {
                 coreIds.insert(tokens[1]);
             }
