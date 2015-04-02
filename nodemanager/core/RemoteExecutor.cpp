@@ -91,11 +91,11 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
                         Logger::Error("Exception when sending back task result. {0}", ex.what());
                     }
 
-                    this->jobTaskTable.RemoveTask(taskInfo->JobId, taskInfo->TaskId);
-
                     // Process will be deleted here.
                     this->processes.erase(taskInfo->TaskId);
                     Logger::Debug("Task {0}: erased process", taskInfo->TaskId);
+
+                    this->jobTaskTable.RemoveTask(taskInfo->JobId, taskInfo->TaskId);
                 }));
 
             this->processes[args.TaskId] = process;
