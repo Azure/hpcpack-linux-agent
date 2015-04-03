@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Hpc.Scheduler.Communicator;
 using Microsoft.Owin.Hosting;
+using Microsoft.ComputeCluster.Management.Win32Helpers;
 
 namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 {
@@ -18,8 +19,16 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
         public WebServer()
         {
-            var fqdn = Dns.GetHostEntry(Environment.MachineName).AddressList.Where(a => a.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork).First().ToString();
-            this.ListeningUri = string.Format(LinuxCommunicatorUriTemplate, fqdn);
+            var nonDirectNetIp = Dns.GetHostEntry(Environment.MachineName).AddressList
+                .Where(a => a.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork && !NetDirectConfiguration.IsNDEnabled(a.GetAddressBytes()))
+                .FirstOrDefault();
+
+            if (nonDirectNetIp == null)
+            {
+                throw new InvalidOperationException("The current system doesn't have a non-NDMA network");
+            }
+
+            this.ListeningUri = string.Format(LinuxCommunicatorUriTemplate, nonDirectNetIp.ToString());
         }
 
         public void Dispose()
