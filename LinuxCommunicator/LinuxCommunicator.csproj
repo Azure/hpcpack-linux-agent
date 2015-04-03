@@ -38,6 +38,9 @@
       <HintPath>ref\CcpActivate.dll</HintPath>
       <Private>False</Private>
     </Reference>
+    <Reference Include="Microsoft.Ccp.Win32Helpers">
+      <HintPath>ref\Microsoft.Ccp.Win32Helpers.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.Hpc.Scheduler, Version=2.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>ref\Microsoft.Hpc.Scheduler.dll</HintPath>
