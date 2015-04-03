@@ -21,7 +21,7 @@ namespace hpc
                 web::json::value ToJson();
              //   web::json::value GetTaskJson(int jobId, int taskId) const;
 
-                std::shared_ptr<hpc::data::TaskInfo> AddJobAndTask(int jobId, int taskId);
+                std::shared_ptr<hpc::data::TaskInfo> AddJobAndTask(int jobId, int taskId, bool& isNewEntry);
                 std::shared_ptr<hpc::data::JobInfo> RemoveJob(int jobId);
                 void RemoveTask(int jobId, int taskId);
                 std::shared_ptr<hpc::data::TaskInfo> GetTask(int jobId, int taskId);

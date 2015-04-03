@@ -13,7 +13,7 @@ json::value JobTaskTable::ToJson()
     return std::move(j);
 }
 
-std::shared_ptr<TaskInfo> JobTaskTable::AddJobAndTask(int jobId, int taskId)
+std::shared_ptr<TaskInfo> JobTaskTable::AddJobAndTask(int jobId, int taskId, bool& isNewEntry)
 {
     WriterLock writerLock(&this->lock);
 
@@ -35,10 +35,12 @@ std::shared_ptr<TaskInfo> JobTaskTable::AddJobAndTask(int jobId, int taskId)
     {
         task = std::shared_ptr<TaskInfo>(new TaskInfo(jobId, taskId, nodeInfo.Name));
         job->Tasks[taskId] = task;
+        isNewEntry = true;
     }
     else
     {
         task = t->second;
+        isNewEntry = false;
     }
 
     return task;

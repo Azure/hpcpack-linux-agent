@@ -43,7 +43,7 @@ namespace hpc
                 std::unique_ptr<Reporter> metricReporter;
 
                 // TODO: Make map hold Process directly.
-                std::map<int, std::shared_ptr<Process>> processes;
+                std::map<long long, std::shared_ptr<Process>> processes;
                 pthread_rwlock_t lock;
         };
     }

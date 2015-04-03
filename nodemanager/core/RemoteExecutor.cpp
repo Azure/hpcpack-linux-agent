@@ -32,7 +32,8 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
 {
     WriterLock writerLock(&this->lock);
 
-    std::shared_ptr<TaskInfo> taskInfo = this->jobTaskTable.AddJobAndTask(args.JobId, args.TaskId);
+    bool isNewEntry;
+    std::shared_ptr<TaskInfo> taskInfo = this->jobTaskTable.AddJobAndTask(args.JobId, args.TaskId, isNewEntry);
 
     if (taskInfo->TaskRequeueCount < args.StartInfo.TaskRequeueCount)
     {
@@ -46,7 +47,8 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
     }
     else
     {
-        if (this->processes.find(args.TaskId) == this->processes.end())
+        if (this->processes.find(taskInfo->GetTaskAttemptId()) == this->processes.end() &&
+            isNewEntry)
         {
             auto process = std::shared_ptr<Process>(new Process(
                 args.TaskId,
@@ -93,13 +95,13 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
 
                     this->jobTaskTable.RemoveTask(taskInfo->JobId, taskInfo->TaskId);
 
-                    Logger::Debug("Task {0}: erasing process", taskInfo->TaskId);
+                    Logger::Debug("Task {0}: attemptId {1}, erasing process", taskInfo->TaskId, taskInfo->GetTaskAttemptId());
 
                     // Process will be deleted here.
-                    this->processes.erase(taskInfo->TaskId);
+                    this->processes.erase(taskInfo->GetTaskAttemptId());
                 }));
 
-            this->processes[args.TaskId] = process;
+            this->processes[taskInfo->GetTaskAttemptId()] = process;
 
             process->Start().then([this] (pid_t pid)
             {
