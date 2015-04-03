@@ -44,14 +44,14 @@
 	<cstdint>
 	"cpprest/details/SafeInt3.hpp"
 
-1422965830 /home/evanc/casablanca/Release/include/cpprest/details/cpprest_compat.h
+1427351029 /home/evanc/casablanca/Release/include/cpprest/details/cpprest_compat.h
 	<sal.h>
 	"cpprest/details/nosal.h"
 	<assert.h>
 	"cpprest/details/nosal.h"
 	<cstdio>
 
-1422965830 /home/evanc/casablanca/Release/include/cpprest/details/nosal.h
+1427351029 /home/evanc/casablanca/Release/include/cpprest/details/nosal.h
 
 1422965830 /home/evanc/casablanca/Release/include/cpprest/details/SafeInt3.hpp
 	<assert.h>
@@ -72,7 +72,7 @@
 	<boost/algorithm/string.hpp>
 	<xlocale.h>
 
-1422965830 /home/evanc/casablanca/Release/include/pplx/pplxtasks.h
+1427351029 /home/evanc/casablanca/Release/include/pplx/pplxtasks.h
 	<ppltasks.h>
 	<concrt.h>
 	"pplx/pplx.h"
@@ -89,7 +89,7 @@
 	<winapifamily.h>
 	<uithreadctxt.h>
 
-1422965830 /home/evanc/casablanca/Release/include/pplx/pplx.h
+1427351029 /home/evanc/casablanca/Release/include/pplx/pplx.h
 	"cpprest/details/cpprest_compat.h"
 	"pplx/pplxwin.h"
 	"pplx/pplxlinux.h"
@@ -97,15 +97,15 @@
 	"pplx/pplxcancellation_token.h"
 	<functional>
 
-1422965830 /home/evanc/casablanca/Release/include/pplx/pplxwin.h
+1427351029 /home/evanc/casablanca/Release/include/pplx/pplxwin.h
 	"cpprest/details/cpprest_compat.h"
 	"pplx/pplxinterface.h"
 
-1422965830 /home/evanc/casablanca/Release/include/pplx/pplxinterface.h
+1427351029 /home/evanc/casablanca/Release/include/pplx/pplxinterface.h
 	<memory>
 	<atomic>
 
-1422965830 /home/evanc/casablanca/Release/include/pplx/pplxlinux.h
+1427351029 /home/evanc/casablanca/Release/include/pplx/pplxlinux.h
 	<signal.h>
 	"pthread.h"
 	"cpprest/details/cpprest_compat.h"
@@ -116,7 +116,7 @@
 	<condition_variable>
 	"pplx/pplxinterface.h"
 
-1422965830 /home/evanc/casablanca/Release/include/pplx/pplxcancellation_token.h
+1427351029 /home/evanc/casablanca/Release/include/pplx/pplxcancellation_token.h
 	<string>
 	<pplx/pplxinterface.h>
 
@@ -249,25 +249,25 @@
 	<sstream>
 	"String.h"
 
-1423549800 /home/evanc/spdlog/include/spdlog/spdlog.h
+1427353132 /home/evanc/spdlog/include/spdlog/spdlog.h
 	"common.h"
 	"logger.h"
 	"details/spdlog_impl.h"
 
-1423549800 /home/evanc/spdlog/include/spdlog/common.h
+1427353132 /home/evanc/spdlog/include/spdlog/common.h
 	<string>
 	<initializer_list>
 	<chrono>
 	<memory>
 
-1423549800 /home/evanc/spdlog/include/spdlog/logger.h
+1427353132 /home/evanc/spdlog/include/spdlog/logger.h
 	<vector>
 	<memory>
 	"sinks/base_sink.h"
 	"common.h"
 	"./details/logger_impl.h"
 
-1423549800 /home/evanc/spdlog/include/spdlog/sinks/base_sink.h
+1427353132 /home/evanc/spdlog/include/spdlog/sinks/base_sink.h
 	<string>
 	<mutex>
 	<atomic>
@@ -276,14 +276,14 @@
 	"../common.h"
 	"../details/log_msg.h"
 
-1423549800 /home/evanc/spdlog/include/spdlog/sinks/sink.h
+1427353132 /home/evanc/spdlog/include/spdlog/sinks/sink.h
 	"../details/log_msg.h"
 
-1423549800 /home/evanc/spdlog/include/spdlog/details/log_msg.h
+1427353132 /home/evanc/spdlog/include/spdlog/details/log_msg.h
 	"../common.h"
 	"./format.h"
 
-1423549800 /home/evanc/spdlog/include/spdlog/details/format.h
+1427353132 /home/evanc/spdlog/include/spdlog/details/format.h
 	<stdint.h>
 	<cassert>
 	<cmath>
@@ -295,10 +295,12 @@
 	<string>
 	<sstream>
 	<iterator>
+	<intrin.h>
 	<utility>
 	"format.cc"
 
-1423549800 /home/evanc/spdlog/include/spdlog/details/format.cc
+1427353132 /home/evanc/spdlog/include/spdlog/details/format.cc
+	"format.h"
 	<string.h>
 	<cctype>
 	<cerrno>
@@ -308,11 +310,11 @@
 	<cstring>
 	<windows.h>
 
-1423549800 /home/evanc/spdlog/include/spdlog/formatter.h
+1427353132 /home/evanc/spdlog/include/spdlog/formatter.h
 	"details/log_msg.h"
 	"details/pattern_formatter_impl.h"
 
-1423549800 /home/evanc/spdlog/include/spdlog/details/pattern_formatter_impl.h
+1427353132 /home/evanc/spdlog/include/spdlog/details/pattern_formatter_impl.h
 	<string>
 	<chrono>
 	<memory>
@@ -322,28 +324,28 @@
 	"./log_msg.h"
 	"./os.h"
 
-1423549800 /home/evanc/spdlog/include/spdlog/details/os.h
+1427353132 /home/evanc/spdlog/include/spdlog/details/os.h
 	<string>
 	<cstdio>
 	<ctime>
 	<Windows.h>
 	"../common.h"
 
-1423549800 /home/evanc/spdlog/include/spdlog/details/logger_impl.h
+1427353132 /home/evanc/spdlog/include/spdlog/details/logger_impl.h
 	"./line_logger.h"
 
-1423549800 /home/evanc/spdlog/include/spdlog/details/line_logger.h
+1427353132 /home/evanc/spdlog/include/spdlog/details/line_logger.h
 	<type_traits>
 	"../common.h"
 	"../logger.h"
 
-1423549800 /home/evanc/spdlog/include/spdlog/details/spdlog_impl.h
+1427353132 /home/evanc/spdlog/include/spdlog/details/spdlog_impl.h
 	"registry.h"
 	"../sinks/file_sinks.h"
 	"../sinks/stdout_sinks.h"
 	"../sinks/syslog_sink.h"
 
-1423549800 /home/evanc/spdlog/include/spdlog/details/registry.h
+1427353132 /home/evanc/spdlog/include/spdlog/details/registry.h
 	<string>
 	<mutex>
 	<unordered_map>
@@ -352,7 +354,7 @@
 	"../async_logger.h"
 	"../common.h"
 
-1423549800 /home/evanc/spdlog/include/spdlog/async_logger.h
+1427353132 /home/evanc/spdlog/include/spdlog/async_logger.h
 	<chrono>
 	<functional>
 	"common.h"
@@ -360,10 +362,10 @@
 	"spdlog.h"
 	"./details/async_logger_impl.h"
 
-1423549800 /home/evanc/spdlog/include/spdlog/details/async_logger_impl.h
+1427353132 /home/evanc/spdlog/include/spdlog/details/async_logger_impl.h
 	"./async_log_helper.h"
 
-1423549800 /home/evanc/spdlog/include/spdlog/details/async_log_helper.h
+1427353132 /home/evanc/spdlog/include/spdlog/details/async_log_helper.h
 	<chrono>
 	<thread>
 	<atomic>
@@ -374,39 +376,39 @@
 	"./log_msg.h"
 	"./format.h"
 
-1423549800 /home/evanc/spdlog/include/spdlog/details/mpmc_bounded_q.h
+1427353132 /home/evanc/spdlog/include/spdlog/details/mpmc_bounded_q.h
 	<atomic>
 	"../common.h"
 
-1423549800 /home/evanc/spdlog/include/spdlog/sinks/file_sinks.h
+1427353132 /home/evanc/spdlog/include/spdlog/sinks/file_sinks.h
 	<mutex>
 	"base_sink.h"
 	"../details/null_mutex.h"
 	"../details/file_helper.h"
 	"../details/format.h"
 
-1423549800 /home/evanc/spdlog/include/spdlog/details/null_mutex.h
+1427353132 /home/evanc/spdlog/include/spdlog/details/null_mutex.h
 
-1423549800 /home/evanc/spdlog/include/spdlog/details/file_helper.h
+1427353132 /home/evanc/spdlog/include/spdlog/details/file_helper.h
 	<string>
 	<thread>
 	<chrono>
 	"os.h"
 
-1423549800 /home/evanc/spdlog/include/spdlog/sinks/stdout_sinks.h
+1427353132 /home/evanc/spdlog/include/spdlog/sinks/stdout_sinks.h
 	<iostream>
 	<mutex>
 	"./ostream_sink.h"
 	"../details/null_mutex.h"
 
-1423549800 /home/evanc/spdlog/include/spdlog/sinks/ostream_sink.h
+1427353132 /home/evanc/spdlog/include/spdlog/sinks/ostream_sink.h
 	<ostream>
 	<mutex>
 	<memory>
 	"../details/null_mutex.h"
 	"./base_sink.h"
 
-1423549800 /home/evanc/spdlog/include/spdlog/sinks/syslog_sink.h
+1427353132 /home/evanc/spdlog/include/spdlog/sinks/syslog_sink.h
 	<array>
 	<string>
 	<syslog.h>
@@ -422,7 +424,7 @@
 	"core/RemoteCommunicator.h"
 	"core/RemoteExecutor.h"
 
-1426473053 /home/evanc/whpc-linux-communicator/nodemanager/utils/Logger.h
+1427353166 /home/evanc/whpc-linux-communicator/nodemanager/utils/Logger.h
 	<syslog.h>
 	<stdio.h>
 	<stdarg.h>
@@ -493,7 +495,7 @@
 	<cpprest/json.h>
 	"ProcessStartInfo.h"
 
-1427187933 source:/home/evanc/whpc-linux-communicator/nodemanager/core/Process.cpp
+1427724395 source:/home/evanc/whpc-linux-communicator/nodemanager/core/Process.cpp
 	<memory.h>
 	<sys/wait.h>
 	<sys/resource.h>
@@ -502,7 +504,7 @@
 	"../utils/Logger.h"
 	"../utils/String.h"
 
-1426670977 /home/evanc/whpc-linux-communicator/nodemanager/core/Process.h
+1428041425 /home/evanc/whpc-linux-communicator/nodemanager/core/Process.h
 	<string>
 	<sstream>
 	<vector>
@@ -517,7 +519,7 @@
 	"../utils/Logger.h"
 	"../utils/System.h"
 
-1426473053 /home/evanc/whpc-linux-communicator/nodemanager/utils/String.h
+1427353166 /home/evanc/whpc-linux-communicator/nodemanager/utils/String.h
 	<string>
 	<vector>
 	<sstream>
@@ -530,7 +532,7 @@
 	"../utils/System.h"
 	"../arguments/StartJobAndTaskArgs.h"
 
-1427269495 /home/evanc/whpc-linux-communicator/nodemanager/utils/System.h
+1427383873 /home/evanc/whpc-linux-communicator/nodemanager/utils/System.h
 	<string>
 	"String.h"
 	"Logger.h"

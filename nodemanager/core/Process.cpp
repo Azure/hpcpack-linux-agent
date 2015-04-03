@@ -51,14 +51,6 @@ void Process::Kill(int forcedExitCode)
     if (this->processId != 0)
     {
         this->ExecuteCommand("/bin/bash", "EndTask.sh", this->taskId, this->processId);
-
-//        if (-1 == kill(this->processId, SIGKILL))
-//        {
-//            Logger::Error("Process {0}: Kill errno {1}", this->processId, errno);
-//            this->message << "Process " << this->processId << ": Kill errno " << errno << "\r\n";
-//        }
-//
-//        Logger::Info("Process {0}: killed", this->processId);
         this->processId = 0;
     }
 
@@ -94,7 +86,7 @@ void* Process::ForkThread(void* arg)
     int ret = p->CreateTaskFolder();
     if (ret != 0)
     {
-        p->message << "Task " << p->taskId << ": error when create task folder, ret " << ret << ". \r\n";
+        p->message << "Task " << p->taskId << ": error when create task folder, ret " << ret << std::endl;
         Logger::Error("Task {0}: error when create task folder, ret {1}", p->taskId, ret);
 
         // TODO fetch the errno.
@@ -106,7 +98,7 @@ void* Process::ForkThread(void* arg)
 
     if (path.empty())
     {
-        p->message << "Error when build script. \r\n";
+        p->message << "Error when build script." << std::endl;
         Logger::Error("Error when build script.");
 
         // TODO fetch the errno.
@@ -127,7 +119,7 @@ void* Process::ForkThread(void* arg)
             errno == EAGAIN ? "number of process reached upper limit" : "not enough memory";
 
         p->message << "Failed to fork(), pid = " << p->processId << ", errno = " << errno
-            << ", msg = " << errorMessage << "\r\n";
+            << ", msg = " << errorMessage << std::endl;
         Logger::Error("Failed to fork(), pid = {0}, errno = {1}, msg = {2}", p->processId, errno, errorMessage);
 
         p->SetExitCode(errno);
@@ -163,8 +155,7 @@ void Process::Monitor()
     if (waitedPid == -1)
     {
         Logger::Error("wait4 for process {0} error {1}", this->processId, errno);
-        // TODO: move "\r\n" to a common place
-        this->message << "wait4 for process " << this->processId << " error " << errno << "\r\n";
+        this->message << "wait4 for process " << this->processId << " error " << errno << std::endl;
         this->SetExitCode(errno);
 
         return;
@@ -184,7 +175,7 @@ void Process::Monitor()
         if (WSTOPSIG(status)) Logger::Info("Process {0}: WSTOPSIG", this->processId);
         if (WIFCONTINUED(status)) Logger::Info("Process {0}: WIFCONTINUED", this->processId);
 
-        this->message << "Process " << this->processId << ": waited " << waitedPid << ", errno " << errno << "\r\n";
+        this->message << "Process " << this->processId << ": waited " << waitedPid << ", errno " << errno << std::endl;
         this->SetExitCode(errno);
 
         return;
@@ -198,13 +189,13 @@ void Process::Monitor()
         int ret = System::ExecuteCommand(output, "head -c 1500", this->stdOutFile);
         if (ret == 0)
         {
-            this->message << "STDOUT: " << output << "\r\n";
+            this->message << "STDOUT: " << output << std::endl;
         }
 
         ret = System::ExecuteCommand(output, "head -c 1500", this->stdErrFile);
         if (ret == 0)
         {
-            this->message << "STDERR: " << output << "\r\n";
+            this->message << "STDERR: " << output << std::endl;
         }
     }
     else
@@ -212,7 +203,7 @@ void Process::Monitor()
         Logger::Error("wait4 for process {0} status {1}", this->processId, status);
         this->SetExitCode(-1);
 
-        this->message << "wait4 for process " << this->processId << " status " << status << "\r\n";
+        this->message << "wait4 for process " << this->processId << " status " << status << std::endl;
     }
 
     // TODO: use cgroup to report.
@@ -247,7 +238,7 @@ void Process::Run(const std::string& path)
 
     assert(ret == -1);
 
-    std::cout << "Error occurred when execvpe, errno = " << errno << "\r\n";
+    std::cout << "Error occurred when execvpe, errno = " << errno << std::endl;
 
     exit(errno);
 }
