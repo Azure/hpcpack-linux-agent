@@ -23,7 +23,7 @@ namespace hpc
 
                 std::shared_ptr<hpc::data::TaskInfo> AddJobAndTask(int jobId, int taskId, bool& isNewEntry);
                 std::shared_ptr<hpc::data::JobInfo> RemoveJob(int jobId);
-                void RemoveTask(int jobId, int taskId);
+                void RemoveTask(int jobId, int taskId, long long attemptId);
                 std::shared_ptr<hpc::data::TaskInfo> GetTask(int jobId, int taskId);
 
             protected:

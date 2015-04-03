@@ -47,7 +47,7 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
     }
     else
     {
-        if (this->processes.find(taskInfo->GetTaskAttemptId()) == this->processes.end() &&
+        if (this->processes.find(taskInfo->GetAttemptId()) == this->processes.end() &&
             isNewEntry)
         {
             auto process = std::shared_ptr<Process>(new Process(
@@ -93,15 +93,16 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
                         Logger::Error("Exception when sending back task result. {0}", ex.what());
                     }
 
-                    this->jobTaskTable.RemoveTask(taskInfo->JobId, taskInfo->TaskId);
+                    // this won't remove the task entry added later as attempt id doesn't match
+                    this->jobTaskTable.RemoveTask(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetAttemptId());
 
-                    Logger::Debug("Task {0}: attemptId {1}, erasing process", taskInfo->TaskId, taskInfo->GetTaskAttemptId());
+                    Logger::Debug("Task {0}: attemptId {1}, erasing process", taskInfo->TaskId, taskInfo->GetAttemptId());
 
                     // Process will be deleted here.
-                    this->processes.erase(taskInfo->GetTaskAttemptId());
+                    this->processes.erase(taskInfo->GetAttemptId());
                 }));
 
-            this->processes[taskInfo->GetTaskAttemptId()] = process;
+            this->processes[taskInfo->GetAttemptId()] = process;
 
             process->Start().then([this] (pid_t pid)
             {
@@ -149,7 +150,7 @@ json::value RemoteExecutor::EndTask(hpc::arguments::EndTaskArgs&& args)
     auto taskInfo = this->jobTaskTable.GetTask(args.JobId, args.TaskId);
 
     this->TerminateTask(args.TaskId);
-    this->jobTaskTable.RemoveTask(taskInfo->JobId, taskInfo->TaskId);
+    this->jobTaskTable.RemoveTask(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetAttemptId());
 
     json::value jsonBody;
     if (taskInfo)

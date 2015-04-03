@@ -80,13 +80,20 @@ std::shared_ptr<JobInfo> JobTaskTable::RemoveJob(int jobId)
     return job;
 }
 
-void JobTaskTable::RemoveTask(int jobId, int taskId)
+void JobTaskTable::RemoveTask(int jobId, int taskId, long long attemptId)
 {
     WriterLock writerLock(&this->lock);
 
     auto j = this->nodeInfo.Jobs.find(jobId);
     if (j != this->nodeInfo.Jobs.end())
     {
-        j->second->Tasks.erase(taskId);
+        auto t = j->second->Tasks.find(taskId);
+
+        // only erase when attempt ID matches.
+        if (t != j->second->Tasks.end() &&
+            t->second->GetAttemptId() == attemptId)
+        {
+            j->second->Tasks.erase(taskId);
+        }
     }
 }

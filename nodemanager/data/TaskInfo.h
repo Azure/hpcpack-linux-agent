@@ -26,7 +26,7 @@ namespace hpc
 
                 const std::string& NodeName;
 
-                long long GetTaskAttemptId() const
+                long long GetAttemptId() const
                 {
                     return ((long long)TaskRequeueCount << 32) + TaskId;
                 }
