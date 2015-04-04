@@ -150,11 +150,13 @@ json::value RemoteExecutor::EndTask(hpc::arguments::EndTaskArgs&& args)
     auto taskInfo = this->jobTaskTable.GetTask(args.JobId, args.TaskId);
 
     this->TerminateTask(args.TaskId);
-    this->jobTaskTable.RemoveTask(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetAttemptId());
 
     json::value jsonBody;
+
     if (taskInfo)
     {
+        this->jobTaskTable.RemoveTask(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetAttemptId());
+
         taskInfo->Exited = true;
         taskInfo->ExitCode = -1;
 
