@@ -12,13 +12,21 @@ namespace hpc
         struct StartJobAndTaskArgs
         {
             public:
-                StartJobAndTaskArgs(int jobId, int taskId, ProcessStartInfo&& startInfo);
+                StartJobAndTaskArgs(
+                    int jobId,
+                    int taskId,
+                    ProcessStartInfo&& startInfo,
+                    std::string&& userName,
+                    std::string&& password);
 
                 StartJobAndTaskArgs(StartJobAndTaskArgs&& args) = default;
 
                 int JobId;
                 int TaskId;
                 ProcessStartInfo StartInfo;
+                std::string UserName;
+                std::string Password;
+                std::shared_ptr<unsigned char[]> certificate;
 
                 static StartJobAndTaskArgs FromJson(const web::json::value& jsonValue);
 
