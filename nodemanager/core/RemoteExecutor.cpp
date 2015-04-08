@@ -37,13 +37,13 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
 
     if (taskInfo->TaskRequeueCount < args.StartInfo.TaskRequeueCount)
     {
-        Logger::Info("Task {0}: Change requeue count from {1} to {2}", args.TaskId, taskInfo->TaskRequeueCount, args.StartInfo.TaskRequeueCount);
+        Logger::Info(args.JobId, args.TaskId, args.StartInfo.TaskRequeueCount, "Change requeue count from {0} to {1}", taskInfo->TaskRequeueCount, args.StartInfo.TaskRequeueCount);
         taskInfo->TaskRequeueCount = args.StartInfo.TaskRequeueCount;
     }
 
     if (args.StartInfo.CommandLine.empty())
     {
-        Logger::Info("Job {0}, task {1} MPI non-master task found, skip creating the process.", args.JobId, args.TaskId);
+        Logger::Info(args.JobId, args.TaskId, args.StartInfo.TaskRequeueCount, "MPI non-master task found, skip creating the process.");
     }
     else
     {
@@ -51,7 +51,9 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
             isNewEntry)
         {
             auto process = std::shared_ptr<Process>(new Process(
-                taskInfo->GetAttemptId(),
+                taskInfo->JobId,
+                taskInfo->TaskId,
+                taskInfo->TaskRequeueCount,
                 std::move(args.StartInfo.CommandLine),
                 std::move(args.StartInfo.StdOutText),
                 std::move(args.StartInfo.StdErrText),
@@ -67,7 +69,8 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
                     {
                         if (taskInfo->Exited)
                         {
-                            Logger::Debug("Task {0}: Ended already by EndTask.", taskInfo->TaskId);
+                            Logger::Debug(taskInfo->JobId, taskInfo->TaskId, taskInfo->TaskRequeueCount,
+                                "Ended already by EndTask.");
                         }
                         else
                         {
@@ -78,25 +81,29 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
                             taskInfo->UserProcessorTime = userTime.tv_sec * 1000000 + userTime.tv_usec;
 
                             auto jsonBody = taskInfo->ToJson();
-                            Logger::Debug("Task {0}: Callback to {1} with {2}", taskInfo->TaskId, callbackUri, jsonBody);
+                            Logger::Debug(taskInfo->JobId, taskInfo->TaskId, taskInfo->TaskRequeueCount,
+                                "Callback to {0} with {1}", callbackUri, jsonBody);
                             client::http_client_config config;
                             config.set_validate_certificates(false);
                             client::http_client client(callbackUri, config);
                             client.request(methods::POST, "", jsonBody).then([&callbackUri, this, taskInfo](http_response response)
                             {
-                                Logger::Info("Task {0}: Callback to {1} response code {2}", taskInfo->TaskId, callbackUri, response.status_code());
+                                Logger::Info(taskInfo->JobId, taskInfo->TaskId, taskInfo->TaskRequeueCount,
+                                    "Callback to {0} response code {1}", callbackUri, response.status_code());
                             }).wait();
                         }
                     }
                     catch (const std::exception& ex)
                     {
-                        Logger::Error("Exception when sending back task result. {0}", ex.what());
+                        Logger::Error(taskInfo->JobId, taskInfo->TaskId, taskInfo->TaskRequeueCount,
+                            "Exception when sending back task result. {0}", ex.what());
                     }
 
                     // this won't remove the task entry added later as attempt id doesn't match
                     this->jobTaskTable.RemoveTask(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetAttemptId());
 
-                    Logger::Debug("Task {0}: attemptId {1}, erasing process", taskInfo->TaskId, taskInfo->GetAttemptId());
+                    Logger::Debug(taskInfo->JobId, taskInfo->TaskId, taskInfo->TaskRequeueCount,
+                        "attemptId {0}, erasing process", taskInfo->GetAttemptId());
 
                     // Process will be deleted here.
                     this->processes.erase(taskInfo->GetAttemptId());
@@ -104,17 +111,19 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
 
             this->processes[taskInfo->GetAttemptId()] = process;
 
-            process->Start().then([this] (pid_t pid)
+            process->Start().then([this, taskInfo] (pid_t pid)
             {
                 if (pid > 0)
                 {
-                    Logger::Debug("Process started {0}", pid);
+                    Logger::Debug(taskInfo->JobId, taskInfo->TaskId, taskInfo->TaskRequeueCount,
+                        "Process started {0}", pid);
                 }
             });
         }
         else
         {
-            Logger::Warn("The task {0} has started already.", args.TaskId);
+            Logger::Warn(taskInfo->JobId, taskInfo->TaskId, taskInfo->TaskRequeueCount,
+                "The task has started already.");
             // Found the original process.
             // TODO: assert the job task table call is the same.
         }

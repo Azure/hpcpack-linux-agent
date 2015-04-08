@@ -28,7 +28,9 @@ namespace hpc
                 typedef void Callback(int, std::string&&, timeval userTime, timeval kernelTime);
 
                 Process(
-                    long long taskId,
+                    int jobId,
+                    int taskId,
+                    int requeueCount,
                     const std::string& cmdLine,
                     const std::string& standardOut,
                     const std::string& standardErr,
@@ -69,7 +71,7 @@ namespace hpc
                     {
                         std::string cmdLine = String::Join(" ", cmd, args...);
                         this->message << "Task " << this->taskId << ": '" << cmdLine << "' failed. exitCode " << ret << "\r\n";
-                        Logger::Error("Task {0}: '{1}' failed. exitCode {2}, output {3}.", this->taskId, cmdLine, ret, output);
+                        Logger::Error(this->jobId, this->taskId, this->requeueCount, "'{0}' failed. exitCode {1}, output {2}.", cmdLine, ret, output);
 
                         this->SetExitCode(ret);
 
@@ -96,7 +98,10 @@ namespace hpc
                 timeval kernelTime = { 0, 0 };
                 std::string taskFolder;
 
-                const long long taskId;
+                const int jobId;
+                const int taskId;
+                const int requeueCount;
+                const std::string taskExecutionId;
                 const std::string commandLine;
                 std::string stdOutFile;
                 std::string stdErrFile;

@@ -22,7 +22,6 @@ if $CGInstalled; then
 	echo FROZEN > $freezerState
 
 	while [ -f $freezerState ] && ! grep -Fxq FROZEN $freezerState; do
-		echo FROZEN > $freezerState
 		sleep .1
 	done
 
@@ -35,7 +34,6 @@ if $CGInstalled; then
 	echo THAWED > $freezerState
 
 	while [ -f $freezerState ] && ! grep -Fxq THAWED $freezerState; do
-		echo THAWED > $freezerState
 		sleep .1
 	done
 else

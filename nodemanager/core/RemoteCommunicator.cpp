@@ -105,8 +105,10 @@ void RemoteCommunicator::HandlePost(http_request request)
     {
         request.extract_json().then([processor, callback = std::move(callbackUri)](pplx::task<json::value> t)
         {
-            // todo: throw exception instead of using the return value.
-            return processor->second(t.get(), callback);
+            auto j = t.get();
+            Logger::Debug("Json: {0}", j.serialize());
+
+            return processor->second(j, callback);
         })
         .then([request, this](pplx::task<json::value> t)
         {
@@ -130,7 +132,6 @@ void RemoteCommunicator::HandlePost(http_request request)
 
 json::value RemoteCommunicator::StartJobAndTask(const json::value& val, const std::string& callbackUri)
 {
-    Logger::Info("Json: {0}", val.serialize());
     auto args = StartJobAndTaskArgs::FromJson(val);
     return this->executor.StartJobAndTask(std::move(args), callbackUri);
 }

@@ -424,12 +424,13 @@
 	"core/RemoteCommunicator.h"
 	"core/RemoteExecutor.h"
 
-1427353166 /home/evanc/whpc-linux-communicator/nodemanager/utils/Logger.h
+1428488455 /home/evanc/whpc-linux-communicator/nodemanager/utils/Logger.h
 	<syslog.h>
 	<stdio.h>
 	<stdarg.h>
 	<iostream>
 	<spdlog/spdlog.h>
+	"String.h"
 
 1426473053 /home/evanc/whpc-linux-communicator/nodemanager/core/RemoteCommunicator.h
 	<cpprest/http_listener.h>
@@ -549,7 +550,7 @@
 1426473053 source:/home/evanc/whpc-linux-communicator/nodemanager/utils/JsonHelper.cpp
 	"JsonHelper.h"
 
-1426595924 source:/home/evanc/whpc-linux-communicator/nodemanager/utils/Logger.cpp
+1427353166 source:/home/evanc/whpc-linux-communicator/nodemanager/utils/Logger.cpp
 	"Logger.h"
 
 1426473053 source:/home/evanc/whpc-linux-communicator/nodemanager/utils/String.cpp
