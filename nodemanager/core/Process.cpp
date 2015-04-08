@@ -11,7 +11,7 @@ using namespace hpc::core;
 using namespace hpc::utils;
 
 Process::Process(
-    int taskId,
+    long long taskId,
     const std::string& cmdLine,
     const std::string& standardOut,
     const std::string& standardErr,
@@ -252,7 +252,7 @@ int Process::CreateTaskFolder()
 {
     char folder[256];
 
-    sprintf(folder, "/tmp/nodemanager_task_%d.XXXXXX", this->taskId);
+    sprintf(folder, "/tmp/nodemanager_task_%lld.XXXXXX", this->taskId);
 
     char* p = mkdtemp(folder);
 

@@ -28,7 +28,7 @@ namespace hpc
                 typedef void Callback(int, std::string&&, timeval userTime, timeval kernelTime);
 
                 Process(
-                    int taskId,
+                    long long taskId,
                     const std::string& cmdLine,
                     const std::string& standardOut,
                     const std::string& standardErr,
@@ -96,7 +96,7 @@ namespace hpc
                 timeval kernelTime = { 0, 0 };
                 std::string taskFolder;
 
-                const int taskId;
+                const long long taskId;
                 const std::string commandLine;
                 std::string stdOutFile;
                 std::string stdErrFile;

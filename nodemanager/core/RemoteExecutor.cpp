@@ -51,7 +51,7 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
             isNewEntry)
         {
             auto process = std::shared_ptr<Process>(new Process(
-                args.TaskId,
+                taskInfo->GetAttemptId(),
                 std::move(args.StartInfo.CommandLine),
                 std::move(args.StartInfo.StdOutText),
                 std::move(args.StartInfo.StdErrText),
