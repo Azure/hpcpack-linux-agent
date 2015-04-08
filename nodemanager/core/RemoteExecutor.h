@@ -31,6 +31,7 @@ namespace hpc
                 void SaveReportUri(const std::string& fileName, const std::string& uri);
                 bool TerminateTask(int taskId);
 
+                const int UnknowId = 999;
                 const int NodeInfoReportInterval = 30;
                 const int MetricReportInterval = 2;
                 const std::string NodeInfoUriFileName = "NodeInfoReportUri";

@@ -139,14 +139,34 @@ json::value RemoteExecutor::EndJob(hpc::arguments::EndJobArgs&& args)
     auto jobInfo = this->jobTaskTable.RemoveJob(args.JobId);
 
     json::value jsonBody;
+
     if (jobInfo)
     {
         for (auto& taskPair : jobInfo->Tasks)
         {
             this->TerminateTask(taskPair.first);
+
+            auto taskInfo = taskPair.second;
+
+            if (taskInfo)
+            {
+                taskInfo->Exited = true;
+                taskInfo->ExitCode = -1;
+            }
+            else
+            {
+                Logger::Warn(args.JobId, taskPair.first, this->UnknowId,
+                    "EndJob: Task is already finished");
+
+                assert(false);
+            }
         }
 
         jsonBody = jobInfo->ToJson();
+    }
+    else
+    {
+        Logger::Warn(args.JobId, this->UnknowId, this->UnknowId, "EndJob: Job is already finished");
     }
 
     return jsonBody;
@@ -170,6 +190,10 @@ json::value RemoteExecutor::EndTask(hpc::arguments::EndTaskArgs&& args)
         taskInfo->ExitCode = -1;
 
         jsonBody = taskInfo->ToJson();
+    }
+    else
+    {
+        Logger::Warn(args.JobId, args.TaskId, this->UnknowId, "EndTask: Task is already finished");
     }
 
     return jsonBody;
