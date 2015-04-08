@@ -21,7 +21,8 @@ if $CGInstalled; then
 	# freeze the task
 	echo FROZEN > $freezerState
 
-	while ! grep -Fxq FROZEN $freezerState; do
+	while [ -f $freezerState ] && ! grep -Fxq FROZEN $freezerState; do
+		echo FROZEN > $freezerState
 		sleep .1
 	done
 
@@ -33,7 +34,8 @@ if $CGInstalled; then
 	# resume tasks
 	echo THAWED > $freezerState
 
-	while ! grep -Fxq THAWED $freezerState; do
+	while [ -f $freezerState ] && ! grep -Fxq THAWED $freezerState; do
+		echo THAWED > $freezerState
 		sleep .1
 	done
 else
