@@ -10,13 +10,10 @@ using namespace web::http;
 
 Reporter::Reporter(const std::string& uri, int interval, std::function<json::value()> fetcher)
     : reportUri(uri), intervalSeconds(interval), valueFetcher(fetcher),
-    isRunning(true), inRequest(false)
+    isRunning(true)
 {
     if (!uri.empty())
     {
-        http_client_config config;
-        config.set_validate_certificates(false);
-        this->client = std::shared_ptr<http_client>(new http_client(uri, config));
         pthread_create(&this->threadId, nullptr, ReportingThread, this);
     }
 }
@@ -29,15 +26,14 @@ Reporter::~Reporter()
     this->cts.cancel();
     if (this->threadId != 0)
     {
+        while (this->inRequest) usleep(1);
         pthread_cancel(this->threadId);
         pthread_join(this->threadId, nullptr);
         Logger::Debug("Destructed Reporter {0}", this->reportUri);
     }
-
-    while (this->inRequest) usleep(1);
 }
 
-pplx::task<void> Reporter::Report()
+void Reporter::Report()
 {
     const std::string& uri = this->reportUri;
     if (!uri.empty())
@@ -46,7 +42,7 @@ pplx::task<void> Reporter::Report()
         if (jsonBody.is_null())
         {
             Logger::Info("Skipped reporting to {0} because json is null", uri);
-            return pplx::task_from_result();
+            return;
         }
 
         if (this->intervalSeconds > 10)
@@ -54,25 +50,32 @@ pplx::task<void> Reporter::Report()
             Logger::Info("---------> Report to {0} with {1}", uri, jsonBody);
         }
 
+        http_client_config config;
+        config.set_validate_certificates(false);
+        http_client client(uri, config);
+
         try
         {
-            return this->client->request(methods::POST, "", jsonBody, this->cts.get_token()).then([&uri, this](http_response response)
+            client.request(methods::POST, "", jsonBody, this->cts.get_token()).then([&uri, this](http_response response)
             {
                 if (this->intervalSeconds > 10)
                 {
                     Logger::Debug("---------> Reported to {0} response code {1}", uri, response.status_code());
                 }
-            });
+            }).wait();
         }
-        catch (std::exception& ex)
+        catch (const http_exception& httpEx)
         {
-            Logger::Error("Reporting exception occurred {0}, {1}", ex.what(), jsonBody);
-            return pplx::task_from_result();
+            Logger::Warn("HttpException occurred when report to {0}, ex {1}", this->reportUri, httpEx.what());
         }
-    }
-    else
-    {
-        return pplx::task_from_result();
+        catch (const std::exception& ex)
+        {
+            Logger::Error("Exception occurred when report to {0}, ex {1}", this->reportUri, ex.what());
+        }
+        catch (...)
+        {
+            Logger::Error("Unknown error occurred when report to {0}", this->reportUri);
+        }
     }
 }
 
@@ -86,28 +89,8 @@ void* Reporter::ReportingThread(void * arg)
     while (r->isRunning)
     {
         r->inRequest = true;
-
-        r->Report().then([r](auto t)
-        {
-            try
-            {
-                t.wait();
-            }
-            catch (const http_exception& httpEx)
-            {
-                Logger::Warn("HttpException occurred when report to {0}, ex {1}", r->reportUri, httpEx.what());
-            }
-            catch (const std::exception& ex)
-            {
-                Logger::Error("Exception occurred when report to {0}, ex {1}", r->reportUri, ex.what());
-            }
-            catch (...)
-            {
-                Logger::Error("Unknown error occurred when report to {0}", r->reportUri);
-            }
-
-            r->inRequest = false;
-        });
+        r->Report();
+        r->inRequest = false;
 
         sleep(r->intervalSeconds);
     }
