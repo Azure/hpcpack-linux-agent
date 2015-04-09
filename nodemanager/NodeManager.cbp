@@ -58,6 +58,7 @@
 		<Unit filename="arguments/StartJobAndTaskArgs.h" />
 		<Unit filename="arguments/StartTaskArgs.cpp" />
 		<Unit filename="arguments/StartTaskArgs.h" />
+		<Unit filename="common/ErrorCodes.h" />
 		<Unit filename="core/IRemoteExecutor.h" />
 		<Unit filename="core/JobTaskTable.cpp" />
 		<Unit filename="core/JobTaskTable.h" />

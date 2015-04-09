@@ -12,8 +12,10 @@
 #include "System.h"
 #include "String.h"
 #include "Logger.h"
+#include "../common/ErrorCodes.h"
 
 using namespace hpc::utils;
+using namespace hpc::common;
 
 std::vector<System::NetInfo> System::GetNetworkInfo()
 {
@@ -183,8 +185,9 @@ void System::CPU(int &cores, int &sockets)
     fs.close();
 }
 
-void System::NetworkUsage(long int &network, const std::string& netName)
+int System::NetworkUsage(long int &network, const std::string& netName)
 {
+    int ret = 1;
     std::ifstream fs("/proc/net/dev", std::ios::in);
     std::string name;
     int receive, send;
@@ -193,14 +196,21 @@ void System::NetworkUsage(long int &network, const std::string& netName)
     fs.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
     std::string tmp = netName + ":";
-    while (name != tmp)
+    while (name != tmp && fs.good())
     {
         fs >> name >> receive >> send;
+        fs.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     }
 
-    network = receive + send;
+    if (name == tmp)
+    {
+        network = receive + send;
+        ret = 0;
+    }
 
     fs.close();
+
+    return ret;
 }
 
 const std::string& System::GetNodeName()
@@ -212,7 +222,7 @@ const std::string& System::GetNodeName()
         if (-1 == gethostname(buffer, 255))
         {
             Logger::Error("gethostname failed with errno {0}", errno);
-            exit(-1);
+            exit((int)ErrorCodes::GetHostNameError);
         }
 
         nodeName = buffer;

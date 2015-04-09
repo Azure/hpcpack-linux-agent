@@ -6,9 +6,11 @@
 #include "Process.h"
 #include "../utils/Logger.h"
 #include "../utils/String.h"
+#include "../common/ErrorCodes.h"
 
 using namespace hpc::core;
 using namespace hpc::utils;
+using namespace hpc::common;
 
 Process::Process(
     int jobId,
@@ -47,6 +49,7 @@ void Process::Kill(int forcedExitCode)
 {
     if (forcedExitCode != 0x0FFFFFFF)
     {
+        Logger::Debug(this->jobId, this->taskId, this->requeueCount, "Setting forced ExitCode {0}", forcedExitCode);
         this->SetExitCode(forcedExitCode);
     }
 
@@ -103,7 +106,7 @@ void* Process::ForkThread(void* arg)
         Logger::Error(p->jobId, p->taskId, p->requeueCount, "Error when build script.");
 
         // TODO fetch the errno.
-        p->SetExitCode(-1);
+        p->SetExitCode((int)ErrorCodes::BuildScriptError);
         goto Final;
     }
 
@@ -191,6 +194,8 @@ void Process::Monitor()
 
     if (WIFEXITED(status))
     {
+        Logger::Info(this->jobId, this->taskId, this->requeueCount,
+            "Process {0}: exite code {1}", this->processId, WEXITSTATUS(status));
         this->SetExitCode(WEXITSTATUS(status));
 
         std::string output;
@@ -209,7 +214,7 @@ void Process::Monitor()
     else
     {
         Logger::Error(this->jobId, this->taskId, this->requeueCount, "wait4 for process {0} status {1}", this->processId, status);
-        this->SetExitCode(-1);
+        this->SetExitCode(status);
 
         this->message << "wait4 for process " << this->processId << " status " << status << std::endl;
     }

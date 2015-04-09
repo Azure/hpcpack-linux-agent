@@ -100,12 +100,10 @@ void* Reporter::ReportingThread(void * arg)
             catch (const std::exception& ex)
             {
                 Logger::Error("Exception occurred when report to {0}, ex {1}", r->reportUri, ex.what());
-                //exit(-1);
             }
             catch (...)
             {
                 Logger::Error("Unknown error occurred when report to {0}", r->reportUri);
-                //exit(-1);
             }
 
             r->inRequest = false;

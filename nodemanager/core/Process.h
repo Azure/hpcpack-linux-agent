@@ -15,6 +15,7 @@
 #include "../utils/String.h"
 #include "../utils/Logger.h"
 #include "../utils/System.h"
+#include "../common/ErrorCodes.h"
 
 using namespace hpc::utils;
 
@@ -92,7 +93,7 @@ namespace hpc
                 std::ostringstream stdOut;
                 std::ostringstream stdErr;
                 std::ostringstream message;
-                int exitCode = -1;
+                int exitCode = (int)hpc::common::ErrorCodes::DefaultExitCode;
                 bool exitCodeSet = false;
                 timeval userTime = { 0, 0 };
                 timeval kernelTime = { 0, 0 };

@@ -6,6 +6,7 @@
 #include "../utils/ReaderLock.h"
 #include "../utils/Logger.h"
 #include "../utils/System.h"
+#include "../common/ErrorCodes.h"
 
 using namespace web::http;
 using namespace web;
@@ -13,6 +14,7 @@ using namespace hpc::core;
 using namespace hpc::utils;
 using namespace hpc::arguments;
 using namespace hpc::data;
+using namespace hpc::common;
 
 RemoteExecutor::RemoteExecutor(const std::string& networkName)
     : monitor(System::GetNodeName(), networkName, MetricReportInterval), lock(PTHREAD_RWLOCK_INITIALIZER)
@@ -136,6 +138,7 @@ json::value RemoteExecutor::EndJob(hpc::arguments::EndJobArgs&& args)
 {
     ReaderLock readerLock(&this->lock);
 
+    Logger::Info(args.JobId, this->UnknowId, this->UnknowId, "EndJob: starting");
     auto jobInfo = this->jobTaskTable.RemoveJob(args.JobId);
 
     json::value jsonBody;
@@ -144,14 +147,15 @@ json::value RemoteExecutor::EndJob(hpc::arguments::EndJobArgs&& args)
     {
         for (auto& taskPair : jobInfo->Tasks)
         {
-            this->TerminateTask(taskPair.first);
+            this->TerminateTask(taskPair.first, (int)ErrorCodes::EndJobExitCode);
 
             auto taskInfo = taskPair.second;
 
             if (taskInfo)
             {
                 taskInfo->Exited = true;
-                taskInfo->ExitCode = -1;
+                taskInfo->ExitCode = (int)ErrorCodes::EndJobExitCode;
+                Logger::Debug(args.JobId, taskPair.first, taskInfo->TaskRequeueCount, "EndJob: starting");
             }
             else
             {
@@ -163,6 +167,7 @@ json::value RemoteExecutor::EndJob(hpc::arguments::EndJobArgs&& args)
         }
 
         jsonBody = jobInfo->ToJson();
+        Logger::Info(args.JobId, this->UnknowId, this->UnknowId, "EndJob: ended {0}", jsonBody);
     }
     else
     {
@@ -175,10 +180,11 @@ json::value RemoteExecutor::EndJob(hpc::arguments::EndJobArgs&& args)
 json::value RemoteExecutor::EndTask(hpc::arguments::EndTaskArgs&& args)
 {
     ReaderLock readerLock(&this->lock);
+    Logger::Info(args.JobId, args.TaskId, this->UnknowId, "EndTask: starting");
 
     auto taskInfo = this->jobTaskTable.GetTask(args.JobId, args.TaskId);
 
-    this->TerminateTask(args.TaskId);
+    this->TerminateTask(args.TaskId, (int)ErrorCodes::EndTaskExitCode);
 
     json::value jsonBody;
 
@@ -187,9 +193,10 @@ json::value RemoteExecutor::EndTask(hpc::arguments::EndTaskArgs&& args)
         this->jobTaskTable.RemoveTask(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetAttemptId());
 
         taskInfo->Exited = true;
-        taskInfo->ExitCode = -1;
+        taskInfo->ExitCode = (int)ErrorCodes::EndTaskExitCode;
 
         jsonBody = taskInfo->ToJson();
+        Logger::Info(args.JobId, args.TaskId, this->UnknowId, "EndTask: ended {0}", jsonBody);
     }
     else
     {
@@ -215,13 +222,13 @@ json::value RemoteExecutor::Metric(const std::string& callbackUri)
     return json::value();
 }
 
-bool RemoteExecutor::TerminateTask(int taskId)
+bool RemoteExecutor::TerminateTask(int taskId, int exitCode)
 {
     auto p = this->processes.find(taskId);
 
     if (p != this->processes.end())
     {
-        p->second->Kill(-1);
+        p->second->Kill(exitCode);
 
         return true;
     }

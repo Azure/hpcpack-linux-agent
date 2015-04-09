@@ -29,7 +29,7 @@ namespace hpc
             private:
                 std::string LoadReportUri(const std::string& fileName);
                 void SaveReportUri(const std::string& fileName, const std::string& uri);
-                bool TerminateTask(int taskId);
+                bool TerminateTask(int taskId, int exitCode);
 
                 const int UnknowId = 999;
                 const int NodeInfoReportInterval = 30;
