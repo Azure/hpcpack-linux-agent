@@ -108,7 +108,13 @@ void Monitor::Run()
         float totalMemoryMb = (float)total / 1024.0f;
 
         long int networkCurrent = 0;
-        System::NetworkUsage(networkCurrent, "eth0");
+        int ret = System::NetworkUsage(networkCurrent, "eth0");
+
+        if (ret != 0)
+        {
+            Logger::Error("Error occurred while collecting network usage {0}", ret);
+        }
+
         float networkUsage = (float)(networkCurrent - networkLast) / this->intervalSeconds;
         networkLast = networkCurrent;
 
@@ -140,6 +146,7 @@ void Monitor::Run()
             this->socketCount = sockets;
             this->distroInfo = distro;
             this->networkInfo = std::move(netInfo);
+
         }
 
         this->isCollected = true;
@@ -154,6 +161,7 @@ void* Monitor::MonitoringThread(void* arg)
     pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, nullptr);
 
     Monitor* m = static_cast<Monitor*>(arg);
+    Logger::Info("Monitoring thread created. Interval {0}", m->intervalSeconds);
     m->Run();
 
     pthread_exit(nullptr);

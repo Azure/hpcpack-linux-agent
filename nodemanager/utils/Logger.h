@@ -7,6 +7,8 @@
 #include <iostream>
 #include <spdlog/spdlog.h>
 
+#include "String.h"
+
 namespace hpc
 {
     namespace utils
@@ -48,6 +50,34 @@ namespace hpc
                 static void Debug(const char* fmt, Args ...args)
                 {
                     Log(LogLevel::Debug, fmt, args...);
+                }
+
+                template <typename ...Args>
+                static void Info(int jobId, int taskId, int requeue, const char* fmt, Args ...args)
+                {
+                    auto f = String::Join("", "Job ", jobId, ", Task ", taskId, ".", requeue, ": ", fmt);
+                    Log(LogLevel::Info, f.c_str(), args...);
+                }
+
+                template <typename ...Args>
+                static void Error(int jobId, int taskId, int requeue, const char* fmt, Args ...args)
+                {
+                    auto f = String::Join("", "Job ", jobId, ", Task ", taskId, ".", requeue, ": ", fmt);
+                    Log(LogLevel::Error, f.c_str(), args...);
+                }
+
+                template <typename ...Args>
+                static void Warn(int jobId, int taskId, int requeue, const char* fmt, Args ...args)
+                {
+                    auto f = String::Join("", "Job ", jobId, ", Task ", taskId, ".", requeue, ": ", fmt);
+                    Log(LogLevel::Warning, f.c_str(), args...);
+                }
+
+                template <typename ...Args>
+                static void Debug(int jobId, int taskId, int requeue, const char* fmt, Args ...args)
+                {
+                    auto f = String::Join("", "Job ", jobId, ", Task ", taskId, ".", requeue, ": ", fmt);
+                    Log(LogLevel::Debug, f.c_str(), args...);
                 }
 
                 template <typename ...Args>
