@@ -1,5 +1,6 @@
 #include "StartJobAndTaskArgs.h"
 #include "../utils/JsonHelper.h"
+#include "../utils/Logger.h"
 
 using namespace hpc::arguments;
 using namespace hpc::utils;
@@ -18,16 +19,17 @@ StartJobAndTaskArgs StartJobAndTaskArgs::FromJson(const json::value& j)
         JsonHelper<int>::Read("JobId", j.at("m_Item1")),
         JsonHelper<int>::Read("TaskId", j.at("m_Item1")),
         ProcessStartInfo::FromJson(j.at("m_Item2")),
-        JsonHelper<std::string>::FromJson(j.at("m_Item3")),
-        JsonHelper<std::string>::FromJson(j.at("m_Item4")));
+        JsonHelper<std::string>::Read("m_Item3", j),
+        JsonHelper<std::string>::Read("m_Item4", j));
 
-    auto cert = j.at("m_Item5");
-    if (!cert.is_null())
+    auto cert = JsonHelper<std::string>::Read("m_Item5", j);
+    if (!cert.empty())
     {
+        Logger::Debug("Deserialized cert value {0}", cert);
         std::vector<unsigned char> certBytes =
-            utility::conversions::from_base64(JsonHelper<std::string>::FromJson(cert));
+            utility::conversions::from_base64(cert);
 
-        args.certificate = std::move(certBytes);
+        args.Certificate = std::move(certBytes);
     }
 
     return std::move(args);

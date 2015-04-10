@@ -21,12 +21,15 @@ Process::Process(
     const std::string& standardErr,
     const std::string& standardIn,
     const std::string& workDir,
+    const std::string& user,
+    const std::string& password,
     std::vector<long>&& cpuAffinity,
     std::map<std::string, std::string>&& envi,
     const std::function<Callback> completed) :
     jobId(jobId), taskId(taskId), requeueCount(requeueCount), taskExecutionId(String::Join("_", taskId, requeueCount)),
     commandLine(cmdLine), stdOutFile(standardOut), stdErrFile(standardErr), stdInFile(standardIn),
-    workDirectory(workDir), affinity(cpuAffinity), environments(envi), callback(completed), processId(0)
+    workDirectory(workDir), userName(user), password(password),
+    affinity(cpuAffinity), environments(envi), callback(completed), processId(0)
 {
 
 }
@@ -53,12 +56,11 @@ void Process::Kill(int forcedExitCode)
         this->SetExitCode(forcedExitCode);
     }
 
-    if (this->processId != 0)
+    if (!this->ended)
     {
         this->ExecuteCommand("/bin/bash", "EndTask.sh", this->taskExecutionId, this->processId);
+        this->GetStatisticsFromCGroup();
     }
-
-    this->GetStatisticsFromCGroup();
 }
 
 void Process::GetStatisticsFromCGroup()
@@ -110,7 +112,7 @@ void* Process::ForkThread(void* arg)
         goto Final;
     }
 
-    if (!p->ExecuteCommand("/bin/bash", "PrepareTask.sh", p->taskExecutionId, p->GetAffinity()))
+    if (0 != p->ExecuteCommand("/bin/bash", "PrepareTask.sh", p->taskExecutionId, p->GetAffinity()))
     {
         goto Final;
     }
@@ -145,8 +147,8 @@ void* Process::ForkThread(void* arg)
 Final:
     p->ExecuteCommand("/bin/bash", "CleanupTask.sh", p->taskExecutionId, p->processId);
     p->ExecuteCommand("rm -rf", p->taskFolder);
+    p->ended = true;
     p->OnCompleted();
-
     pthread_exit(nullptr);
 }
 
@@ -199,13 +201,13 @@ void Process::Monitor()
         this->SetExitCode(WEXITSTATUS(status));
 
         std::string output;
-        int ret = System::ExecuteCommand(output, "head -c 1500", this->stdOutFile);
+        int ret = System::ExecuteCommandOut(output, "head -c 1500", this->stdOutFile);
         if (ret == 0)
         {
             this->message << "STDOUT: " << output << std::endl;
         }
 
-        ret = System::ExecuteCommand(output, "head -c 1500", this->stdErrFile);
+        ret = System::ExecuteCommandOut(output, "head -c 1500", this->stdErrFile);
         if (ret == 0)
         {
             this->message << "STDERR: " << output << std::endl;
@@ -270,7 +272,16 @@ int Process::CreateTaskFolder()
     if (p)
     {
         this->taskFolder = p;
-        return 0;
+
+        int ret;
+        ret = this->ExecuteCommand("chown -R", this->userName, "/tmp");
+
+        if (ret == 0)
+        {
+            ret = this->ExecuteCommand("chmod -R u+rwX", this->taskFolder);
+        }
+
+        return ret;
     }
     else
     {
@@ -280,9 +291,15 @@ int Process::CreateTaskFolder()
 
 std::string Process::BuildScript()
 {
-    std::string path = this->taskFolder + "/run.sh";
+    std::string cmd = this->taskFolder + "/cmd.sh";
+    std::ofstream fsCmd(cmd, std::ios::trunc);
+    fsCmd << "#!/bin/bash" << std::endl << std::endl;
+    fsCmd << this->commandLine << std::endl;
+    fsCmd.close();
 
-    std::ofstream fs(path, std::ios::trunc);
+    std::string runDirInOut = this->taskFolder + "/run_dir_in_out.sh";
+
+    std::ofstream fs(runDirInOut, std::ios::trunc);
     fs << "#!/bin/bash" << std::endl << std::endl;
 
     fs << "cd ";
@@ -300,12 +317,9 @@ std::string Process::BuildScript()
     if (this->stdOutFile.empty()) this->stdOutFile = this->taskFolder + "/stdout.txt";
     if (this->stdErrFile.empty()) this->stdErrFile = this->taskFolder + "/stderr.txt";
 
-    if (!this->commandLine.empty())
-    {
-        fs << this->commandLine
-            << " >" << this->stdOutFile
-            << " 2>" << this->stdErrFile;
-    }
+    fs << " /bin/bash " << cmd
+        << " >" << this->stdOutFile
+        << " 2>" << this->stdErrFile;
 
     if (!this->stdInFile.empty())
     {
@@ -316,7 +330,15 @@ std::string Process::BuildScript()
 
     fs.close();
 
-    return std::move(path);
+    std::string runUser = this->taskFolder + "/run_user.sh";
+    std::ofstream fsRunUser(runUser, std::ios::trunc);
+    fsRunUser << "#!/bin/bash" << std::endl << std::endl;
+    fsRunUser << "sudo -u " << this->userName
+        << " /bin/bash " << runDirInOut << std::endl;
+
+    fsRunUser.close();
+
+    return std::move(runUser);
 }
 
 std::unique_ptr<const char* []> Process::PrepareEnvironment()

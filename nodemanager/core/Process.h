@@ -37,6 +37,8 @@ namespace hpc
                     const std::string& standardErr,
                     const std::string& standardIn,
                     const std::string& workDir,
+                    const std::string& user,
+                    const std::string& password,
                     std::vector<long>&& cpuAffinity,
                     std::map<std::string, std::string>&& envi,
                     const std::function<Callback> completed);
@@ -64,10 +66,10 @@ namespace hpc
                 int CreateTaskFolder();
 
                 template <typename ... Args>
-                bool ExecuteCommand(const std::string& cmd, const Args& ... args)
+                int ExecuteCommand(const std::string& cmd, const Args& ... args)
                 {
                     std::string output;
-                    int ret = System::ExecuteCommand(output, cmd, args...);
+                    int ret = System::ExecuteCommandOut(output, cmd, args...);
                     if (ret != 0)
                     {
                         std::string cmdLine = String::Join(" ", cmd, args...);
@@ -75,11 +77,9 @@ namespace hpc
                         Logger::Error(this->jobId, this->taskId, this->requeueCount, "'{0}' failed. exitCode {1}, output {2}.", cmdLine, ret, output);
 
                         this->SetExitCode(ret);
-
-                        return false;
                     }
 
-                    return true;
+                    return ret;
                 }
 
                 static void* ForkThread(void*);
@@ -108,6 +108,8 @@ namespace hpc
                 std::string stdErrFile;
                 const std::string stdInFile;
                 const std::string workDirectory;
+                const std::string userName;
+                const std::string password;
                 const std::vector<long> affinity;
                 const std::map<std::string, std::string> environments;
                 std::vector<std::string> environmentsBuffer;
@@ -116,6 +118,7 @@ namespace hpc
 
                 pthread_t threadId;
                 pid_t processId;
+                bool ended = false;
 
                 pplx::task_completion_event<pid_t> started;
         };

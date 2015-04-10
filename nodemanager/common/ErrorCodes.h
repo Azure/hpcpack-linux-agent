@@ -13,6 +13,8 @@ namespace hpc
             DefaultExitCode = -999,
             GetHostNameError = -104,
             PopenError = -105,
+            SetUserPermission = -106,
+            TestRunFailed = -107,
         };
     }
 }

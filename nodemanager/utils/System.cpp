@@ -23,7 +23,7 @@ std::vector<System::NetInfo> System::GetNetworkInfo()
 
     std::string rawData;
 
-    int ret = System::ExecuteCommand(rawData, "ip", "addr");
+    int ret = System::ExecuteCommandOut(rawData, "ip", "addr");
     if (ret == 0)
     {
         std::string name, mac, ipV4, ipV6;
@@ -241,12 +241,46 @@ const std::string& System::GetDistroInfo()
     static std::string distroInfo;
     if (distroInfo.empty())
     {
-        int ret = System::ExecuteCommand(distroInfo, "cat", "/proc/version");
+        int ret = System::ExecuteCommandOut(distroInfo, "cat", "/proc/version");
         if (ret != 0)
         {
-            Logger::Error("cat /proc/version error code {0}", ret);
+            Logger::Error("cat /proc/version error code {0} {1}", ret, distroInfo);
         }
     }
 
     return distroInfo;
+}
+
+int System::CreateUser(const std::string& userName, const std::string& password)
+{
+    std::string output;
+
+    int ret = System::ExecuteCommandOut(output, "useradd", userName, "-m");
+    if (ret != 0)
+    {
+        Logger::Error("useradd {0} -m error code {1}", userName, ret);
+        return ret;
+    }
+
+    std::string input = String::Join("", password, "\n", password, "\n");
+    ret = System::ExecuteCommandIn(input, "passwd", userName);
+    if (ret != 0)
+    {
+        Logger::Error("passwd {0} error code {1}", userName, ret);
+    }
+
+    return ret;
+}
+
+int System::DeleteUser(const std::string& userName)
+{
+    std::string output;
+
+    int ret = System::ExecuteCommandOut(output, "userdel", userName, "-r");
+    if (ret != 0)
+    {
+        Logger::Error("userdel {0} error code {1}", userName, ret);
+    }
+
+    return ret;
 }

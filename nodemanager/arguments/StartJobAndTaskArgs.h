@@ -26,7 +26,7 @@ namespace hpc
                 ProcessStartInfo StartInfo;
                 std::string UserName;
                 std::string Password;
-                std::vector<unsigned char> certificate;
+                std::vector<unsigned char> Certificate;
 
                 static StartJobAndTaskArgs FromJson(const web::json::value& jsonValue);
 
