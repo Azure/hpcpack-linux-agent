@@ -24,7 +24,10 @@ StartJobAndTaskArgs StartJobAndTaskArgs::FromJson(const json::value& j)
     auto cert = j.at("m_Item5");
     if (!cert.is_null())
     {
+        std::vector<unsigned char> certBytes =
+            utility::conversions::from_base64(JsonHelper<std::string>::FromJson(cert));
 
+        args.certificate = std::move(certBytes);
     }
 
     return std::move(args);
