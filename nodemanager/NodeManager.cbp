@@ -48,6 +48,8 @@
 			<Add directory="../../spdlog/include" />
 		</Compiler>
 		<Unit filename="Readme.txt" />
+		<Unit filename="Version.cpp" />
+		<Unit filename="Version.h" />
 		<Unit filename="arguments/EndJobArgs.cpp" />
 		<Unit filename="arguments/EndJobArgs.h" />
 		<Unit filename="arguments/EndTaskArgs.cpp" />
