@@ -25,7 +25,23 @@ RemoteExecutor::RemoteExecutor(const std::string& networkName)
 
 json::value RemoteExecutor::StartJobAndTask(StartJobAndTaskArgs&& args, const std::string& callbackUri)
 {
-    // TODO: Prepare Job execution envi.
+    {
+        WriterLock writerLock(&this->lock);
+
+        int ret = System::CreateUser(args.UserName, args.Password);
+        if (ret != 0)
+        {
+            throw std::runtime_error(
+                String::Join(" ", "Create user", args.UserName, "failed with error code", ret));
+        }
+
+        if (!args.Certificate.empty())
+        {
+            // TODO: put the key file to the correct place
+        }
+
+        this->jobUsers[args.JobId] = std::tuple<std::string, std::string>(args.UserName, args.Password);
+    }
 
     return this->StartTask(StartTaskArgs(args.JobId, args.TaskId, std::move(args.StartInfo)), callbackUri);
 }
@@ -52,6 +68,15 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
         if (this->processes.find(taskInfo->GetAttemptId()) == this->processes.end() &&
             isNewEntry)
         {
+
+            auto jobUser = this->jobUsers.find(args.JobId);
+            if (jobUser == this->jobUsers.end())
+            {
+                Logger::Error(args.JobId, args.TaskId, args.StartInfo.TaskRequeueCount,
+                    "no user created");
+                throw new std::runtime_error("no user created");
+            }
+
             auto process = std::shared_ptr<Process>(new Process(
                 taskInfo->JobId,
                 taskInfo->TaskId,
@@ -61,6 +86,8 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
                 std::move(args.StartInfo.StdErrText),
                 std::move(args.StartInfo.StdInText),
                 std::move(args.StartInfo.WorkDirectory),
+                std::get<0>(jobUser->second),
+                std::get<1>(jobUser->second),
                 std::move(args.StartInfo.Affinity),
                 std::move(args.StartInfo.EnvironmentVariables),
                 [taskInfo, callbackUri, this] (int exitCode, std::string&& message, timeval userTime, timeval kernelTime)
@@ -136,9 +163,10 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
 
 json::value RemoteExecutor::EndJob(hpc::arguments::EndJobArgs&& args)
 {
-    ReaderLock readerLock(&this->lock);
+    WriterLock writerLock(&this->lock);
 
     Logger::Info(args.JobId, this->UnknowId, this->UnknowId, "EndJob: starting");
+
     auto jobInfo = this->jobTaskTable.RemoveJob(args.JobId);
 
     json::value jsonBody;
@@ -172,6 +200,12 @@ json::value RemoteExecutor::EndJob(hpc::arguments::EndJobArgs&& args)
     else
     {
         Logger::Warn(args.JobId, this->UnknowId, this->UnknowId, "EndJob: Job is already finished");
+    }
+
+    auto jobUser = this->jobUsers.find(args.JobId);
+    if (jobUser != this->jobUsers.end())
+    {
+        System::DeleteUser(std::get<0>(jobUser->second));
     }
 
     return jsonBody;

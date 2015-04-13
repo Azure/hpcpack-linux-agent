@@ -33,16 +33,44 @@ namespace hpc
 
                 static const std::string& GetDistroInfo();
 
+                static int CreateUser(const std::string& userName, const std::string& password);
+                static int DeleteUser(const std::string& userName);
+
                 template <typename ... Args>
-                static int ExecuteCommand(std::string& output, const std::string& cmd, const Args& ... args)
+                static int ExecuteCommandIn(const std::string& input, const std::string& cmd, const Args& ... args)
                 {
                     std::string command = String::Join(" ", cmd, args...);
+                    Logger::Debug("Executing cmd: {0}", command);
+                    FILE* stream = popen(command.c_str(), "w");
+                    int exitCode = (int)hpc::common::ErrorCodes::PopenError;
 
-                    //Logger::Debug("Executing cmd: {0}", command);
+                    if (stream)
+                    {
+                        if (!input.empty())
+                        {
+                            fputs(input.c_str(), stream);
+                        }
+
+                        int ret = pclose(stream);
+                        exitCode = WEXITSTATUS(ret);
+                    }
+                    else
+                    {
+                        Logger::Error("Error when popen {0}", command);
+                    }
+
+                    return exitCode;
+                }
+
+                template <typename ... Args>
+                static int ExecuteCommandOut(std::string& output, const std::string& cmd, const Args& ... args)
+                {
+                    std::string command = String::Join(" ", cmd, args...);
+                    Logger::Debug("Executing cmd: {0}", command);
                     FILE* stream = popen(command.c_str(), "r");
+                    int exitCode = (int)hpc::common::ErrorCodes::PopenError;
 
                     std::ostringstream result;
-                    int exitCode = (int)hpc::common::ErrorCodes::PopenError;
 
                     if (stream)
                     {
@@ -57,6 +85,7 @@ namespace hpc
                     }
                     else
                     {
+                        Logger::Error("Error when popen {0}", command);
                         result << "error when popen " << command << std::endl;
                     }
 

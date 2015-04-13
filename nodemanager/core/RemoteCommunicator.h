@@ -28,19 +28,28 @@ namespace hpc
                 void HandlePost(web::http::http_request message);
 
                 template <typename T>
-                static bool IsError(pplx::task<T>& t)
+                static bool IsError(pplx::task<T>& t, std::string& errorMessage)
                 {
                     try { t.wait(); return false; }
                     catch (const web::http::http_exception& httpEx)
                     {
                         Logger::Error("Http exception occurred: {0}", httpEx.what());
+                        errorMessage = httpEx.what();
                     }
                     catch (const std::exception& ex)
                     {
                         Logger::Error("Exception occurred: {0}", ex.what());
+                        errorMessage = ex.what();
                     }
 
                     return true;
+                }
+
+                template <typename T>
+                static bool IsError(pplx::task<T>& t)
+                {
+                    std::string errorMessage;
+                    return IsError(t, errorMessage);
                 }
 
                 std::string GetListeningUri(const std::string& networkName);

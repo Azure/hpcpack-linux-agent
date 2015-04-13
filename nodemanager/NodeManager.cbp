@@ -14,6 +14,7 @@
 				<Compiler>
 					<Add option="-Wall" />
 					<Add option="-g" />
+					<Add option="-DDEBUG" />
 				</Compiler>
 				<Linker>
 					<Add option="-lpthread" />
@@ -87,6 +88,10 @@
 		<Unit filename="scripts/PrepareTask.sh" />
 		<Unit filename="scripts/StartTask.sh" />
 		<Unit filename="scripts/common.sh" />
+		<Unit filename="test/ProcessTest.cpp" />
+		<Unit filename="test/ProcessTest.h" />
+		<Unit filename="test/TestRunner.cpp" />
+		<Unit filename="test/TestRunner.h" />
 		<Unit filename="utils/JsonHelper.cpp" />
 		<Unit filename="utils/JsonHelper.h" />
 		<Unit filename="utils/Logger.cpp" />

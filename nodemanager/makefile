@@ -34,6 +34,7 @@ CPPS = $(notdir $(wildcard */*.cpp *.cpp))
 OBJS = $(CPPS:.cpp=.o)
 
 # debug
+MACRO_DEBUG = -D DEBUG
 INC_DEBUG = $(INC)
 CFLAGS_DEBUG = $(CFLAGS) -g
 LIBDIR_DEBUG = -L$(CASA_LIB_DEBUG)
@@ -45,6 +46,7 @@ OUT_DEBUG = $(OUTDIR_DEBUG)/$(BINARY)
 OBJS_DEBUG = $(addprefix $(OBJDIR_DEBUG)/, $(OBJS))
 
 # release
+MACRO_RELEASE =
 INC_RELEASE = $(INC)
 CFLAGS_RELEASE = $(CFLAGS) -O2
 LIBDIR_RELEASE = -L$(CASA_LIB_RELEASE)
@@ -61,6 +63,8 @@ rebuild: clean all
 clean: clean_debug clean_release
 release: before_release out_release after_release
 debug: before_debug out_debug after_debug
+redebug: clean_debug debug
+rerelease: clean_release release
 
 # color output
 define compile
@@ -76,7 +80,7 @@ define compile
 	@tput setaf 7;
 	@echo " ]";
 	@tput sgr0
-	@$(CXX) $(1) $(2) -c $< -o $@
+	@$(CXX) $(1) $(2) $(3) -c $< -o $@
 endef
 
 define building
@@ -152,10 +156,10 @@ clean_debug:
 	rm -rf $(OBJDIR_DEBUG)
 
 $(OBJDIR_DEBUG)/%.o: */%.cpp
-	$(call compile,$(CFLAGS_DEBUG),$(INC_DEBUG))
+	$(call compile,$(CFLAGS_DEBUG),$(INC_DEBUG),$(MACRO_DEBUG))
 
 $(OBJDIR_DEBUG)/%.o: %.cpp
-	$(call compile,$(CFLAGS_DEBUG),$(INC_DEBUG))
+	$(call compile,$(CFLAGS_DEBUG),$(INC_DEBUG),$(MACRO_DEBUG))
 
 # release targets
 before_release:
@@ -175,15 +179,11 @@ clean_release:
 	rm -rf $(OUTDIR_RELEASE)
 	rm -rf $(OBJDIR_RELEASE)
 
-define compile_release =
-	@$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c $< -o $@
-endef
-
 $(OBJDIR_RELEASE)/%.o: */%.cpp
-	$(call compile,$(CFLAGS_RELEASE),$(INC_RELEASE))
+	$(call compile,$(CFLAGS_RELEASE),$(INC_RELEASE),$(MACRO_RELEASE))
 
 $(OBJDIR_RELEASE)/%.o: %.cpp
-	$(call compile,$(CFLAGS_RELEASE),$(INC_RELEASE))
+	$(call compile,$(CFLAGS_RELEASE),$(INC_RELEASE),$(MACRO_RELEASE))
 
 # phony targets
 .PHONY: before_debug after_debug clean_debug before_release after_release clean_release

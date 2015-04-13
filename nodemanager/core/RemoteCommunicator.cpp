@@ -112,14 +112,15 @@ void RemoteCommunicator::HandlePost(http_request request)
         })
         .then([request, this](pplx::task<json::value> t)
         {
-            if (!this->IsError(t))
+            std::string errorMessage;
+            if (!this->IsError(t, errorMessage))
             {
                 auto jsonBody = t.get();
                 request.reply(status_codes::OK, jsonBody).then([this](auto t) { this->IsError(t); });
             }
             else
             {
-                request.reply(status_codes::InternalError, "").then([this](auto t) { this->IsError(t); });
+                request.reply(status_codes::InternalError, errorMessage).then([this](auto t) { this->IsError(t); });
             }
         });
     }

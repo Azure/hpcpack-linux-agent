@@ -45,6 +45,7 @@ namespace hpc
 
                 // TODO: Make map hold Process directly.
                 std::map<long long, std::shared_ptr<Process>> processes;
+                std::map<int, std::tuple<std::string, std::string>> jobUsers;
                 pthread_rwlock_t lock;
         };
     }
