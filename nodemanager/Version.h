@@ -29,6 +29,12 @@ namespace hpc
                     { "1.1.1.2",
                         {
                             "Fixed a long running issue because of callback failure",
+                            "Added version history support",
+                        }
+                    },
+                    { "1.1.1.3",
+                        {
+                            "Fixed a long running issue because of callback contract mismatch",
                         }
                     },
                 };

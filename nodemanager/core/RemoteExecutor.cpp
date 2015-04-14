@@ -82,7 +82,8 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
                             taskInfo->KernelProcessorTime = kernelTime.tv_sec * 1000000 + kernelTime.tv_usec;
                             taskInfo->UserProcessorTime = userTime.tv_sec * 1000000 + userTime.tv_usec;
 
-                            auto jsonBody = taskInfo->ToJson();
+                            auto jsonBody = taskInfo->ToCompletionEventArgJson();
+
                             Logger::Debug(taskInfo->JobId, taskInfo->TaskId, taskInfo->TaskRequeueCount,
                                 "Callback to {0} with {1}", callbackUri, jsonBody);
                             client::http_client_config config;
