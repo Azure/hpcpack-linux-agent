@@ -37,6 +37,13 @@ namespace hpc
                             "Fixed a long running issue because of callback contract mismatch",
                         }
                     },
+                    { "1.1.1.4",
+                        {
+                            "Retry when create cgroup failed",
+                            "Return the exit code and error message when PrepareTask",
+                            "Record the output to message in Process",
+                        }
+                    },
                 };
 
                 auto it = --versionHistory.end();
