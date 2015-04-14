@@ -44,7 +44,7 @@ if $CGInstalled; then
 		((maxLoop--))
 	done
 else
-	kill -s TERM $(pstree -l -p $taskId | grep "([[:digit:]]*)" -o | tr -d '()')
+	kill -s TERM $(pstree -l -p $processId | grep "([[:digit:]]*)" -o | tr -d '()')
 fi
 
 exit 0

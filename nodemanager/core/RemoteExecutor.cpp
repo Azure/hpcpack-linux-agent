@@ -109,7 +109,8 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
                             taskInfo->KernelProcessorTime = kernelTime.tv_sec * 1000000 + kernelTime.tv_usec;
                             taskInfo->UserProcessorTime = userTime.tv_sec * 1000000 + userTime.tv_usec;
 
-                            auto jsonBody = taskInfo->ToJson();
+                            auto jsonBody = taskInfo->ToCompletionEventArgJson();
+
                             Logger::Debug(taskInfo->JobId, taskInfo->TaskId, taskInfo->TaskRequeueCount,
                                 "Callback to {0} with {1}", callbackUri, jsonBody);
                             client::http_client_config config;
@@ -121,6 +122,9 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
                                     "Callback to {0} response code {1}", callbackUri, response.status_code());
                             }).wait();
                         }
+
+                        // this won't remove the task entry added later as attempt id doesn't match
+                        this->jobTaskTable.RemoveTask(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetAttemptId());
                     }
                     catch (const std::exception& ex)
                     {
@@ -128,8 +132,6 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
                             "Exception when sending back task result. {0}", ex.what());
                     }
 
-                    // this won't remove the task entry added later as attempt id doesn't match
-                    this->jobTaskTable.RemoveTask(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetAttemptId());
 
                     Logger::Debug(taskInfo->JobId, taskInfo->TaskId, taskInfo->TaskRequeueCount,
                         "attemptId {0}, erasing process", taskInfo->GetAttemptId());

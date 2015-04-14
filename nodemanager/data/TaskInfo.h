@@ -23,6 +23,7 @@ namespace hpc
                 TaskInfo(TaskInfo&& t) = default;
 
                 web::json::value ToJson() const;
+                web::json::value ToCompletionEventArgJson() const;
 
                 const std::string& NodeName;
 

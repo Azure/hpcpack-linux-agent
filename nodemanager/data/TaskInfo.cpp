@@ -22,6 +22,13 @@ json::value TaskInfo::ToJson() const
     j["Message"] = JsonHelper<std::string>::ToJson(this->Message);
     j["ProcessIds"] = JsonHelper<std::string>::ToJson(String::Join<','>(this->ProcessIds));
 
+    return j;
+}
+
+json::value TaskInfo::ToCompletionEventArgJson() const
+{
+    json::value j = this->ToJson();
+
     json::value jobIdArg;
     jobIdArg["JobId"] = this->JobId;
     jobIdArg["TaskInfo"] = j;
