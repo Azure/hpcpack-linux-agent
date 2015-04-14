@@ -6,12 +6,16 @@
 #include "Process.h"
 #include "../utils/Logger.h"
 #include "../utils/String.h"
+#include "../common/ErrorCodes.h"
 
 using namespace hpc::core;
 using namespace hpc::utils;
+using namespace hpc::common;
 
 Process::Process(
+    int jobId,
     int taskId,
+    int requeueCount,
     const std::string& cmdLine,
     const std::string& standardOut,
     const std::string& standardErr,
@@ -20,7 +24,7 @@ Process::Process(
     std::vector<long>&& cpuAffinity,
     std::map<std::string, std::string>&& envi,
     const std::function<Callback> completed) :
-    taskId(taskId),
+    jobId(jobId), taskId(taskId), requeueCount(requeueCount), taskExecutionId(String::Join("_", taskId, requeueCount)),
     commandLine(cmdLine), stdOutFile(standardOut), stdErrFile(standardErr), stdInFile(standardIn),
     workDirectory(workDir), affinity(cpuAffinity), environments(envi), callback(completed), processId(0)
 {
@@ -36,7 +40,7 @@ pplx::task<pid_t> Process::Start()
 {
     pthread_create(&this->threadId, nullptr, ForkThread, this);
 
-    Logger::Debug("Created thread {0}", this->threadId);
+    Logger::Debug(this->jobId, this->taskId, this->requeueCount, "Created thread {0}", this->threadId);
 
     return pplx::task<pid_t>(this->started);
 }
@@ -45,13 +49,13 @@ void Process::Kill(int forcedExitCode)
 {
     if (forcedExitCode != 0x0FFFFFFF)
     {
+        Logger::Debug(this->jobId, this->taskId, this->requeueCount, "Setting forced ExitCode {0}", forcedExitCode);
         this->SetExitCode(forcedExitCode);
     }
 
     if (this->processId != 0)
     {
-        this->ExecuteCommand("/bin/bash", "EndTask.sh", this->taskId, this->processId);
-        this->processId = 0;
+        this->ExecuteCommand("/bin/bash", "EndTask.sh", this->taskExecutionId, this->processId);
     }
 
     this->GetStatisticsFromCGroup();
@@ -70,11 +74,11 @@ void Process::OnCompleted()
     }
     catch (const std::exception& ex)
     {
-        Logger::Error("Exception happened when callback, ex = {0}", ex.what());
+        Logger::Error(this->jobId, this->taskId, this->requeueCount, "Exception happened when callback, ex = {0}", ex.what());
     }
     catch (...)
     {
-        Logger::Error("Unknown exception happened when callback");
+        Logger::Error(this->jobId, this->taskId, this->requeueCount, "Unknown exception happened when callback");
     }
 }
 
@@ -87,7 +91,7 @@ void* Process::ForkThread(void* arg)
     if (ret != 0)
     {
         p->message << "Task " << p->taskId << ": error when create task folder, ret " << ret << std::endl;
-        Logger::Error("Task {0}: error when create task folder, ret {1}", p->taskId, ret);
+        Logger::Error(p->jobId, p->taskId, p->requeueCount, "error when create task folder, ret {0}", ret);
 
         // TODO fetch the errno.
         p->SetExitCode(ret);
@@ -99,14 +103,14 @@ void* Process::ForkThread(void* arg)
     if (path.empty())
     {
         p->message << "Error when build script." << std::endl;
-        Logger::Error("Error when build script.");
+        Logger::Error(p->jobId, p->taskId, p->requeueCount, "Error when build script.");
 
         // TODO fetch the errno.
-        p->SetExitCode(-1);
+        p->SetExitCode((int)ErrorCodes::BuildScriptError);
         goto Final;
     }
 
-    if (!p->ExecuteCommand("/bin/bash", "PrepareTask.sh", p->taskId, p->GetAffinity()))
+    if (!p->ExecuteCommand("/bin/bash", "PrepareTask.sh", p->taskExecutionId, p->GetAffinity()))
     {
         goto Final;
     }
@@ -120,7 +124,7 @@ void* Process::ForkThread(void* arg)
 
         p->message << "Failed to fork(), pid = " << p->processId << ", errno = " << errno
             << ", msg = " << errorMessage << std::endl;
-        Logger::Error("Failed to fork(), pid = {0}, errno = {1}, msg = {2}", p->processId, errno, errorMessage);
+        Logger::Error(p->jobId, p->taskId, p->requeueCount, "Failed to fork(), pid = {0}, errno = {1}, msg = {2}", p->processId, errno, errorMessage);
 
         p->SetExitCode(errno);
         goto Final;
@@ -132,13 +136,14 @@ void* Process::ForkThread(void* arg)
     }
     else
     {
+        assert(p->processId > 0);
         p->started.set(p->processId);
+        assert(p->processId > 0);
         p->Monitor();
     }
 
 Final:
-    p->processId = 0;
-    p->ExecuteCommand("/bin/bash", "CleanupTask.sh", p->taskId, p->processId);
+    p->ExecuteCommand("/bin/bash", "CleanupTask.sh", p->taskExecutionId, p->processId);
     p->ExecuteCommand("rm -rf", p->taskFolder);
     p->OnCompleted();
 
@@ -147,33 +152,39 @@ Final:
 
 void Process::Monitor()
 {
-    Logger::Debug("Monitor the forked process {0}", this->processId);
+    assert(this->processId > 0);
+    Logger::Debug(this->jobId, this->taskId, this->requeueCount, "Monitor the forked process {0}", this->processId);
 
     int status;
     rusage usage;
+    assert(this->processId > 0);
     pid_t waitedPid = wait4(this->processId, &status, 0, &usage);
+    assert(this->processId > 0);
     if (waitedPid == -1)
     {
-        Logger::Error("wait4 for process {0} error {1}", this->processId, errno);
+        Logger::Error(this->jobId, this->taskId, this->requeueCount, "wait4 for process {0} error {1}", this->processId, errno);
         this->message << "wait4 for process " << this->processId << " error " << errno << std::endl;
         this->SetExitCode(errno);
 
         return;
     }
 
+    assert(this->processId > 0);
     if (waitedPid != this->processId)
     {
-        Logger::Error("Process {0}: waited {1}, errno {2}", this->processId, waitedPid, errno);
+        Logger::Error(this->jobId, this->taskId, this->requeueCount,
+            "Process {0}: waited {1}, errno {2}", this->processId, waitedPid, errno);
+        assert(false);
 
         int tmp;
-        if (WIFEXITED(status)) Logger::Info("Process {0}: WIFEXITED", this->processId);
-        if ((tmp = WEXITSTATUS(status))) Logger::Info("Process {0}: WEXITSTATUS: {1}", this->processId, tmp);
-        if (WIFSIGNALED(status)) Logger::Info("Process {0}: WIFSIGNALED", this->processId);
-        if ((tmp = WTERMSIG(status))) Logger::Info("Process {0}: WTERMSIG: {1}", this->processId, tmp);
-        if (WCOREDUMP(status)) Logger::Info("Process {0}: Core dumped.", this->processId);
-        if (WIFSTOPPED(status)) Logger::Info("Process {0}: WIFSTOPPED", this->processId);
-        if (WSTOPSIG(status)) Logger::Info("Process {0}: WSTOPSIG", this->processId);
-        if (WIFCONTINUED(status)) Logger::Info("Process {0}: WIFCONTINUED", this->processId);
+        if (WIFEXITED(status)) Logger::Info(this->jobId, this->taskId, this->requeueCount, "Process {0}: WIFEXITED", this->processId);
+        if ((tmp = WEXITSTATUS(status))) Logger::Info(this->jobId, this->taskId, this->requeueCount, "Process {0}: WEXITSTATUS: {1}", this->processId, tmp);
+        if (WIFSIGNALED(status)) Logger::Info(this->jobId, this->taskId, this->requeueCount, "Process {0}: WIFSIGNALED", this->processId);
+        if ((tmp = WTERMSIG(status))) Logger::Info(this->jobId, this->taskId, this->requeueCount, "Process {0}: WTERMSIG: {1}", this->processId, tmp);
+        if (WCOREDUMP(status)) Logger::Info(this->jobId, this->taskId, this->requeueCount, "Process {0}: Core dumped.", this->processId);
+        if (WIFSTOPPED(status)) Logger::Info(this->jobId, this->taskId, this->requeueCount, "Process {0}: WIFSTOPPED", this->processId);
+        if (WSTOPSIG(status)) Logger::Info(this->jobId, this->taskId, this->requeueCount, "Process {0}: WSTOPSIG", this->processId);
+        if (WIFCONTINUED(status)) Logger::Info(this->jobId, this->taskId, this->requeueCount, "Process {0}: WIFCONTINUED", this->processId);
 
         this->message << "Process " << this->processId << ": waited " << waitedPid << ", errno " << errno << std::endl;
         this->SetExitCode(errno);
@@ -183,6 +194,8 @@ void Process::Monitor()
 
     if (WIFEXITED(status))
     {
+        Logger::Info(this->jobId, this->taskId, this->requeueCount,
+            "Process {0}: exite code {1}", this->processId, WEXITSTATUS(status));
         this->SetExitCode(WEXITSTATUS(status));
 
         std::string output;
@@ -200,8 +213,8 @@ void Process::Monitor()
     }
     else
     {
-        Logger::Error("wait4 for process {0} status {1}", this->processId, status);
-        this->SetExitCode(-1);
+        Logger::Error(this->jobId, this->taskId, this->requeueCount, "wait4 for process {0} status {1}", this->processId, status);
+        this->SetExitCode(status);
 
         this->message << "wait4 for process " << this->processId << " status " << status << std::endl;
     }
@@ -210,7 +223,7 @@ void Process::Monitor()
     this->userTime = usage.ru_utime;
     this->kernelTime = usage.ru_stime;
 
-    Logger::Debug("Process {0}: Monitor ended", this->processId);
+    Logger::Debug(this->jobId, this->taskId, this->requeueCount, "Process {0}: Monitor ended", this->processId);
     // TODO: Number of process;
     // TODO: ProcessIds
     // TODO: WorkingSet
@@ -221,13 +234,11 @@ void Process::Run(const std::string& path)
     std::vector<char> pathBuffer(path.cbegin(), path.cend());
     pathBuffer.push_back('\0');
 
-    std::string taskIdString = String::Join("", this->taskId);
-
     char* const args[] =
     {
         const_cast<char* const>("/bin/bash"),
         const_cast<char* const>("StartTask.sh"),
-        const_cast<char* const>(taskIdString.c_str()),
+        const_cast<char* const>(this->taskExecutionId.c_str()),
         &pathBuffer[0],
         nullptr
     };
@@ -252,7 +263,7 @@ int Process::CreateTaskFolder()
 {
     char folder[256];
 
-    sprintf(folder, "/tmp/nodemanager_task_%d.XXXXXX", this->taskId);
+    sprintf(folder, "/tmp/nodemanager_task_%d_%d.XXXXXX", this->taskId, this->requeueCount);
 
     char* p = mkdtemp(folder);
 

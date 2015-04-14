@@ -24,7 +24,7 @@
 	<map>
 	<cpprest/json.h>
 
-1422965830 /home/evanc/casablanca/Release/include/cpprest/json.h
+1427351029 /home/evanc/casablanca/Release/include/cpprest/json.h
 	<memory>
 	<string>
 	<sstream>
@@ -34,7 +34,7 @@
 	"cpprest/details/basic_types.h"
 	"cpprest/asyncrt_utils.h"
 
-1422965830 /home/evanc/casablanca/Release/include/cpprest/details/basic_types.h
+1427351029 /home/evanc/casablanca/Release/include/cpprest/details/basic_types.h
 	<string>
 	<fstream>
 	<iostream>
@@ -53,13 +53,15 @@
 
 1427351029 /home/evanc/casablanca/Release/include/cpprest/details/nosal.h
 
-1422965830 /home/evanc/casablanca/Release/include/cpprest/details/SafeInt3.hpp
-	<assert.h>
+1427351029 /home/evanc/casablanca/Release/include/cpprest/details/SafeInt3.hpp
 	<cstddef>
+	<cstdlib>
 	<intrin.h>
 	<stdint.h>
+	<assert.h>
+	<stdlib.h>
 
-1422965830 /home/evanc/casablanca/Release/include/cpprest/asyncrt_utils.h
+1427351029 /home/evanc/casablanca/Release/include/cpprest/asyncrt_utils.h
 	<string>
 	<vector>
 	<cstdint>
@@ -155,12 +157,12 @@
 1423402903 /home/evanc/whpc-linux-communicator/NodeManager/Test.h
 	<cpprest/http_listener.h>
 
-1422965830 /home/evanc/casablanca/Release/include/cpprest/http_listener.h
+1427351029 /home/evanc/casablanca/Release/include/cpprest/http_listener.h
 	<limits>
 	<functional>
 	"cpprest/http_msg.h"
 
-1422965830 /home/evanc/casablanca/Release/include/cpprest/http_msg.h
+1427351029 /home/evanc/casablanca/Release/include/cpprest/http_msg.h
 	<map>
 	<memory>
 	<string>
@@ -178,11 +180,11 @@
 	"cpprest/details/http_constants.dat"
 	"cpprest/details/http_constants.dat"
 
-1422965830 /home/evanc/casablanca/Release/include/cpprest/uri.h
+1427351029 /home/evanc/casablanca/Release/include/cpprest/uri.h
 	"cpprest/base_uri.h"
 	"cpprest/uri_builder.h"
 
-1422965830 /home/evanc/casablanca/Release/include/cpprest/base_uri.h
+1427351029 /home/evanc/casablanca/Release/include/cpprest/base_uri.h
 	<map>
 	<memory>
 	<string>
@@ -191,13 +193,13 @@
 	"cpprest/asyncrt_utils.h"
 	"cpprest/details/basic_types.h"
 
-1422965830 /home/evanc/casablanca/Release/include/cpprest/uri_builder.h
+1427351029 /home/evanc/casablanca/Release/include/cpprest/uri_builder.h
 	<sstream>
 	<string>
 	<vector>
 	"cpprest/base_uri.h"
 
-1422965830 /home/evanc/casablanca/Release/include/cpprest/http_headers.h
+1427351029 /home/evanc/casablanca/Release/include/cpprest/http_headers.h
 	<map>
 	<memory>
 	<string>
@@ -205,11 +207,11 @@
 	<system_error>
 	"cpprest/asyncrt_utils.h"
 
-1422965830 /home/evanc/casablanca/Release/include/cpprest/streams.h
+1427351029 /home/evanc/casablanca/Release/include/cpprest/streams.h
 	"cpprest/astreambuf.h"
 	<iosfwd>
 
-1422965830 /home/evanc/casablanca/Release/include/cpprest/astreambuf.h
+1427351029 /home/evanc/casablanca/Release/include/cpprest/astreambuf.h
 	<ios>
 	<memory>
 	<cstring>
@@ -218,7 +220,7 @@
 	"cpprest/details/basic_types.h"
 	"cpprest/asyncrt_utils.h"
 
-1422965830 /home/evanc/casablanca/Release/include/cpprest/containerstream.h
+1427351029 /home/evanc/casablanca/Release/include/cpprest/containerstream.h
 	<vector>
 	<queue>
 	<algorithm>
@@ -227,7 +229,7 @@
 	"cpprest/astreambuf.h"
 	"cpprest/streams.h"
 
-1422965830 /home/evanc/casablanca/Release/include/cpprest/details/http_constants.dat
+1427351029 /home/evanc/casablanca/Release/include/cpprest/details/http_constants.dat
 
 1423734326 source:/home/evanc/whpc-linux-communicator/NodeManager/RemoteCommunicator.cpp
 	<sstream>
@@ -416,86 +418,88 @@
 	"../common.h"
 	"../details/log_msg.h"
 
-1426473053 source:/home/evanc/whpc-linux-communicator/nodemanager/main.cpp
+1428909167 source:/home/evanc/whpc-linux-communicator/nodemanager/main.cpp
 	<iostream>
 	<cpprest/http_listener.h>
 	<cpprest/json.h>
 	"utils/Logger.h"
 	"core/RemoteCommunicator.h"
 	"core/RemoteExecutor.h"
+	"Version.h"
 
-1427353166 /home/evanc/whpc-linux-communicator/nodemanager/utils/Logger.h
+1428488455 /home/evanc/whpc-linux-communicator/nodemanager/utils/Logger.h
 	<syslog.h>
 	<stdio.h>
 	<stdarg.h>
 	<iostream>
 	<spdlog/spdlog.h>
+	"String.h"
 
-1426473053 /home/evanc/whpc-linux-communicator/nodemanager/core/RemoteCommunicator.h
+1427722564 /home/evanc/whpc-linux-communicator/nodemanager/core/RemoteCommunicator.h
 	<cpprest/http_listener.h>
 	<cpprest/json.h>
 	"../utils/Logger.h"
 	"IRemoteExecutor.h"
 
-1424929892 /home/evanc/whpc-linux-communicator/nodemanager/core/IRemoteExecutor.h
+1427722694 /home/evanc/whpc-linux-communicator/nodemanager/core/IRemoteExecutor.h
 	"../arguments/StartJobAndTaskArgs.h"
 	"../arguments/StartTaskArgs.h"
 	"../arguments/EndJobArgs.h"
 	"../arguments/EndTaskArgs.h"
 
-1426473053 /home/evanc/whpc-linux-communicator/nodemanager/core/RemoteExecutor.h
+1428574742 /home/evanc/whpc-linux-communicator/nodemanager/core/RemoteExecutor.h
 	"IRemoteExecutor.h"
 	"JobTaskTable.h"
 	"Monitor.h"
 	"Process.h"
 	"Reporter.h"
 
-1424929892 source:/home/evanc/whpc-linux-communicator/nodemanager/arguments/EndJobArgs.cpp
+1427353166 source:/home/evanc/whpc-linux-communicator/nodemanager/arguments/EndJobArgs.cpp
 	"EndJobArgs.h"
 	"../utils/JsonHelper.h"
 
-1424929892 /home/evanc/whpc-linux-communicator/nodemanager/arguments/EndJobArgs.h
+1427353166 /home/evanc/whpc-linux-communicator/nodemanager/arguments/EndJobArgs.h
 	<cpprest/json.h>
 
-1427272086 /home/evanc/whpc-linux-communicator/nodemanager/utils/JsonHelper.h
+1427383873 /home/evanc/whpc-linux-communicator/nodemanager/utils/JsonHelper.h
 	<vector>
 	<map>
 	<cpprest/json.h>
 
-1424929892 source:/home/evanc/whpc-linux-communicator/nodemanager/arguments/EndTaskArgs.cpp
+1427353166 source:/home/evanc/whpc-linux-communicator/nodemanager/arguments/EndTaskArgs.cpp
 	"EndTaskArgs.h"
 	"../utils/JsonHelper.h"
 
-1424929892 /home/evanc/whpc-linux-communicator/nodemanager/arguments/EndTaskArgs.h
+1427353166 /home/evanc/whpc-linux-communicator/nodemanager/arguments/EndTaskArgs.h
 	<cpprest/json.h>
 
-1426473053 source:/home/evanc/whpc-linux-communicator/nodemanager/arguments/ProcessStartInfo.cpp
+1427353166 source:/home/evanc/whpc-linux-communicator/nodemanager/arguments/ProcessStartInfo.cpp
 	"ProcessStartInfo.h"
 	"../utils/JsonHelper.h"
 
-1426473053 /home/evanc/whpc-linux-communicator/nodemanager/arguments/ProcessStartInfo.h
+1427353166 /home/evanc/whpc-linux-communicator/nodemanager/arguments/ProcessStartInfo.h
 	<string>
 	<vector>
 	<map>
 	<cpprest/json.h>
 
-1424929892 source:/home/evanc/whpc-linux-communicator/nodemanager/arguments/StartJobAndTaskArgs.cpp
+1427383873 source:/home/evanc/whpc-linux-communicator/nodemanager/arguments/StartJobAndTaskArgs.cpp
 	"StartJobAndTaskArgs.h"
 	"../utils/JsonHelper.h"
 
-1424929892 /home/evanc/whpc-linux-communicator/nodemanager/arguments/StartJobAndTaskArgs.h
+1427383873 /home/evanc/whpc-linux-communicator/nodemanager/arguments/StartJobAndTaskArgs.h
 	<cpprest/json.h>
 	"ProcessStartInfo.h"
 
-1424929892 source:/home/evanc/whpc-linux-communicator/nodemanager/arguments/StartTaskArgs.cpp
+1427353166 source:/home/evanc/whpc-linux-communicator/nodemanager/arguments/StartTaskArgs.cpp
 	"StartTaskArgs.h"
 	"../utils/JsonHelper.h"
 
-1424929892 /home/evanc/whpc-linux-communicator/nodemanager/arguments/StartTaskArgs.h
+1427353166 /home/evanc/whpc-linux-communicator/nodemanager/arguments/StartTaskArgs.h
 	<cpprest/json.h>
 	"ProcessStartInfo.h"
 
-1427724395 source:/home/evanc/whpc-linux-communicator/nodemanager/core/Process.cpp
+1428574597 source:/home/evanc/whpc-linux-communicator/nodemanager/core/Process.cpp
 	<memory.h>
 	<sys/wait.h>
 	<sys/resource.h>
@@ -503,8 +507,9 @@
 	"Process.h"
 	"../utils/Logger.h"
 	"../utils/String.h"
+	"../common/ErrorCodes.h"
 
-1428041425 /home/evanc/whpc-linux-communicator/nodemanager/core/Process.h
+1428574604 /home/evanc/whpc-linux-communicator/nodemanager/core/Process.h
 	<string>
 	<sstream>
 	<vector>
@@ -518,6 +523,7 @@
 	"../utils/String.h"
 	"../utils/Logger.h"
 	"../utils/System.h"
+	"../common/ErrorCodes.h"
 
 1427353166 /home/evanc/whpc-linux-communicator/nodemanager/utils/String.h
 	<string>
@@ -525,19 +531,20 @@
 	<sstream>
 	<algorithm>
 
-1426473053 source:/home/evanc/whpc-linux-communicator/nodemanager/core/RemoteCommunicator.cpp
+1428486600 source:/home/evanc/whpc-linux-communicator/nodemanager/core/RemoteCommunicator.cpp
 	<sstream>
 	"RemoteCommunicator.h"
 	"../utils/String.h"
 	"../utils/System.h"
 	"../arguments/StartJobAndTaskArgs.h"
 
-1427383873 /home/evanc/whpc-linux-communicator/nodemanager/utils/System.h
+1428574577 /home/evanc/whpc-linux-communicator/nodemanager/utils/System.h
 	<string>
 	"String.h"
 	"Logger.h"
+	"../common/ErrorCodes.h"
 
-1427192138 source:/home/evanc/whpc-linux-communicator/nodemanager/core/RemoteExecutor.cpp
+1428574636 source:/home/evanc/whpc-linux-communicator/nodemanager/core/RemoteExecutor.cpp
 	<cpprest/http_client.h>
 	<memory>
 	"RemoteExecutor.h"
@@ -545,14 +552,15 @@
 	"../utils/ReaderLock.h"
 	"../utils/Logger.h"
 	"../utils/System.h"
+	"../common/ErrorCodes.h"
 
-1426473053 source:/home/evanc/whpc-linux-communicator/nodemanager/utils/JsonHelper.cpp
+1427353166 source:/home/evanc/whpc-linux-communicator/nodemanager/utils/JsonHelper.cpp
 	"JsonHelper.h"
 
-1426595924 source:/home/evanc/whpc-linux-communicator/nodemanager/utils/Logger.cpp
+1427353166 source:/home/evanc/whpc-linux-communicator/nodemanager/utils/Logger.cpp
 	"Logger.h"
 
-1426473053 source:/home/evanc/whpc-linux-communicator/nodemanager/utils/String.cpp
+1427353166 source:/home/evanc/whpc-linux-communicator/nodemanager/utils/String.cpp
 	<sstream>
 	"String.h"
 
@@ -571,39 +579,39 @@
 	"String.h"
 	"Logger.h"
 
-1426602483 source:/home/evanc/whpc-linux-communicator/nodemanager/core/JobTaskTable.cpp
+1428485409 source:/home/evanc/whpc-linux-communicator/nodemanager/core/JobTaskTable.cpp
 	"JobTaskTable.h"
 	"../utils/WriterLock.h"
 	"../utils/ReaderLock.h"
 
-1426602464 /home/evanc/whpc-linux-communicator/nodemanager/core/JobTaskTable.h
+1428485409 /home/evanc/whpc-linux-communicator/nodemanager/core/JobTaskTable.h
 	<map>
 	<cpprest/json.h>
 	"../data/TaskInfo.h"
 	"../data/JobInfo.h"
 	"../data/NodeInfo.h"
 
-1426597393 /home/evanc/whpc-linux-communicator/nodemanager/data/TaskInfo.h
+1428485409 /home/evanc/whpc-linux-communicator/nodemanager/data/TaskInfo.h
 	<cpprest/json.h>
 	<vector>
 	<string>
 	<memory>
 
-1424929911 /home/evanc/whpc-linux-communicator/nodemanager/data/JobInfo.h
+1427353166 /home/evanc/whpc-linux-communicator/nodemanager/data/JobInfo.h
 	<cpprest/json.h>
 	<map>
 	"TaskInfo.h"
 
-1424947474 /home/evanc/whpc-linux-communicator/nodemanager/data/NodeInfo.h
+1427353166 /home/evanc/whpc-linux-communicator/nodemanager/data/NodeInfo.h
 	<cpprest/json.h>
 	<string>
 	<map>
 	"JobInfo.h"
 
-1424929892 /home/evanc/whpc-linux-communicator/nodemanager/utils/WriterLock.h
+1427353166 /home/evanc/whpc-linux-communicator/nodemanager/utils/WriterLock.h
 	<pthread.h>
 
-1422965830 /home/evanc/casablanca/Release/include/cpprest/http_client.h
+1427351029 /home/evanc/casablanca/Release/include/cpprest/http_client.h
 	<wrl.h>
 	<msxml6.h>
 	<memory>
@@ -618,45 +626,45 @@
 	"cpprest/oauth1.h"
 	"cpprest/oauth2.h"
 
-1422965830 /home/evanc/casablanca/Release/include/cpprest/details/web_utilities.h
+1427351029 /home/evanc/casablanca/Release/include/cpprest/details/web_utilities.h
 	"cpprest/asyncrt_utils.h"
 
-1422965830 /home/evanc/casablanca/Release/include/cpprest/oauth1.h
+1427351029 /home/evanc/casablanca/Release/include/cpprest/oauth1.h
 	"cpprest/http_msg.h"
 	"cpprest/details/http_constants.dat"
 	"cpprest/details/http_constants.dat"
 
-1422965830 /home/evanc/casablanca/Release/include/cpprest/oauth2.h
+1427351029 /home/evanc/casablanca/Release/include/cpprest/oauth2.h
 	"cpprest/http_msg.h"
 	"cpprest/details/http_constants.dat"
 
-1424940673 source:/home/evanc/whpc-linux-communicator/nodemanager/data/JobInfo.cpp
+1427353166 source:/home/evanc/whpc-linux-communicator/nodemanager/data/JobInfo.cpp
 	"JobInfo.h"
 
-1424948178 source:/home/evanc/whpc-linux-communicator/nodemanager/data/NodeInfo.cpp
+1427353166 source:/home/evanc/whpc-linux-communicator/nodemanager/data/NodeInfo.cpp
 	"NodeInfo.h"
 	"../utils/System.h"
 
-1426597885 source:/home/evanc/whpc-linux-communicator/nodemanager/data/TaskInfo.cpp
+1427353166 source:/home/evanc/whpc-linux-communicator/nodemanager/data/TaskInfo.cpp
 	"TaskInfo.h"
 	"../utils/JsonHelper.h"
 	"../utils/String.h"
 
-1424929892 source:/home/evanc/whpc-linux-communicator/nodemanager/utils/ReaderLock.cpp
+1427353166 source:/home/evanc/whpc-linux-communicator/nodemanager/utils/ReaderLock.cpp
 	"ReaderLock.h"
 
-1424929892 /home/evanc/whpc-linux-communicator/nodemanager/utils/ReaderLock.h
+1427353166 /home/evanc/whpc-linux-communicator/nodemanager/utils/ReaderLock.h
 	<pthread.h>
 
 1424929892 source:/home/evanc/whpc-linux-communicator/nodemanager/utils/WriterLock.cpp
 	"WriterLock.h"
 
-1427272469 /home/evanc/whpc-linux-communicator/nodemanager/core/Monitor.h
+1427383873 /home/evanc/whpc-linux-communicator/nodemanager/core/Monitor.h
 	<cpprest/json.h>
 	<map>
 	"../utils/System.h"
 
-1427272649 source:/home/evanc/whpc-linux-communicator/nodemanager/core/Monitor.cpp
+1428571893 source:/home/evanc/whpc-linux-communicator/nodemanager/core/Monitor.cpp
 	<pthread.h>
 	"Monitor.h"
 	"../utils/ReaderLock.h"
@@ -664,12 +672,23 @@
 	"../utils/Logger.h"
 	"../utils/System.h"
 
-1426473053 /home/evanc/whpc-linux-communicator/nodemanager/core/Reporter.h
+1428578115 /home/evanc/whpc-linux-communicator/nodemanager/core/Reporter.h
 	<cpprest/json.h>
 	<functional>
 
-1426473053 source:/home/evanc/whpc-linux-communicator/nodemanager/core/Reporter.cpp
+1428573779 source:/home/evanc/whpc-linux-communicator/nodemanager/core/Reporter.cpp
 	<cpprest/http_client.h>
 	"Reporter.h"
 	"../utils/Logger.h"
+
+1428574569 /home/evanc/whpc-linux-communicator/nodemanager/common/ErrorCodes.h
+
+1428909113 source:/home/evanc/whpc-linux-communicator/nodemanager/Version.cpp
+	"Version.h"
+
+1429007613 /home/evanc/whpc-linux-communicator/nodemanager/Version.h
+	<string>
+	<map>
+	<vector>
+	<iostream>
 

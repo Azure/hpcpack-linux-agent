@@ -5,6 +5,7 @@
 
 #include "String.h"
 #include "Logger.h"
+#include "../common/ErrorCodes.h"
 
 namespace hpc
 {
@@ -26,7 +27,7 @@ namespace hpc
                 static void CPUUsage(long int &total, long int &idle);
                 static void Memory(unsigned long &available, unsigned long &total);
                 static void CPU(int &cores, int &sockets);
-                static void NetworkUsage(long int &network, const std::string& netName);
+                static int NetworkUsage(long int &network, const std::string& netName);
                 static const std::string& GetNodeName();
                 static bool IsCGroupInstalled();
 
@@ -41,7 +42,7 @@ namespace hpc
                     FILE* stream = popen(command.c_str(), "r");
 
                     std::ostringstream result;
-                    int exitCode = -1;
+                    int exitCode = (int)hpc::common::ErrorCodes::PopenError;
 
                     if (stream)
                     {

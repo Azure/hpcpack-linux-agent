@@ -16,7 +16,7 @@ namespace hpc
                 Reporter(const std::string& uri, int interval, std::function<json::value()> fetcher);
                 ~Reporter();
 
-                pplx::task<void> Report();
+                void Report();
             protected:
             private:
                 static void* ReportingThread(void* arg);
@@ -28,8 +28,7 @@ namespace hpc
                 pthread_t threadId;
                 pplx::cancellation_token_source cts;
                 bool isRunning;
-                bool inRequest;
-                std::shared_ptr<http::client::http_client> client;
+                bool inRequest = false;
         };
     }
 }

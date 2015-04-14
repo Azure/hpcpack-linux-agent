@@ -15,29 +15,36 @@ if $CGInstalled; then
 	tasks=$CGroupRoot/cpuset/$groupName/tasks
 	freezerState=$CGroupRoot/freezer/$groupName/freezer.state
 
-	[ ! -f $tasks ] && echo "task is ended" && exit 1
-	[ ! -f $freezerState ] && echo "task is ended" && exit 1
+	[ ! -f $tasks ] && echo "$tasks doesn't exist" && exit -200
+	[ ! -f $freezerState ] && echo "$freezerState doesn't exist" && exit -201
 
 	# freeze the task
 	echo FROZEN > $freezerState
 
-	while ! grep -Fxq FROZEN $freezerState; do
+	maxLoop=20
+	while [ -f $freezerState ] && ! grep -Fxq FROZEN $freezerState && [ $maxLoop -gt 0 ]
+	do
 		sleep .1
+		((maxLoop--))
 	done
 
 	# kill all tasks
-	for pid in $(cat $tasks); do
+	for pid in $(cat $tasks); 
+	do
 		[ -d /proc/$pid ] && kill -TERM $pid
 	done
 
 	# resume tasks
 	echo THAWED > $freezerState
 
-	while ! grep -Fxq THAWED $freezerState; do
+	maxLoop=20
+	while [ -f $freezerState ] && ! grep -Fxq THAWED $freezerState && [ $maxLoop -gt 0 ] 
+	do
 		sleep .1
+		((maxLoop--))
 	done
 else
-	kill -s TERM $(pstree -l -p $taskId | grep "([[:digit:]]*)" -o | tr -d '()')
+	kill -s TERM $(pstree -l -p $processId | grep "([[:digit:]]*)" -o | tr -d '()')
 fi
 
 exit 0

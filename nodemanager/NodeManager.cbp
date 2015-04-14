@@ -48,6 +48,8 @@
 			<Add directory="../../spdlog/include" />
 		</Compiler>
 		<Unit filename="Readme.txt" />
+		<Unit filename="Version.cpp" />
+		<Unit filename="Version.h" />
 		<Unit filename="arguments/EndJobArgs.cpp" />
 		<Unit filename="arguments/EndJobArgs.h" />
 		<Unit filename="arguments/EndTaskArgs.cpp" />
@@ -58,6 +60,7 @@
 		<Unit filename="arguments/StartJobAndTaskArgs.h" />
 		<Unit filename="arguments/StartTaskArgs.cpp" />
 		<Unit filename="arguments/StartTaskArgs.h" />
+		<Unit filename="common/ErrorCodes.h" />
 		<Unit filename="core/IRemoteExecutor.h" />
 		<Unit filename="core/JobTaskTable.cpp" />
 		<Unit filename="core/JobTaskTable.h" />
