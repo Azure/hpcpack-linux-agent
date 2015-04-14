@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.30723.0
+# Visual Studio 14
+VisualStudioVersion = 14.0.22310.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "LinuxCommunicator", "LinuxCommunicator.csproj", "{AA00383C-5CAA-47E2-AAAF-04AE2890B534}"
 EndProject
@@ -12,6 +12,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MonitoringTest", "..\MonitoringTest\MonitoringTest\MonitoringTest.csproj", "{C10856A3-ED71-4A26-83F1-0529A5049DC3}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "FuncTest", "..\FuncTest\FuncTest.csproj", "{A7E995F9-4C5C-4D65-91C6-8E09DF8FDC47}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Test", "..\Test\Test.csproj", "{ED4BB613-B234-446E-8FAF-2CB25BA055A2}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -73,6 +75,18 @@ Global
 		{A7E995F9-4C5C-4D65-91C6-8E09DF8FDC47}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
 		{A7E995F9-4C5C-4D65-91C6-8E09DF8FDC47}.Release|Mixed Platforms.Build.0 = Release|Any CPU
 		{A7E995F9-4C5C-4D65-91C6-8E09DF8FDC47}.Release|Win32.ActiveCfg = Release|Any CPU
+		{ED4BB613-B234-446E-8FAF-2CB25BA055A2}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{ED4BB613-B234-446E-8FAF-2CB25BA055A2}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{ED4BB613-B234-446E-8FAF-2CB25BA055A2}.Debug|Mixed Platforms.ActiveCfg = Debug|Any CPU
+		{ED4BB613-B234-446E-8FAF-2CB25BA055A2}.Debug|Mixed Platforms.Build.0 = Debug|Any CPU
+		{ED4BB613-B234-446E-8FAF-2CB25BA055A2}.Debug|Win32.ActiveCfg = Debug|Any CPU
+		{ED4BB613-B234-446E-8FAF-2CB25BA055A2}.Debug|Win32.Build.0 = Debug|Any CPU
+		{ED4BB613-B234-446E-8FAF-2CB25BA055A2}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{ED4BB613-B234-446E-8FAF-2CB25BA055A2}.Release|Any CPU.Build.0 = Release|Any CPU
+		{ED4BB613-B234-446E-8FAF-2CB25BA055A2}.Release|Mixed Platforms.ActiveCfg = Release|Any CPU
+		{ED4BB613-B234-446E-8FAF-2CB25BA055A2}.Release|Mixed Platforms.Build.0 = Release|Any CPU
+		{ED4BB613-B234-446E-8FAF-2CB25BA055A2}.Release|Win32.ActiveCfg = Release|Any CPU
+		{ED4BB613-B234-446E-8FAF-2CB25BA055A2}.Release|Win32.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
