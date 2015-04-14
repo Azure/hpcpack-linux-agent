@@ -94,6 +94,9 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
                                     "Callback to {0} response code {1}", callbackUri, response.status_code());
                             }).wait();
                         }
+
+                        // this won't remove the task entry added later as attempt id doesn't match
+                        this->jobTaskTable.RemoveTask(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetAttemptId());
                     }
                     catch (const std::exception& ex)
                     {
@@ -101,8 +104,6 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
                             "Exception when sending back task result. {0}", ex.what());
                     }
 
-                    // this won't remove the task entry added later as attempt id doesn't match
-                    this->jobTaskTable.RemoveTask(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetAttemptId());
 
                     Logger::Debug(taskInfo->JobId, taskInfo->TaskId, taskInfo->TaskRequeueCount,
                         "attemptId {0}, erasing process", taskInfo->GetAttemptId());
