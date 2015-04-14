@@ -4,16 +4,15 @@
 #include <string>
 #include <map>
 #include <vector>
+#include <iostream>
 
 namespace hpc
 {
     class Version
     {
         public:
-            static const std::string& GetVersion()
+            static const std::map<std::string, std::vector<std::string>>& GetVersionHistory()
             {
-                static std::string version;
-
                 static std::map<std::string, std::vector<std::string>> versionHistory =
                 {
                     { "1.1.1.1",
@@ -44,13 +43,44 @@ namespace hpc
                             "Record the output to message in Process",
                         }
                     },
+                    { "1.1.1.5",
+                        {
+                            "Print out version history",
+                        }
+                    },
                 };
 
-                auto it = --versionHistory.end();
-                version = it->first;
-
-                return version;
+                return versionHistory;
             }
+
+            static const std::string& GetVersion()
+            {
+                auto& h = GetVersionHistory();
+                auto it = --h.end();
+                return it->first;
+            }
+
+            static void PrintVersionHistory()
+            {
+                auto& h = GetVersionHistory();
+                for (auto& v : h)
+                {
+                    std::cout << v.first << std::endl;
+                    std::cout << "================================================================" << std::endl;
+
+                    int number = 0;
+                    for (auto& m : v.second)
+                    {
+                        number++;
+                        std::cout << number << ". " << m << std::endl;
+                    }
+
+                    std::cout << std::endl;
+                }
+            }
+
+        private:
+
     };
 }
 
