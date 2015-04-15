@@ -30,7 +30,8 @@ DEBUG = debug
 RELEASE = release
 OBJDIR = obj
 OUTDIR = bin
-CPPS = $(notdir $(wildcard */*.cpp *.cpp))
+CPPSWITHDIR = $(wildcard */*.cpp *.cpp)
+CPPS = $(notdir $(CPPSWITHDIR))
 OBJS = $(CPPS:.cpp=.o)
 
 # debug
@@ -41,6 +42,7 @@ LIBDIR_DEBUG = -L$(CASA_LIB_DEBUG)
 LIB_DEBUG = $(LIB)
 LDFLAGS_DEBUG = $(LDFLAGS)
 OBJDIR_DEBUG = $(OBJDIR)/$(DEBUG)
+OBJDIRSED_DEBUG = $(OBJDIR)\/$(DEBUG)
 OUTDIR_DEBUG = $(OUTDIR)/$(DEBUG)
 OUT_DEBUG = $(OUTDIR_DEBUG)/$(BINARY)
 OBJS_DEBUG = $(addprefix $(OBJDIR_DEBUG)/, $(OBJS))
@@ -53,6 +55,7 @@ LIBDIR_RELEASE = -L$(CASA_LIB_RELEASE)
 LIB_RELEASE = $(LIB)
 LDFLAGS_RELEASE = $(LDFLAGS) -s
 OBJDIR_RELEASE = $(OBJDIR)/$(RELEASE)
+OBJDIRSED_RELEASE = $(OBJDIR)\/$(RELEASE)
 OUTDIR_RELEASE = $(OUTDIR)/$(RELEASE)
 OUT_RELEASE = $(OUTDIR_RELEASE)/$(BINARY)
 OBJS_RELEASE = $(addprefix $(OBJDIR_RELEASE)/, $(OBJS))
@@ -190,5 +193,12 @@ $(OBJDIR_RELEASE)/%.o: %.cpp
 
 # dependency
 include deps
-deps:
-	$(CXX) -MM *.cpp */*.cpp > deps
+deps: $(CPPSWITHDIR)
+	@tput bold;
+	@echo -n "Rebuilding dependencies ... ";
+	$(CXX) -MM *.cpp */*.cpp > rawdeps
+	cat rawdeps | sed -e "s/\(.*\)\.o/$(OBJDIRSED_DEBUG)\/\1\.o/" > deps
+	cat rawdeps | sed -e "s/\(.*\)\.o/$(OBJDIRSED_RELEASE)\/\1\.o/" >> deps
+	@tput setaf 2
+	@echo "Done."
+	@tput sgr0;

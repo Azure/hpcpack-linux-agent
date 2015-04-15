@@ -58,6 +58,11 @@ namespace hpc
                             "Fixed a bug that json not-existing value is handled incorrectly",
                         }
                     },
+                    { "1.1.1.7",
+                        {
+                            "Make file dependency auto detect",
+                        }
+                    },
                 };
 
                 return versionHistory;
