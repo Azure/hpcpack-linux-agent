@@ -27,6 +27,8 @@ namespace hpc
                 std::string UserName;
                 std::string Password;
                 std::vector<unsigned char> Certificate;
+                std::string PrivateKey;
+                std::string PublicKey;
 
                 static StartJobAndTaskArgs FromJson(const web::json::value& jsonValue);
 

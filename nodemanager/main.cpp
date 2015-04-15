@@ -26,8 +26,10 @@ int main(int argc, char* argv[])
     if (argc > 1)
     {
         if (string("-v") == argv[1])
-        Version::PrintVersionHistory();
-        return 0;
+        {
+            Version::PrintVersionHistory();
+            return 0;
+        }
     }
 
     std::cout << "Node manager started." << std::endl;
@@ -38,7 +40,9 @@ int main(int argc, char* argv[])
 
     if (argc > 1)
     {
-        if (std::string(argv[1]) == "-t")
+        cout << "Testing";
+
+        if (string("-t") == argv[1])
         {
             TestRunner tr;
             bool result = tr.Run();

@@ -74,7 +74,7 @@ std::shared_ptr<JobInfo> JobTaskTable::RemoveJob(int jobId)
     if (j != this->nodeInfo.Jobs.end())
     {
         job = j->second;
-        this->nodeInfo.Jobs.erase(jobId);
+        this->nodeInfo.Jobs.erase(j);
     }
 
     return job;
@@ -93,7 +93,7 @@ void JobTaskTable::RemoveTask(int jobId, int taskId, long long attemptId)
         if (t != j->second->Tasks.end() &&
             t->second->GetAttemptId() == attemptId)
         {
-            j->second->Tasks.erase(taskId);
+            j->second->Tasks.erase(t);
         }
     }
 }

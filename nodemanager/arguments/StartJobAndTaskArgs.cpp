@@ -22,15 +22,17 @@ StartJobAndTaskArgs StartJobAndTaskArgs::FromJson(const json::value& j)
         JsonHelper<std::string>::Read("m_Item3", j),
         JsonHelper<std::string>::Read("m_Item4", j));
 
-    auto cert = JsonHelper<std::string>::Read("m_Item5", j);
-    if (!cert.empty())
-    {
-        Logger::Debug("Deserialized cert value {0}", cert);
-        std::vector<unsigned char> certBytes =
-            utility::conversions::from_base64(cert);
-
-        args.Certificate = std::move(certBytes);
-    }
+    args.PrivateKey = JsonHelper<std::string>::Read("m_Item5", j);
+    args.PublicKey = JsonHelper<std::string>::Read("m_Item6", j);
+//
+//    if (!privateKey.empty())
+//    {
+//        Logger::Debug("Deserialized privateKey value {0}", privateKey);
+//        std::vector<unsigned char> certBytes =
+//            utility::conversions::from_base64(privateKey);
+//
+//        args.Certificate = std::move(certBytes);
+//    }
 
     return std::move(args);
 }

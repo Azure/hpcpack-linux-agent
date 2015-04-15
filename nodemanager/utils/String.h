@@ -53,6 +53,18 @@ namespace hpc
                             [](int c) { return std::isspace(c); }).base());
                 }
 
+                static inline std::string GetUserName(const std::string& domainUserName)
+                {
+                    std::string userName = domainUserName;
+                    auto userNameTokens = String::Split(userName, '\\');
+                    if (userNameTokens.size() > 1)
+                    {
+                        userName = userNameTokens[userNameTokens.size() - 1];
+                    }
+
+                    return std::move(userName);
+                }
+
             protected:
             private:
         };

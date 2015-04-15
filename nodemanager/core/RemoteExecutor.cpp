@@ -28,19 +28,24 @@ json::value RemoteExecutor::StartJobAndTask(StartJobAndTaskArgs&& args, const st
     {
         WriterLock writerLock(&this->lock);
 
-        int ret = System::CreateUser(args.UserName, args.Password);
-        if (ret != 0)
+        std::string userName;
+        bool existed = false;
+        if (!args.UserName.empty())
         {
-            throw std::runtime_error(
-                String::Join(" ", "Create user", args.UserName, "failed with error code", ret));
+            userName = String::GetUserName(args.UserName);
+            int ret = System::CreateUser(userName, args.Password, args.PrivateKey, args.PublicKey);
+            if (ret == 9)
+            {
+                existed = true;
+            }
+            else if (ret != 0)
+            {
+                throw std::runtime_error(
+                    String::Join(" ", "Create user", userName, "failed with error code", ret));
+            }
         }
 
-        if (!args.Certificate.empty())
-        {
-            // TODO: put the key file to the correct place
-        }
-
-        this->jobUsers[args.JobId] = std::tuple<std::string, std::string>(args.UserName, args.Password);
+        this->jobUsers[args.JobId] = std::tuple<std::string, std::string, bool>(userName, args.Password, existed);
     }
 
     return this->StartTask(StartTaskArgs(args.JobId, args.TaskId, std::move(args.StartInfo)), callbackUri);
@@ -53,11 +58,7 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
     bool isNewEntry;
     std::shared_ptr<TaskInfo> taskInfo = this->jobTaskTable.AddJobAndTask(args.JobId, args.TaskId, isNewEntry);
 
-    if (taskInfo->TaskRequeueCount < args.StartInfo.TaskRequeueCount)
-    {
-        Logger::Info(args.JobId, args.TaskId, args.StartInfo.TaskRequeueCount, "Change requeue count from {0} to {1}", taskInfo->TaskRequeueCount, args.StartInfo.TaskRequeueCount);
-        taskInfo->TaskRequeueCount = args.StartInfo.TaskRequeueCount;
-    }
+    taskInfo->SetTaskRequeueCount(args.StartInfo.TaskRequeueCount);
 
     if (args.StartInfo.CommandLine.empty())
     {
@@ -65,7 +66,7 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
     }
     else
     {
-        if (this->processes.find(taskInfo->GetAttemptId()) == this->processes.end() &&
+        if (this->processes.find(taskInfo->ProcessKey) == this->processes.end() &&
             isNewEntry)
         {
 
@@ -80,7 +81,7 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
             auto process = std::shared_ptr<Process>(new Process(
                 taskInfo->JobId,
                 taskInfo->TaskId,
-                taskInfo->TaskRequeueCount,
+                taskInfo->GetTaskRequeueCount(),
                 std::move(args.StartInfo.CommandLine),
                 std::move(args.StartInfo.StdOutText),
                 std::move(args.StartInfo.StdErrText),
@@ -98,7 +99,7 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
                     {
                         if (taskInfo->Exited)
                         {
-                            Logger::Debug(taskInfo->JobId, taskInfo->TaskId, taskInfo->TaskRequeueCount,
+                            Logger::Debug(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetTaskRequeueCount(),
                                 "Ended already by EndTask.");
                         }
                         else
@@ -111,14 +112,14 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
 
                             auto jsonBody = taskInfo->ToCompletionEventArgJson();
 
-                            Logger::Debug(taskInfo->JobId, taskInfo->TaskId, taskInfo->TaskRequeueCount,
+                            Logger::Debug(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetTaskRequeueCount(),
                                 "Callback to {0} with {1}", callbackUri, jsonBody);
                             client::http_client_config config;
                             config.set_validate_certificates(false);
                             client::http_client client(callbackUri, config);
                             client.request(methods::POST, "", jsonBody).then([&callbackUri, this, taskInfo](http_response response)
                             {
-                                Logger::Info(taskInfo->JobId, taskInfo->TaskId, taskInfo->TaskRequeueCount,
+                                Logger::Info(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetTaskRequeueCount(),
                                     "Callback to {0} response code {1}", callbackUri, response.status_code());
                             }).wait();
                         }
@@ -128,32 +129,32 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
                     }
                     catch (const std::exception& ex)
                     {
-                        Logger::Error(taskInfo->JobId, taskInfo->TaskId, taskInfo->TaskRequeueCount,
+                        Logger::Error(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetTaskRequeueCount(),
                             "Exception when sending back task result. {0}", ex.what());
                     }
 
 
-                    Logger::Debug(taskInfo->JobId, taskInfo->TaskId, taskInfo->TaskRequeueCount,
-                        "attemptId {0}, erasing process", taskInfo->GetAttemptId());
+                    Logger::Debug(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetTaskRequeueCount(),
+                        "attemptId {0}, processKey {1}, erasing process", taskInfo->GetAttemptId(), taskInfo->ProcessKey);
 
                     // Process will be deleted here.
-                    this->processes.erase(taskInfo->GetAttemptId());
+                    this->processes.erase(taskInfo->ProcessKey);
                 }));
 
-            this->processes[taskInfo->GetAttemptId()] = process;
+            this->processes[taskInfo->ProcessKey] = process;
 
             process->Start().then([this, taskInfo] (pid_t pid)
             {
                 if (pid > 0)
                 {
-                    Logger::Debug(taskInfo->JobId, taskInfo->TaskId, taskInfo->TaskRequeueCount,
+                    Logger::Debug(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetTaskRequeueCount(),
                         "Process started {0}", pid);
                 }
             });
         }
         else
         {
-            Logger::Warn(taskInfo->JobId, taskInfo->TaskId, taskInfo->TaskRequeueCount,
+            Logger::Warn(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetTaskRequeueCount(),
                 "The task has started already.");
             // Found the original process.
             // TODO: assert the job task table call is the same.
@@ -177,7 +178,7 @@ json::value RemoteExecutor::EndJob(hpc::arguments::EndJobArgs&& args)
     {
         for (auto& taskPair : jobInfo->Tasks)
         {
-            this->TerminateTask(taskPair.first, (int)ErrorCodes::EndJobExitCode);
+            this->TerminateTask(taskPair.second->ProcessKey, (int)ErrorCodes::EndJobExitCode);
 
             auto taskInfo = taskPair.second;
 
@@ -185,7 +186,7 @@ json::value RemoteExecutor::EndJob(hpc::arguments::EndJobArgs&& args)
             {
                 taskInfo->Exited = true;
                 taskInfo->ExitCode = (int)ErrorCodes::EndJobExitCode;
-                Logger::Debug(args.JobId, taskPair.first, taskInfo->TaskRequeueCount, "EndJob: starting");
+                Logger::Debug(args.JobId, taskPair.first, taskInfo->GetTaskRequeueCount(), "EndJob: starting");
             }
             else
             {
@@ -207,7 +208,16 @@ json::value RemoteExecutor::EndJob(hpc::arguments::EndJobArgs&& args)
     auto jobUser = this->jobUsers.find(args.JobId);
     if (jobUser != this->jobUsers.end())
     {
-        System::DeleteUser(std::get<0>(jobUser->second));
+        bool existed = std::get<2>(jobUser->second);
+
+        if (!existed)
+        {
+            auto userName = std::get<0>(jobUser->second);
+            if (!userName.empty())
+            {
+                System::DeleteUser(userName);
+            }
+        }
     }
 
     return jsonBody;
@@ -220,12 +230,11 @@ json::value RemoteExecutor::EndTask(hpc::arguments::EndTaskArgs&& args)
 
     auto taskInfo = this->jobTaskTable.GetTask(args.JobId, args.TaskId);
 
-    this->TerminateTask(args.TaskId, (int)ErrorCodes::EndTaskExitCode);
-
     json::value jsonBody;
 
     if (taskInfo)
     {
+        this->TerminateTask(taskInfo->ProcessKey, (int)ErrorCodes::EndTaskExitCode);
         this->jobTaskTable.RemoveTask(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetAttemptId());
 
         taskInfo->Exited = true;
@@ -258,9 +267,9 @@ json::value RemoteExecutor::Metric(const std::string& callbackUri)
     return json::value();
 }
 
-bool RemoteExecutor::TerminateTask(int taskId, int exitCode)
+bool RemoteExecutor::TerminateTask(int processKey, int exitCode)
 {
-    auto p = this->processes.find(taskId);
+    auto p = this->processes.find(processKey);
 
     if (p != this->processes.end())
     {

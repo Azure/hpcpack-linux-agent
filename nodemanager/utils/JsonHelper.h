@@ -18,7 +18,13 @@ namespace hpc
             public:
                 static T Read(const std::string& name, const json::value& j)
                 {
-                    auto obj = j.at(name);
+                    json::value obj;
+
+                    if (j.has_field(name))
+                    {
+                        obj = j.at(name);
+                    }
+
                     return JsonHelper<T>::FromJson(obj);
                 }
 
@@ -42,7 +48,13 @@ namespace hpc
             public:
                 static std::vector<T> Read(const std::string& name, const json::value& j)
                 {
-                    auto obj = j.at(name);
+                    json::value obj;
+
+                    if (j.has_field(name))
+                    {
+                        obj = j.at(name);
+                    }
+
                     return JsonHelper<std::vector<T>>::FromJson(obj);
                 }
 
@@ -88,7 +100,13 @@ namespace hpc
             public:
                 static std::map<std::string, T> Read(const std::string& name, const json::value& j)
                 {
-                    auto obj = j.at(name);
+                    json::value obj;
+
+                    if (j.has_field(name))
+                    {
+                        obj = j.at(name);
+                    }
+
                     return std::move(JsonHelper<std::map<std::string, T>>::FromJson(obj));
                 }
 

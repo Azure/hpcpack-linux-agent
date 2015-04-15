@@ -28,7 +28,7 @@ Process::Process(
     const std::function<Callback> completed) :
     jobId(jobId), taskId(taskId), requeueCount(requeueCount), taskExecutionId(String::Join("_", taskId, requeueCount)),
     commandLine(cmdLine), stdOutFile(standardOut), stdErrFile(standardErr), stdInFile(standardIn),
-    workDirectory(workDir), userName(user), password(password),
+    workDirectory(workDir), userName(user.empty() ? "root" : user), password(password),
     affinity(cpuAffinity), environments(envi), callback(completed), processId(0)
 {
 
@@ -333,8 +333,16 @@ std::string Process::BuildScript()
     std::string runUser = this->taskFolder + "/run_user.sh";
     std::ofstream fsRunUser(runUser, std::ios::trunc);
     fsRunUser << "#!/bin/bash" << std::endl << std::endl;
-    fsRunUser << "sudo -u " << this->userName
-        << " /bin/bash " << runDirInOut << std::endl;
+
+    if (!this->userName.empty())
+    {
+        fsRunUser << "sudo -u " << this->userName
+            << " /bin/bash " << runDirInOut << std::endl;
+    }
+    else
+    {
+        fsRunUser << " /bin/bash " << runDirInOut << std::endl;
+    }
 
     fsRunUser.close();
 

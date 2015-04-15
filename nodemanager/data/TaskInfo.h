@@ -6,6 +6,8 @@
 #include <string>
 #include <memory>
 
+#include "../utils/Logger.h"
+
 namespace hpc
 {
     namespace data
@@ -14,7 +16,7 @@ namespace hpc
         {
             public:
                 TaskInfo(int jobId, int taskId, const std::string& nodeName) :
-                    NodeName(nodeName), JobId(jobId), TaskId(taskId), TaskRequeueCount(0),
+                    NodeName(nodeName), JobId(jobId), TaskId(taskId),
                     ExitCode(0), Exited(false), KernelProcessorTime(0), UserProcessorTime(0),
                     WorkingSet(0), NumberOfProcesses(0), IsPrimaryTask(true)
                 {
@@ -29,12 +31,29 @@ namespace hpc
 
                 long long GetAttemptId() const
                 {
-                    return ((long long)TaskRequeueCount << 32) + TaskId;
+                    return ((long long)taskRequeueCount << 32) + TaskId;
+                }
+
+                int GetTaskRequeueCount() const { return this->taskRequeueCount; }
+
+                void SetTaskRequeueCount(int c)
+                {
+                    int oldC = this->taskRequeueCount;
+                    this->taskRequeueCount = c;
+
+                    if (!this->processKeySet)
+                    {
+                        this->ProcessKey = this->GetAttemptId();
+                        this->processKeySet = true;
+                    }
+
+                    hpc::utils::Logger::Info(this->JobId, this->TaskId, this->taskRequeueCount,
+                        "Change requeue count from {0} to {1}, processKey {2}",
+                        oldC, c, this->ProcessKey);
                 }
 
                 int JobId;
                 int TaskId;
-                int TaskRequeueCount;
                 int ExitCode;
                 bool Exited;
                 long long KernelProcessorTime;
@@ -42,11 +61,14 @@ namespace hpc
                 int WorkingSet;
                 int NumberOfProcesses;
                 bool IsPrimaryTask;
+                long long ProcessKey;
 
                 std::string Message;
                 std::vector<int> ProcessIds;
             protected:
             private:
+                int taskRequeueCount = 0;
+                bool processKeySet = false;
 
         };
     }

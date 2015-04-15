@@ -11,7 +11,7 @@ json::value TaskInfo::ToJson() const
     json::value j;
 
     j["TaskId"] = this->TaskId;
-    j["TaskRequeueCount"] = this->TaskRequeueCount;
+    j["TaskRequeueCount"] = this->taskRequeueCount;
     j["ExitCode"] = this->ExitCode;
     j["Exited"] = this->Exited;
     j["KernelProcessorTime"] = (int64_t)this->KernelProcessorTime;

@@ -33,7 +33,12 @@ namespace hpc
 
                 static const std::string& GetDistroInfo();
 
-                static int CreateUser(const std::string& userName, const std::string& password);
+                static int CreateUser(
+                    const std::string& userName,
+                    const std::string& password,
+                    const std::string& privateKey,
+                    const std::string& publicKey);
+
                 static int DeleteUser(const std::string& userName);
 
                 template <typename ... Args>

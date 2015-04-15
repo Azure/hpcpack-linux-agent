@@ -251,22 +251,74 @@ const std::string& System::GetDistroInfo()
     return distroInfo;
 }
 
-int System::CreateUser(const std::string& userName, const std::string& password)
+int System::CreateUser(
+    const std::string& userName,
+    const std::string& password,
+    const std::string& privateKey,
+    const std::string& publicKey)
 {
     std::string output;
 
-    int ret = System::ExecuteCommandOut(output, "useradd", userName, "-m");
+    int ret = System::ExecuteCommandOut(output, "useradd", userName, "-m", "-s /bin/bash");
     if (ret != 0)
     {
-        Logger::Error("useradd {0} -m error code {1}", userName, ret);
-        return ret;
+        Logger::Warn("useradd {0} -m error code {1}", userName, ret);
+
+        if (ret != 9) // exist
+        {
+            return ret;
+        }
     }
 
-    std::string input = String::Join("", password, "\n", password, "\n");
-    ret = System::ExecuteCommandIn(input, "passwd", userName);
-    if (ret != 0)
+    if (ret != 9)
     {
-        Logger::Error("passwd {0} error code {1}", userName, ret);
+        std::string input = String::Join("", password, "\n", password, "\n");
+        ret = System::ExecuteCommandIn(input, "passwd", userName);
+        if (ret != 0)
+        {
+            Logger::Error("passwd {0} error code {1}", userName, ret);
+            return ret;
+        }
+    }
+
+    std::string sshFolder = String::Join("", "/home/", userName, "/.ssh/");
+
+    if (!privateKey.empty())
+    {
+        auto privateKeyFileName = String::Join("", sshFolder, "id_rsa");
+        std::ifstream test(privateKeyFileName);
+        // won't overwrite existing user's private key
+        if (!test.good())
+        {
+            std::ofstream privateKeyFile(privateKeyFileName, std::ios::trunc);
+            privateKeyFile << privateKey;
+            privateKeyFile.close();
+        }
+        else
+        {
+            Logger::Info("File {0} exist, skip overwriting", privateKeyFileName);
+        }
+    }
+
+    if (!publicKey.empty())
+    {
+        auto publicKeyFileName = String::Join("", sshFolder, "id_rsa.pub");
+        std::ifstream test(publicKeyFileName);
+        // won't overwrite existing user's private key
+        if (!test.good())
+        {
+            std::ofstream publicKeyFile(publicKeyFileName, std::ios::trunc);
+            publicKeyFile << publicKey;
+            publicKeyFile.close();
+        }
+        else
+        {
+            Logger::Info("File {0} exist, skip overwriting", publicKeyFileName);
+        }
+
+        std::ofstream authFile(String::Join("", sshFolder, "authorized_keys"), std::ios::app);
+        authFile << publicKey;
+        authFile.close();
     }
 
     return ret;

@@ -48,6 +48,16 @@ namespace hpc
                             "Print out version history",
                         }
                     },
+                    { "1.1.1.6",
+                        {
+                            "Changed the process chain which will handle the user permission, std streams better",
+                            "Added utilities to handle users",
+                            "Added unit test framework",
+                            "Added test case for some echo Process",
+                            "Fixed a bug that a requeued task cannot be canceled",
+                            "Fixed a bug that json not-existing value is handled incorrectly",
+                        }
+                    },
                 };
 
                 return versionHistory;

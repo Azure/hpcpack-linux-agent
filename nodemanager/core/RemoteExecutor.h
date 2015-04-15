@@ -29,7 +29,7 @@ namespace hpc
             private:
                 std::string LoadReportUri(const std::string& fileName);
                 void SaveReportUri(const std::string& fileName, const std::string& uri);
-                bool TerminateTask(int taskId, int exitCode);
+                bool TerminateTask(int processKey, int exitCode);
 
                 const int UnknowId = 999;
                 const int NodeInfoReportInterval = 30;
@@ -45,7 +45,7 @@ namespace hpc
 
                 // TODO: Make map hold Process directly.
                 std::map<long long, std::shared_ptr<Process>> processes;
-                std::map<int, std::tuple<std::string, std::string>> jobUsers;
+                std::map<int, std::tuple<std::string, std::string, bool>> jobUsers;
                 pthread_rwlock_t lock;
         };
     }
