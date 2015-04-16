@@ -63,6 +63,17 @@ namespace hpc
                             "Make file dependency auto detect",
                         }
                     },
+                    { "1.1.1.8",
+                        {
+                            "Set timeout to let callback release locks to avoid deadlock",
+                            "Request resync when callback fails",
+                            "Adjust the maximum log size to avoid flushing important logs"
+                            "Fixed the detection method of cgroup in CentOS 6.6",
+                            "Make the return message of a task more verbose"
+                            "Verify the cgroup creation status at the end of PrepareTask"
+                            "Adjusted makefile output format",
+                        }
+                    },
                 };
 
                 return versionHistory;

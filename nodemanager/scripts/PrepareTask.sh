@@ -70,5 +70,13 @@ if $CGInstalled; then
 	then
 		exit $ec
 	fi
+
+	tasks=$CGroupRoot/cpuset/$groupName/tasks
+	freezerState=$CGroupRoot/freezer/$groupName/freezer.state
+
+	[ ! -f $tasks ] && echo "$tasks doesn't exist" && exit -200
+	[ ! -f $freezerState ] && echo "$freezerState doesn't exist" && exit -201
+
+	exit 0
 fi
 

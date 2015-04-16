@@ -72,16 +72,17 @@ namespace hpc
                     int ret = System::ExecuteCommandOut(output, cmd, args...);
                     if (ret != 0)
                     {
-                        std::string cmdLine = String::Join(" ", cmd, args...);
-                        this->message
-                            << "Task " << this->taskId << ": '" << cmdLine
-                            << "' failed. exitCode " << ret << ". output "
-                            << output << std::endl;
-
-                        Logger::Error(this->jobId, this->taskId, this->requeueCount, "'{0}' failed. exitCode {1}, output {2}.", cmdLine, ret, output);
 
                         this->SetExitCode(ret);
                     }
+
+                    std::string cmdLine = String::Join(" ", cmd, args...);
+                    this->message
+                        << "Task " << this->taskId << ": '" << cmdLine
+                        << "', exitCode " << ret << ". output "
+                        << output << std::endl;
+
+                    Logger::Debug(this->jobId, this->taskId, this->requeueCount, "'{0}', exitCode {1}, output {2}.", cmdLine, ret, output);
 
                     return ret;
                 }

@@ -52,6 +52,8 @@ void Reporter::Report()
 
         http_client_config config;
         config.set_validate_certificates(false);
+        utility::seconds timeout(5l);
+        config.set_timeout(timeout);
         http_client client(uri, config);
 
         try

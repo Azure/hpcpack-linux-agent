@@ -26,6 +26,12 @@ namespace hpc
                 void RemoveTask(int jobId, int taskId, long long attemptId);
                 std::shared_ptr<hpc::data::TaskInfo> GetTask(int jobId, int taskId);
 
+                void RequestResync()
+                {
+                    // Set this flag so the next report will trigger the resync with scheduler.
+                    this->nodeInfo.JustStarted = true;
+                }
+
             protected:
             private:
                 pthread_rwlock_t lock;

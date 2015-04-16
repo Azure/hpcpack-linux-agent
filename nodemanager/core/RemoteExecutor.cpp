@@ -116,6 +116,13 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
                                 "Callback to {0} with {1}", callbackUri, jsonBody);
                             client::http_client_config config;
                             config.set_validate_certificates(false);
+                            utility::seconds timeout(5l);
+                            config.set_timeout(timeout);
+
+                            Logger::Debug(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetTaskRequeueCount(),
+                                "Callback to {0}, configure: timeout {1} seconds, chuck size {2}",
+                                callbackUri, config.timeout().count(), config.chunksize());
+
                             client::http_client client(callbackUri, config);
                             client.request(methods::POST, "", jsonBody).then([&callbackUri, this, taskInfo](http_response response)
                             {
@@ -129,6 +136,7 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
                     }
                     catch (const std::exception& ex)
                     {
+                        this->jobTaskTable.RequestResync();
                         Logger::Error(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetTaskRequeueCount(),
                             "Exception when sending back task result. {0}", ex.what());
                     }

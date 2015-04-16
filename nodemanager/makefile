@@ -194,11 +194,16 @@ $(OBJDIR_RELEASE)/%.o: %.cpp
 # dependency
 include deps
 deps: $(CPPSWITHDIR)
-	@tput bold;
-	@echo -n "Rebuilding dependencies ... ";
+	@tput bold
+	@echo "Rebuilding dependencies ... "
+	@tput sgr0
+	$(indent)
 	$(CXX) -MM *.cpp */*.cpp > rawdeps
+	$(indent)
 	cat rawdeps | sed -e "s/\(.*\)\.o/$(OBJDIRSED_DEBUG)\/\1\.o/" > deps
+	$(indent)
 	cat rawdeps | sed -e "s/\(.*\)\.o/$(OBJDIRSED_RELEASE)\/\1\.o/" >> deps
 	@tput setaf 2
+	@tput bold
 	@echo "Done."
 	@tput sgr0;
