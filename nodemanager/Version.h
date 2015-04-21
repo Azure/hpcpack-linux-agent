@@ -67,11 +67,20 @@ namespace hpc
                         {
                             "Set timeout to let callback release locks to avoid deadlock",
                             "Request resync when callback fails",
-                            "Adjust the maximum log size to avoid flushing important logs"
+                            "Adjust the maximum log size to avoid flushing important logs",
                             "Fixed the detection method of cgroup in CentOS 6.6",
-                            "Make the return message of a task more verbose"
-                            "Verify the cgroup creation status at the end of PrepareTask"
+                            "Make the return message of a task more verbose",
+                            "Verify the cgroup creation status at the end of PrepareTask",
                             "Adjusted makefile output format",
+                        }
+                    },
+                    { "1.1.1.9",
+                        {
+                            "Fixed the default working directory ownership",
+                            "Write to the task message and log only when failure happened",
+                            "Configure CentOS sudoers to allow non-tty execution",
+                            "Changed test user name in unit test case",
+                            "Won't delete the user in job ending to avoid multi-job interference",
                         }
                     },
                 };

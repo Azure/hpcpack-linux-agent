@@ -36,6 +36,23 @@ int main(int argc, char* argv[])
     Logger::Info("Log system works.");
     Logger::Info("Version: {0}", Version::GetVersion());
 
+    std::string output;
+    int ret = System::ExecuteCommandOut(
+        output,
+        "sed -i --",
+        "'s/\\(Defaults\\s\\+\\)\\(requiretty\\)/\\1!\\2/g'",
+        "/etc/sudoers");
+
+    if (ret != 0)
+    {
+        Logger::Error(
+            "Failed when execute {0}, exit code {1}",
+            "sed -i -- 's/\\(Defaults\\s\\+\\)\\(requiretty\\)/\\1!\\2/g' /etc/sudoers",
+            ret);
+
+        return ret;
+    }
+
 #ifdef DEBUG
 
     if (argc > 1)

@@ -213,20 +213,21 @@ json::value RemoteExecutor::EndJob(hpc::arguments::EndJobArgs&& args)
         Logger::Warn(args.JobId, this->UnknowId, this->UnknowId, "EndJob: Job is already finished");
     }
 
-    auto jobUser = this->jobUsers.find(args.JobId);
-    if (jobUser != this->jobUsers.end())
-    {
-        bool existed = std::get<2>(jobUser->second);
-
-        if (!existed)
-        {
-            auto userName = std::get<0>(jobUser->second);
-            if (!userName.empty())
-            {
-                System::DeleteUser(userName);
-            }
-        }
-    }
+// Won't delete the user to avoid multi-job interfere
+//    auto jobUser = this->jobUsers.find(args.JobId);
+//    if (jobUser != this->jobUsers.end())
+//    {
+//        bool existed = std::get<2>(jobUser->second);
+//
+//        if (!existed)
+//        {
+//            auto userName = std::get<0>(jobUser->second);
+//            if (!userName.empty())
+//            {
+//                System::DeleteUser(userName);
+//            }
+//        }
+//    }
 
     return jsonBody;
 }

@@ -45,7 +45,7 @@ namespace hpc
                 static int ExecuteCommandIn(const std::string& input, const std::string& cmd, const Args& ... args)
                 {
                     std::string command = String::Join(" ", cmd, args...);
-                    Logger::Debug("Executing cmd: {0}", command);
+                    //Logger::Debug("Executing cmd: {0}", command);
                     FILE* stream = popen(command.c_str(), "w");
                     int exitCode = (int)hpc::common::ErrorCodes::PopenError;
 
@@ -71,7 +71,7 @@ namespace hpc
                 static int ExecuteCommandOut(std::string& output, const std::string& cmd, const Args& ... args)
                 {
                     std::string command = String::Join(" ", cmd, args...);
-                    Logger::Debug("Executing cmd: {0}", command);
+                    //Logger::Debug("Executing cmd: {0}", command);
                     FILE* stream = popen(command.c_str(), "r");
                     int exitCode = (int)hpc::common::ErrorCodes::PopenError;
 

@@ -14,7 +14,7 @@ ProcessTest::ProcessTest()
 
 bool ProcessTest::SimpleEcho()
 {
-    std::string userName = "testuser", password = "testpass";
+    std::string userName = "nm_testuser", password = "Pass1word";
 
     bool result = true;
     bool started = false;

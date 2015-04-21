@@ -274,7 +274,7 @@ int Process::CreateTaskFolder()
         this->taskFolder = p;
 
         int ret;
-        ret = this->ExecuteCommand("chown -R", this->userName, "/tmp");
+        ret = this->ExecuteCommand("chown -R", this->userName, this->taskFolder);
 
         if (ret == 0)
         {
