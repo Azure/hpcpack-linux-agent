@@ -11,9 +11,9 @@ namespace hpc
     class Version
     {
         public:
-            static const std::map<std::string, std::vector<std::string>>& GetVersionHistory()
+            static const std::vector<std::pair<std::string, std::vector<std::string>>>& GetVersionHistory()
             {
-                static std::map<std::string, std::vector<std::string>> versionHistory =
+                static std::vector<std::pair<std::string, std::vector<std::string>>> versionHistory =
                 {
                     { "1.1.1.1",
                         {
@@ -92,6 +92,7 @@ namespace hpc
                     { "1.1.1.11",
                         {
                             "Fix EndTask race condition with Task Completion",
+                            "Order the version display",
                         }
                     },
                 };
