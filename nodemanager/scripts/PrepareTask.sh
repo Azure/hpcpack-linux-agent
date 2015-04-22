@@ -34,7 +34,8 @@ if $CGInstalled; then
 	maxLoop=3
 	while [ $maxLoop -gt 0 ]
 	do
-		echo "$2" > $CGroupRoot/cpuset/$groupName/cpuset.cpus
+		cpusFile=$(GetCpusFile $groupName)
+		echo "$2" > $cpusFile
 		ec=$?
 		if [ $ec -eq 0 ]
 		then
@@ -54,7 +55,8 @@ if $CGInstalled; then
 	maxLoop=3
 	while [ $maxLoop -gt 0 ]
 	do
-		echo 0 > $CGroupRoot/cpuset/$groupName/cpuset.mems
+		memsFile=$(GetMemsFile $groupName)
+		echo 0 > $memsFile
 		ec=$?
 		if [ $ec -eq 0 ]
 		then
@@ -71,8 +73,8 @@ if $CGInstalled; then
 		exit $ec
 	fi
 
-	tasks=$CGroupRoot/cpuset/$groupName/tasks
-	freezerState=$CGroupRoot/freezer/$groupName/freezer.state
+	tasks=$(GetCpusetTasksFile $groupName)
+	freezerState=$(GetFreezerStateFile $groupName)
 
 	[ ! -f $tasks ] && echo "$tasks doesn't exist" && exit -200
 	[ ! -f $freezerState ] && echo "$freezerState doesn't exist" && exit -201

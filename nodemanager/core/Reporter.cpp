@@ -58,13 +58,12 @@ void Reporter::Report()
 
         try
         {
-            client.request(methods::POST, "", jsonBody, this->cts.get_token()).then([&uri, this](http_response response)
+            http_response response = client.request(methods::POST, "", jsonBody, this->cts.get_token()).get();
+
+            if (this->intervalSeconds > 10)
             {
-                if (this->intervalSeconds > 10)
-                {
-                    Logger::Debug("---------> Reported to {0} response code {1}", uri, response.status_code());
-                }
-            }).wait();
+                Logger::Debug("---------> Reported to {0} response code {1}", uri, response.status_code());
+            }
         }
         catch (const http_exception& httpEx)
         {

@@ -12,8 +12,8 @@ processId=$2
 if $CGInstalled; then
 	groupName=$(GetCGroupName $taskId)
 	group=$CGroupSubSys:$groupName
-	tasks=$CGroupRoot/cpuset/$groupName/tasks
-	freezerState=$CGroupRoot/freezer/$groupName/freezer.state
+	tasks=$(GetCpusetTasksFile $groupName)
+	freezerState=$(GetFreezerStateFile $groupName)
 
 	[ ! -f $tasks ] && echo "$tasks doesn't exist" && exit -200
 	[ ! -f $freezerState ] && echo "$freezerState doesn't exist" && exit -201

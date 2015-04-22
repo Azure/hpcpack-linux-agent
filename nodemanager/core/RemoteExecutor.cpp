@@ -93,8 +93,6 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
                 std::move(args.StartInfo.EnvironmentVariables),
                 [taskInfo, callbackUri, this] (int exitCode, std::string&& message, timeval userTime, timeval kernelTime)
                 {
-                    WriterLock writerLock(&this->lock);
-
                     try
                     {
                         if (taskInfo->Exited)
@@ -104,13 +102,19 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
                         }
                         else
                         {
-                            taskInfo->Exited = true;
-                            taskInfo->ExitCode = exitCode;
-                            taskInfo->Message = std::move(message);
-                            taskInfo->KernelProcessorTime = kernelTime.tv_sec * 1000000 + kernelTime.tv_usec;
-                            taskInfo->UserProcessorTime = userTime.tv_sec * 1000000 + userTime.tv_usec;
+                            json::value jsonBody;
 
-                            auto jsonBody = taskInfo->ToCompletionEventArgJson();
+                            {
+                                WriterLock writerLock(&this->lock);
+
+                                taskInfo->Exited = true;
+                                taskInfo->ExitCode = exitCode;
+                                taskInfo->Message = std::move(message);
+                                taskInfo->KernelProcessorTime = kernelTime.tv_sec * 1000000 + kernelTime.tv_usec;
+                                taskInfo->UserProcessorTime = userTime.tv_sec * 1000000 + userTime.tv_usec;
+
+                                jsonBody = taskInfo->ToCompletionEventArgJson();
+                            }
 
                             Logger::Debug(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetTaskRequeueCount(),
                                 "Callback to {0} with {1}", callbackUri, jsonBody);
@@ -124,11 +128,10 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
                                 callbackUri, config.timeout().count(), config.chunksize());
 
                             client::http_client client(callbackUri, config);
-                            client.request(methods::POST, "", jsonBody).then([&callbackUri, this, taskInfo](http_response response)
-                            {
-                                Logger::Info(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetTaskRequeueCount(),
-                                    "Callback to {0} response code {1}", callbackUri, response.status_code());
-                            }).wait();
+                            http_response response = client.request(methods::POST, "", jsonBody).get();
+
+                            Logger::Info(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetTaskRequeueCount(),
+                                "Callback to {0} response code {1}", callbackUri, response.status_code());
                         }
 
                         // this won't remove the task entry added later as attempt id doesn't match
@@ -145,8 +148,12 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
                     Logger::Debug(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetTaskRequeueCount(),
                         "attemptId {0}, processKey {1}, erasing process", taskInfo->GetAttemptId(), taskInfo->ProcessKey);
 
-                    // Process will be deleted here.
-                    this->processes.erase(taskInfo->ProcessKey);
+                    {
+                        WriterLock writerLock(&this->lock);
+
+                        // Process will be deleted here.
+                        this->processes.erase(taskInfo->ProcessKey);
+                    }
                 }));
 
             this->processes[taskInfo->ProcessKey] = process;

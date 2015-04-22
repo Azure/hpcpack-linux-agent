@@ -83,6 +83,12 @@ namespace hpc
                             "Won't delete the user in job ending to avoid multi-job interference",
                         }
                     },
+                    { "1.1.1.10",
+                        {
+                            "Try to fix a thread pool leak issue",
+                            "Support CGroup mounting point on CentOS 6.6",
+                        }
+                    },
                 };
 
                 return versionHistory;
