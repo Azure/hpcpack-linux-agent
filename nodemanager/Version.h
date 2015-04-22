@@ -89,6 +89,11 @@ namespace hpc
                             "Support CGroup mounting point on CentOS 6.6",
                         }
                     },
+                    { "1.1.1.11",
+                        {
+                            "Fix EndTask race condition with Task Completion",
+                        }
+                    },
                 };
 
                 return versionHistory;

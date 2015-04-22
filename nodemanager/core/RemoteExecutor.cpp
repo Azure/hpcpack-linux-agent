@@ -95,18 +95,18 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
                 {
                     try
                     {
-                        if (taskInfo->Exited)
-                        {
-                            Logger::Debug(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetTaskRequeueCount(),
-                                "Ended already by EndTask.");
-                        }
-                        else
-                        {
-                            json::value jsonBody;
+                        json::value jsonBody;
 
+                        {
+                            WriterLock writerLock(&this->lock);
+
+                            if (taskInfo->Exited)
                             {
-                                WriterLock writerLock(&this->lock);
-
+                                Logger::Debug(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetTaskRequeueCount(),
+                                    "Ended already by EndTask.");
+                            }
+                            else
+                            {
                                 taskInfo->Exited = true;
                                 taskInfo->ExitCode = exitCode;
                                 taskInfo->Message = std::move(message);
@@ -115,7 +115,10 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
 
                                 jsonBody = taskInfo->ToCompletionEventArgJson();
                             }
+                        }
 
+                        if (!jsonBody.is_null())
+                        {
                             Logger::Debug(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetTaskRequeueCount(),
                                 "Callback to {0} with {1}", callbackUri, jsonBody);
                             client::http_client_config config;
