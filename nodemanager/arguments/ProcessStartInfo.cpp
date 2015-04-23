@@ -11,12 +11,12 @@ ProcessStartInfo::ProcessStartInfo(
     std::string&& stdErr,
     std::string&& workDir,
     int taskRequeueCount,
-    std::vector<long>&& affinity,
+    std::vector<uint64_t>&& affinity,
     std::map<std::string, std::string>&& enviVars) :
     CommandLine(std::move(cmdLine)),
-    StdInText(std::move(stdIn)),
-    StdOutText(std::move(stdOut)),
-    StdErrText(std::move(stdErr)),
+    StdInFile(std::move(stdIn)),
+    StdOutFile(std::move(stdOut)),
+    StdErrFile(std::move(stdErr)),
     WorkDirectory(std::move(workDir)),
     TaskRequeueCount(taskRequeueCount),
     Affinity(std::move(affinity)),
@@ -34,7 +34,7 @@ ProcessStartInfo ProcessStartInfo::FromJson(const web::json::value& jsonValue)
         JsonHelper<std::string>::Read("stderr", jsonValue),
         JsonHelper<std::string>::Read("workingDirectory", jsonValue),
         JsonHelper<int>::Read("taskRequeueCount", jsonValue),
-        JsonHelper<std::vector<long>>::Read("affinity", jsonValue),
+        JsonHelper<std::vector<uint64_t>>::Read("affinity", jsonValue),
         JsonHelper<std::map<std::string, std::string>>::Read("environmentVariables", jsonValue));
 
     return std::move(startInfo);

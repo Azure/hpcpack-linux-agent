@@ -13,6 +13,7 @@ namespace hpc
                 ProcessTest();
 
                 static bool SimpleEcho();
+                static bool Affinity();
 
             protected:
             private:

@@ -11,6 +11,7 @@ using namespace hpc::utils;
 TestRunner::TestRunner()
 {
     this->tests["SimpleEcho"] = []() { return ProcessTest::SimpleEcho(); };
+    this->tests["Affinity"] = []() { return ProcessTest::Affinity(); };
 }
 
 bool TestRunner::Run()

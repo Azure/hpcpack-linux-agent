@@ -39,7 +39,7 @@ namespace hpc
                     const std::string& workDir,
                     const std::string& user,
                     const std::string& password,
-                    std::vector<long>&& cpuAffinity,
+                    std::vector<uint64_t>&& cpuAffinity,
                     std::map<std::string, std::string>&& envi,
                     const std::function<Callback> completed);
 
@@ -88,6 +88,12 @@ namespace hpc
                 static void* ForkThread(void*);
 
                 std::string GetAffinity();
+                static inline void OutputAffinity(std::ostringstream& oss, int start, int end)
+                {
+                    if (start == end) { oss << "," << start; }
+                    else if (start < end) { oss << "," << start << "-" << end; }
+                }
+
                 void Run(const std::string& path);
                 void Monitor();
                 std::string BuildScript();
@@ -113,7 +119,7 @@ namespace hpc
                 const std::string workDirectory;
                 const std::string userName;
                 const std::string password;
-                const std::vector<long> affinity;
+                const std::vector<uint64_t> affinity;
                 const std::map<std::string, std::string> environments;
                 std::vector<std::string> environmentsBuffer;
 

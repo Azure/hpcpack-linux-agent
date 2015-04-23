@@ -26,6 +26,7 @@ namespace hpc
         FROMJSON_DEFAULT(std::string, is_string(), as_string(), std::string())
         FROMJSON(const json::array&, is_array(), as_array())
         FROMJSON(long long, is_number(), as_number().to_int64())
+        FROMJSON(uint64_t, is_number(), as_number().to_uint64())
         FROMJSON(double, is_number(), as_number().to_double())
         FROMJSON(bool, is_boolean(), as_bool())
         FROMJSON(const json::object&, is_object(), as_object())

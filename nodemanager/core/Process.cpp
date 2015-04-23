@@ -23,7 +23,7 @@ Process::Process(
     const std::string& workDir,
     const std::string& user,
     const std::string& password,
-    std::vector<long>&& cpuAffinity,
+    std::vector<uint64_t>&& cpuAffinity,
     std::map<std::string, std::string>&& envi,
     const std::function<Callback> completed) :
     jobId(jobId), taskId(taskId), requeueCount(requeueCount), taskExecutionId(String::Join("_", taskId, requeueCount)),
@@ -258,7 +258,51 @@ void Process::Run(const std::string& path)
 
 std::string Process::GetAffinity()
 {
-    return "0-3";
+    int cores, sockets;
+    System::CPU(cores, sockets);
+
+    std::string aff;
+    if (!this->affinity.empty())
+    {
+        std::ostringstream result;
+        for (int lastCore = 0, i = 0; i < cores; i++)
+        {
+            size_t affinityIndex = i / 64;
+            int affinityOffset = i % 64;
+
+            if (this->affinity.size() <= affinityIndex)
+            {
+                OutputAffinity(result, lastCore, i - 1);
+
+                break;
+            }
+
+            uint64_t currentAffinity = this->affinity[affinityIndex];
+
+            if (!((currentAffinity >> affinityOffset) << (63 - affinityOffset)))
+            {
+                // if the bit is not set;
+                OutputAffinity(result, lastCore, i - 1);
+
+                lastCore = i + 1;
+            }
+            else if (i == cores - 1)
+            {
+                OutputAffinity(result, lastCore, i);
+            }
+        }
+
+        aff = result.str();
+    }
+
+    if (aff.size() > 1)
+    {
+        return aff.substr(1);
+    }
+    else
+    {
+        return String::Join("-", "0", cores - 1);
+    }
 }
 
 int Process::CreateTaskFolder()
