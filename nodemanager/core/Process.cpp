@@ -177,19 +177,6 @@ void Process::Monitor()
             "Process {0}: waited {1}, errno {2}", this->processId, waitedPid, errno);
         assert(false);
 
-        int tmp;
-        if (WIFEXITED(status)) Logger::Info(this->jobId, this->taskId, this->requeueCount, "Process {0}: WIFEXITED", this->processId);
-        if ((tmp = WEXITSTATUS(status))) Logger::Info(this->jobId, this->taskId, this->requeueCount, "Process {0}: WEXITSTATUS: {1}", this->processId, tmp);
-        if (WIFSIGNALED(status)) Logger::Info(this->jobId, this->taskId, this->requeueCount, "Process {0}: WIFSIGNALED", this->processId);
-        if ((tmp = WTERMSIG(status))) Logger::Info(this->jobId, this->taskId, this->requeueCount, "Process {0}: WTERMSIG: {1}", this->processId, tmp);
-        if (WCOREDUMP(status)) Logger::Info(this->jobId, this->taskId, this->requeueCount, "Process {0}: Core dumped.", this->processId);
-        if (WIFSTOPPED(status)) Logger::Info(this->jobId, this->taskId, this->requeueCount, "Process {0}: WIFSTOPPED", this->processId);
-        if (WSTOPSIG(status)) Logger::Info(this->jobId, this->taskId, this->requeueCount, "Process {0}: WSTOPSIG", this->processId);
-        if (WIFCONTINUED(status)) Logger::Info(this->jobId, this->taskId, this->requeueCount, "Process {0}: WIFCONTINUED", this->processId);
-
-        this->message << "Process " << this->processId << ": waited " << waitedPid << ", errno " << errno << std::endl;
-        this->SetExitCode(errno);
-
         return;
     }
 
@@ -214,10 +201,23 @@ void Process::Monitor()
     }
     else
     {
-        Logger::Error(this->jobId, this->taskId, this->requeueCount, "wait4 for process {0} status {1}", this->processId, status);
+        int tmp;
+        if (WIFSIGNALED(status))
+        {
+            Logger::Info(this->jobId, this->taskId, this->requeueCount, "Process {0}: WIFSIGNALED Signal {1}", this->processId, WTERMSIG(status));
+            this->message << "Process " << this->processId << ": WIFSIGNALED Signal " << WTERMSIG(status) << std::endl;
+        }
+
+        if (WCOREDUMP(status))
+        {
+            Logger::Info(this->jobId, this->taskId, this->requeueCount, "Process {0}: Core dumped.", this->processId);
+            this->message << "Process " << this->processId << ": Core dumped." << std::endl;
+        }
+
+        Logger::Error(this->jobId, this->taskId, this->requeueCount, "Process {0}: wait4 status {1}", this->processId, status);
         this->SetExitCode(status);
 
-        this->message << "wait4 for process " << this->processId << " status " << status << std::endl;
+        this->message << "Process " << this->processId << ": wait4 status " << status << std::endl;
     }
 
     // TODO: use cgroup to report.
