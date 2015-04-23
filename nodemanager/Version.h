@@ -99,6 +99,7 @@ namespace hpc
                         {
                             "Support CPU affinity",
                             "Cleanup the user ssh keys after job finish",
+                            "Report the signal which kills the process",
                         }
                     },
                 };
