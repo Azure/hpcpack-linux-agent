@@ -102,6 +102,11 @@ namespace hpc
                             "Report the signal which kills the process",
                         }
                     },
+                    { "1.1.1.13",
+                        {
+                            "Fix a user name mis-match issue",
+                        }
+                    },
                 };
 
                 return versionHistory;

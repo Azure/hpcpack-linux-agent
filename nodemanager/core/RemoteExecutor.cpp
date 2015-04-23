@@ -239,6 +239,7 @@ json::value RemoteExecutor::EndJob(hpc::arguments::EndJobArgs&& args)
 
     if (jobUser != this->jobUsers.end())
     {
+        Logger::Info(args.JobId, this->UnknowId, this->UnknowId, "EndJob: Cleanup user {0}", std::get<0>(jobUser->second));
         auto userJob = this->userJobs.find(std::get<0>(jobUser->second));
 
         bool cleanupUser = false;
@@ -252,6 +253,8 @@ json::value RemoteExecutor::EndJob(hpc::arguments::EndJobArgs&& args)
 
             // cleanup when no one is using the user;
             cleanupUser = userJob->second.empty();
+            Logger::Info(args.JobId, this->UnknowId, this->UnknowId,
+                "EndJob: {0} jobs associated with the user {1}", userJob->second.size(), std::get<0>(jobUser->second));
 
             if (cleanupUser)
             {
@@ -273,6 +276,8 @@ json::value RemoteExecutor::EndJob(hpc::arguments::EndJobArgs&& args)
             {
                 if (!userName.empty())
                 {
+                    Logger::Info(args.JobId, this->UnknowId, this->UnknowId,
+                        "EndJob: Delete user {0}", userName);
                     System::DeleteUser(userName);
                 }
             }
@@ -280,16 +285,25 @@ json::value RemoteExecutor::EndJob(hpc::arguments::EndJobArgs&& args)
             {
                 if (privateKeyAdded)
                 {
+                    Logger::Info(args.JobId, this->UnknowId, this->UnknowId,
+                        "EndJob: RemoveSshKey id_rsa: {0}", userName);
+
                     System::RemoveSshKey(userName, "id_rsa");
                 }
 
                 if (publicKeyAdded)
                 {
+                    Logger::Info(args.JobId, this->UnknowId, this->UnknowId,
+                        "EndJob: RemoveSshKey id_rsa.pub: {0}", userName);
+
                     System::RemoveSshKey(userName, "id_rsa.pub");
                 }
 
                 if (authKeyAdded)
                 {
+                    Logger::Info(args.JobId, this->UnknowId, this->UnknowId,
+                        "EndJob: RemoveAuthorizedKey {0}", userName);
+
                     System::RemoveAuthorizedKey(userName, publicKey);
                 }
             }
