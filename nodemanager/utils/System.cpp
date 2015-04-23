@@ -253,9 +253,7 @@ const std::string& System::GetDistroInfo()
 
 int System::CreateUser(
     const std::string& userName,
-    const std::string& password,
-    const std::string& privateKey,
-    const std::string& publicKey)
+    const std::string& password)
 {
     std::string output;
 
@@ -281,45 +279,129 @@ int System::CreateUser(
         }
     }
 
+    return ret;
+}
+
+int System::AddSshKey(
+    const std::string& userName,
+    const std::string& key,
+    const std::string& fileName)
+{
     std::string sshFolder = String::Join("", "/home/", userName, "/.ssh/");
 
-    if (!privateKey.empty())
+    std::string output;
+    int ret = System::ExecuteCommandOut(
+        output,
+        "[ -d ", sshFolder, " ] || mkdir ", sshFolder,
+        " && chown ", userName, " ", sshFolder, " && chmod 775 ", sshFolder);
+
+    if (ret != 0)
     {
-        auto privateKeyFileName = String::Join("", sshFolder, "id_rsa");
-        std::ifstream test(privateKeyFileName);
-        // won't overwrite existing user's private key
-        if (!test.good())
-        {
-            std::ofstream privateKeyFile(privateKeyFileName, std::ios::trunc);
-            privateKeyFile << privateKey;
-            privateKeyFile.close();
-        }
-        else
-        {
-            Logger::Info("File {0} exist, skip overwriting", privateKeyFileName);
-        }
+        Logger::Info("Cannot create folder {0}, error code {1}", sshFolder, ret);
+        return ret;
     }
 
-    if (!publicKey.empty())
+    if (!key.empty())
     {
-        auto publicKeyFileName = String::Join("", sshFolder, "id_rsa.pub");
-        std::ifstream test(publicKeyFileName);
+        auto keyFileName = String::Join("", sshFolder, fileName);
+        std::ifstream test(keyFileName);
         // won't overwrite existing user's private key
         if (!test.good())
         {
-            std::ofstream publicKeyFile(publicKeyFileName, std::ios::trunc);
-            publicKeyFile << publicKey;
-            publicKeyFile.close();
+            std::ofstream keyFile(keyFileName, std::ios::trunc);
+            keyFile << key;
+            keyFile.close();
+            return 0;
         }
         else
         {
-            Logger::Info("File {0} exist, skip overwriting", publicKeyFileName);
+            Logger::Info("File {0} exist, skip overwriting", keyFileName);
         }
 
-        std::ofstream authFile(String::Join("", sshFolder, "authorized_keys"), std::ios::app);
-        authFile << publicKey;
+        test.close();
+    }
+
+    return -1;
+}
+
+int System::RemoveSshKey(
+    const std::string& userName,
+    const std::string& fileName)
+{
+    std::string sshFolder = String::Join("", "/home/", userName, "/.ssh/");
+
+    auto keyFileName = String::Join("", sshFolder, fileName);
+    std::ifstream test(keyFileName);
+    // won't overwrite existing user's private key
+    if (test.good())
+    {
+        std::string output;
+        return System::ExecuteCommandOut(output, "rm -f", keyFileName);
+    }
+
+    test.close();
+
+    return 0;
+}
+
+int System::AddAuthorizedKey(
+    const std::string& userName,
+    const std::string& key)
+{
+    std::string sshFolder = String::Join("", "/home/", userName, "/.ssh/");
+
+    std::ofstream authFile(String::Join("", sshFolder, "authorized_keys"), std::ios::app);
+
+    int ret = -1;
+
+    if (authFile.good())
+    {
+        authFile << key;
+        ret = 0;
+    }
+
+    authFile.close();
+
+    return ret;
+}
+
+int System::RemoveAuthorizedKey(
+    const std::string& userName,
+    const std::string& key)
+{
+    std::string sshFolder = String::Join("", "/home/", userName, "/.ssh/");
+
+    std::ifstream authFile(String::Join("", sshFolder, "authorized_keys"), std::ios::in);
+    std::vector<std::string> lines;
+
+    int ret = -1;
+
+    if (!authFile.good())
+    {
         authFile.close();
+        return ret;
     }
+
+    std::string trimKey = String::Trim(key);
+    std::string line;
+    while (getline(authFile, line))
+    {
+        if (String::Trim(line) != trimKey)
+        {
+            lines.push_back(line);
+        }
+    }
+
+    authFile.close();
+
+    std::ofstream authFileOut(String::Join("", sshFolder, "authorized_keys"), std::ios::trunc);
+    for (auto& k : lines)
+    {
+        authFileOut << k << std::endl;
+    }
+
+    ret = 0;
+    authFileOut.close();
 
     return ret;
 }

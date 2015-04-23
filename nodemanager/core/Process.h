@@ -38,7 +38,6 @@ namespace hpc
                     const std::string& standardIn,
                     const std::string& workDir,
                     const std::string& user,
-                    const std::string& password,
                     std::vector<uint64_t>&& cpuAffinity,
                     std::map<std::string, std::string>&& envi,
                     const std::function<Callback> completed);
@@ -118,7 +117,6 @@ namespace hpc
                 const std::string stdInFile;
                 const std::string workDirectory;
                 const std::string userName;
-                const std::string password;
                 const std::vector<uint64_t> affinity;
                 const std::map<std::string, std::string> environments;
                 std::vector<std::string> environmentsBuffer;

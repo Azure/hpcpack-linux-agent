@@ -1,6 +1,9 @@
 #ifndef REMOTEEXECUTOR_H
 #define REMOTEEXECUTOR_H
 
+#include <set>
+#include <map>
+
 #include "IRemoteExecutor.h"
 #include "JobTaskTable.h"
 #include "Monitor.h"
@@ -45,7 +48,8 @@ namespace hpc
 
                 // TODO: Make map hold Process directly.
                 std::map<long long, std::shared_ptr<Process>> processes;
-                std::map<int, std::tuple<std::string, std::string, bool>> jobUsers;
+                std::map<int, std::tuple<std::string, bool, bool, bool, bool, std::string>> jobUsers;
+                std::map<std::string, std::set<int>> userJobs;
                 pthread_rwlock_t lock;
         };
     }

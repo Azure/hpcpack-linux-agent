@@ -50,11 +50,17 @@ a8lxTKnZCsRXU1HexqZs+DSc+30tz50bNqLdido/l5B4EJnQP03ciO0=\
 
     std::string publicKey = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDEkoEAGGc6wT16d4Ye+yN2hcqigdTGlMcjUlW6cAmRWYXLwkKoW3WlX3xAK0oQdMLqRDu2PVRPY3qfHURj0EEellpydeaSekp1fg27Rw2VKmEumu6Wxwo9HddXORPAQXTQ4yI0lWSerypckXVPeVjHetbkSci2foLedCbeBA9c/RyRgIUl227/pJKDNX2Rpqly0sY82nVWN/0p4NAyslexA0fGdBx+IgKnbU2JQKJeiwOomtEB/N492XRfCw2eCi7Ly3R8+U1KeBm+zH6Q8aH8ApqQohhLRw71bcWZ1g1bxd6HORxXOu0mFTzHbWFcZ9ILtXRl4Pt0x5Mve1AJXEKb hpclabsa@longhaulLN5-033\n";
 
-    int ret = System::CreateUser(userName, password, privateKey, publicKey);
+    int ret = System::CreateUser(userName, password);
+    if (ret != 0) return false;
+    ret = System::AddSshKey(userName, privateKey, "id_rsa");
+    if (ret != 0) return false;
+    ret = System::AddSshKey(userName, publicKey, "id_rsa.pub");
+    if (ret != 0) return false;
+    ret = System::AddAuthorizedKey(userName, publicKey);
     if (ret != 0) return false;
 
     Process p(
-        25, 28, 1, "echo 30", "", "", "", "", userName, password,
+        25, 28, 1, "echo 30", "", "", "", "", userName,
         std::vector<uint64_t>(), std::map<std::string, std::string>(),
         [&result, &callbacked]
         (int exitCode, std::string&& message, timeval userTime, timeval kernelTime)
@@ -131,11 +137,17 @@ a8lxTKnZCsRXU1HexqZs+DSc+30tz50bNqLdido/l5B4EJnQP03ciO0=\
 
     std::string publicKey = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDEkoEAGGc6wT16d4Ye+yN2hcqigdTGlMcjUlW6cAmRWYXLwkKoW3WlX3xAK0oQdMLqRDu2PVRPY3qfHURj0EEellpydeaSekp1fg27Rw2VKmEumu6Wxwo9HddXORPAQXTQ4yI0lWSerypckXVPeVjHetbkSci2foLedCbeBA9c/RyRgIUl227/pJKDNX2Rpqly0sY82nVWN/0p4NAyslexA0fGdBx+IgKnbU2JQKJeiwOomtEB/N492XRfCw2eCi7Ly3R8+U1KeBm+zH6Q8aH8ApqQohhLRw71bcWZ1g1bxd6HORxXOu0mFTzHbWFcZ9ILtXRl4Pt0x5Mve1AJXEKb hpclabsa@longhaulLN5-033\n";
 
-    int ret = System::CreateUser(userName, password, privateKey, publicKey);
+    int ret = System::CreateUser(userName, password);
+    if (ret != 0) return false;
+    ret = System::AddSshKey(userName, privateKey, "id_rsa");
+    if (ret != 0) return false;
+    ret = System::AddSshKey(userName, publicKey, "id_rsa.pub");
+    if (ret != 0) return false;
+    ret = System::AddAuthorizedKey(userName, publicKey);
     if (ret != 0) return false;
 
     Process p(
-        25, 28, 1, "echo 30", "", "", "", "", userName, password,
+        25, 28, 1, "echo 30", "", "", "", "", userName,
         std::vector<uint64_t>({ UINT64_C(4) }), std::map<std::string, std::string>(),
         [&result, &callbacked]
         (int exitCode, std::string&& message, timeval userTime, timeval kernelTime)

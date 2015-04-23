@@ -35,9 +35,24 @@ namespace hpc
 
                 static int CreateUser(
                     const std::string& userName,
-                    const std::string& password,
-                    const std::string& privateKey,
-                    const std::string& publicKey);
+                    const std::string& password);
+
+                static int AddSshKey(
+                    const std::string& userName,
+                    const std::string& key,
+                    const std::string& fileName);
+
+                static int RemoveSshKey(
+                    const std::string& userName,
+                    const std::string& fileName);
+
+                static int AddAuthorizedKey(
+                    const std::string& userName,
+                    const std::string& key);
+
+                static int RemoveAuthorizedKey(
+                    const std::string& userName,
+                    const std::string& key);
 
                 static int DeleteUser(const std::string& userName);
 
@@ -95,6 +110,11 @@ namespace hpc
                     }
 
                     output = result.str();
+
+                    if (exitCode != 0)
+                    {
+                        Logger::Warn("Executing {0}, error code {1}", command, exitCode);
+                    }
 
                     return exitCode;
                 }

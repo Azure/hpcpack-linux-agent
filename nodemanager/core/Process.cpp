@@ -22,13 +22,12 @@ Process::Process(
     const std::string& standardIn,
     const std::string& workDir,
     const std::string& user,
-    const std::string& password,
     std::vector<uint64_t>&& cpuAffinity,
     std::map<std::string, std::string>&& envi,
     const std::function<Callback> completed) :
     jobId(jobId), taskId(taskId), requeueCount(requeueCount), taskExecutionId(String::Join("_", taskId, requeueCount)),
     commandLine(cmdLine), stdOutFile(standardOut), stdErrFile(standardErr), stdInFile(standardIn),
-    workDirectory(workDir), userName(user.empty() ? "root" : user), password(password),
+    workDirectory(workDir), userName(user.empty() ? "root" : user),
     affinity(cpuAffinity), environments(envi), callback(completed), processId(0)
 {
 

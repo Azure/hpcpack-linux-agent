@@ -28,24 +28,37 @@ json::value RemoteExecutor::StartJobAndTask(StartJobAndTaskArgs&& args, const st
     {
         WriterLock writerLock(&this->lock);
 
-        std::string userName;
-        bool existed = false;
         if (!args.UserName.empty())
         {
-            userName = String::GetUserName(args.UserName);
-            int ret = System::CreateUser(userName, args.Password, args.PrivateKey, args.PublicKey);
-            if (ret == 9)
-            {
-                existed = true;
-            }
-            else if (ret != 0)
+            std::string userName = String::GetUserName(args.UserName);
+            int ret = System::CreateUser(userName, args.Password);
+
+            bool existed = ret == 9;
+
+            if (ret != 0 && ret != 9)
             {
                 throw std::runtime_error(
                     String::Join(" ", "Create user", userName, "failed with error code", ret));
             }
-        }
 
-        this->jobUsers[args.JobId] = std::tuple<std::string, std::string, bool>(userName, args.Password, existed);
+            bool privateKeyAdded = 0 == System::AddSshKey(args.UserName, args.PrivateKey, "id_rsa");
+            bool publicKeyAdded = 0 == System::AddSshKey(args.UserName, args.PublicKey, "id_rsa.pub");
+            bool authKeyAdded = 0 == System::AddAuthorizedKey(args.UserName, args.PublicKey);
+
+            this->jobUsers[args.JobId] =
+                std::tuple<std::string, bool, bool, bool, bool, std::string>(userName, existed, privateKeyAdded, publicKeyAdded, authKeyAdded, args.PublicKey);
+
+            auto it = this->userJobs.find(userName);
+
+            if (it != this->userJobs.end())
+            {
+                it->second.insert(args.JobId);
+            }
+            else
+            {
+                this->userJobs[userName] = { args.JobId };
+            }
+        }
     }
 
     return this->StartTask(StartTaskArgs(args.JobId, args.TaskId, std::move(args.StartInfo)), callbackUri);
@@ -88,7 +101,6 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
                 std::move(args.StartInfo.StdInFile),
                 std::move(args.StartInfo.WorkDirectory),
                 std::get<0>(jobUser->second),
-                std::get<1>(jobUser->second),
                 std::move(args.StartInfo.Affinity),
                 std::move(args.StartInfo.EnvironmentVariables),
                 [taskInfo, callbackUri, this] (int exitCode, std::string&& message, timeval userTime, timeval kernelTime)
@@ -223,21 +235,68 @@ json::value RemoteExecutor::EndJob(hpc::arguments::EndJobArgs&& args)
         Logger::Warn(args.JobId, this->UnknowId, this->UnknowId, "EndJob: Job is already finished");
     }
 
-// Won't delete the user to avoid multi-job interfere
-//    auto jobUser = this->jobUsers.find(args.JobId);
-//    if (jobUser != this->jobUsers.end())
-//    {
-//        bool existed = std::get<2>(jobUser->second);
-//
-//        if (!existed)
-//        {
-//            auto userName = std::get<0>(jobUser->second);
-//            if (!userName.empty())
-//            {
-//                System::DeleteUser(userName);
-//            }
-//        }
-//    }
+    auto jobUser = this->jobUsers.find(args.JobId);
+
+    if (jobUser != this->jobUsers.end())
+    {
+        auto userJob = this->userJobs.find(std::get<0>(jobUser->second));
+
+        bool cleanupUser = false;
+        if (userJob == this->userJobs.end())
+        {
+            cleanupUser = true;
+        }
+        else
+        {
+            userJob->second.erase(args.JobId);
+
+            // cleanup when no one is using the user;
+            cleanupUser = userJob->second.empty();
+
+            if (cleanupUser)
+            {
+                this->userJobs.erase(userJob);
+            }
+        }
+
+        if (cleanupUser)
+        {
+            std::string userName, publicKey;
+            bool existed, privateKeyAdded, publicKeyAdded, authKeyAdded;
+
+            std::tie(userName, existed, privateKeyAdded, publicKeyAdded, authKeyAdded, publicKey) = jobUser->second;
+
+            // the existed could be true for the later job, so the user will be left
+            // on the node, which is by design.
+            // we just have this delete user logic for a simple way of cleanup.
+            if (!existed)
+            {
+                if (!userName.empty())
+                {
+                    System::DeleteUser(userName);
+                }
+            }
+            else
+            {
+                if (privateKeyAdded)
+                {
+                    System::RemoveSshKey(userName, "id_rsa");
+                }
+
+                if (publicKeyAdded)
+                {
+                    System::RemoveSshKey(userName, "id_rsa.pub");
+                }
+
+                if (authKeyAdded)
+                {
+                    System::RemoveAuthorizedKey(userName, publicKey);
+                }
+            }
+        }
+
+        this->jobUsers.erase(jobUser);
+    }
 
     return jsonBody;
 }

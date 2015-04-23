@@ -98,6 +98,7 @@ namespace hpc
                     { "1.1.1.12",
                         {
                             "Support CPU affinity",
+                            "Cleanup the user ssh keys after job finish",
                         }
                     },
                 };
