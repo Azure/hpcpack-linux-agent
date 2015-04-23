@@ -95,6 +95,11 @@ namespace hpc
                             "Order the version display",
                         }
                     },
+                    { "1.1.1.12",
+                        {
+                            "Support CPU affinity",
+                        }
+                    },
                 };
 
                 return versionHistory;
