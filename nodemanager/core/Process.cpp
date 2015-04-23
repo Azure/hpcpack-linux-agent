@@ -201,7 +201,6 @@ void Process::Monitor()
     }
     else
     {
-        int tmp;
         if (WIFSIGNALED(status))
         {
             Logger::Info(this->jobId, this->taskId, this->requeueCount, "Process {0}: WIFSIGNALED Signal {1}", this->processId, WTERMSIG(status));

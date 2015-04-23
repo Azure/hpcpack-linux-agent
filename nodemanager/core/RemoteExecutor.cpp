@@ -41,9 +41,9 @@ json::value RemoteExecutor::StartJobAndTask(StartJobAndTaskArgs&& args, const st
                     String::Join(" ", "Create user", userName, "failed with error code", ret));
             }
 
-            bool privateKeyAdded = 0 == System::AddSshKey(args.UserName, args.PrivateKey, "id_rsa");
-            bool publicKeyAdded = 0 == System::AddSshKey(args.UserName, args.PublicKey, "id_rsa.pub");
-            bool authKeyAdded = 0 == System::AddAuthorizedKey(args.UserName, args.PublicKey);
+            bool privateKeyAdded = 0 == System::AddSshKey(userName, args.PrivateKey, "id_rsa");
+            bool publicKeyAdded = 0 == System::AddSshKey(userName, args.PublicKey, "id_rsa.pub");
+            bool authKeyAdded = 0 == System::AddAuthorizedKey(userName, args.PublicKey);
 
             this->jobUsers[args.JobId] =
                 std::tuple<std::string, bool, bool, bool, bool, std::string>(userName, existed, privateKeyAdded, publicKeyAdded, authKeyAdded, args.PublicKey);
