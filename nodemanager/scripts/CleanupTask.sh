@@ -3,8 +3,8 @@
 
 . common.sh
 
-[ -z "$1" ] && echo "task id not specified" && exit 2
-[ -z "$2" ] && echo "process id not specified" && exit 2
+[ -z "$1" ] && echo "task id not specified" && exit 202
+[ -z "$2" ] && echo "process id not specified" && exit 202
 
 taskId=$1
 processId=$2

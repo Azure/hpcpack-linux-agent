@@ -95,16 +95,17 @@ namespace hpc
                             "Order the version display",
                         }
                     },
-                    { "1.1.1.12",
+                    { "1.2.1.1",
                         {
                             "Support CPU affinity",
                             "Cleanup the user ssh keys after job finish",
                             "Report the signal which kills the process",
+                            "Fix a user name mis-match issue",
                         }
                     },
-                    { "1.1.1.13",
+                    { "1.2.1.2",
                         {
-                            "Fix a user name mis-match issue",
+                            "Wait for the node trust before running mpi job",
                         }
                     },
                 };

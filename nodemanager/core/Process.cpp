@@ -240,6 +240,7 @@ void Process::Run(const std::string& path)
         const_cast<char* const>("StartTask.sh"),
         const_cast<char* const>(this->taskExecutionId.c_str()),
         &pathBuffer[0],
+        const_cast<char* const>(this->userName.c_str()),
         nullptr
     };
 
@@ -378,7 +379,7 @@ std::string Process::BuildScript()
 
     if (!this->userName.empty())
     {
-        fsRunUser << "sudo -u " << this->userName
+        fsRunUser << "sudo -E -u " << this->userName
             << " /bin/bash " << runDirInOut << std::endl;
     }
     else

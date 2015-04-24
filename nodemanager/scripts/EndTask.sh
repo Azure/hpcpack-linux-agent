@@ -3,8 +3,8 @@
 
 . common.sh
 
-[ -z "$1" ] && echo "task id not specified" && exit 2
-[ -z "$2" ] && echo "process id not specified" && exit 2
+[ -z "$1" ] && echo "task id not specified" && exit 202
+[ -z "$2" ] && echo "process id not specified" && exit 202
 
 taskId=$1
 processId=$2
@@ -15,8 +15,8 @@ if $CGInstalled; then
 	tasks=$(GetCpusetTasksFile $groupName)
 	freezerState=$(GetFreezerStateFile $groupName)
 
-	[ ! -f $tasks ] && echo "$tasks doesn't exist" && exit -200
-	[ ! -f $freezerState ] && echo "$freezerState doesn't exist" && exit -201
+	[ ! -f $tasks ] && echo "$tasks doesn't exist" && exit 200
+	[ ! -f $freezerState ] && echo "$freezerState doesn't exist" && exit 201
 
 	# freeze the task
 	echo FROZEN > $freezerState
