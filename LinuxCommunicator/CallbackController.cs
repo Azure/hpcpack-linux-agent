@@ -38,7 +38,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
         {
             try
             {
-                LinuxCommunicator.Instance.Tracer.TraceInfo("Linux TaskCompleted. NodeName {0}, TaskMessage {1}", taskInfo.NodeName, taskInfo.TaskInfo.Message);
+                LinuxCommunicator.Instance.Tracer.TraceInfo("Linux TaskCompleted. NodeName {0}, TaskId {1} ExitCode {2} TaskMessage {3}", taskInfo.NodeName, taskInfo.TaskInfo.TaskId, taskInfo.TaskInfo.ExitCode, taskInfo.TaskInfo.Message);
                 return LinuxCommunicator.Instance.SchedulerCallbacks.TaskCompleted(taskInfo);
             }
             catch (Exception ex)

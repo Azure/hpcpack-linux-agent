@@ -14,6 +14,7 @@ using Microsoft.Hpc.Scheduler.Properties;
 using Microsoft.Hpc.Communicators.LinuxCommunicator.Monitoring;
 using System.IO;
 using System.Collections.Concurrent;
+using System.Xml.Linq;
 
 namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 {
@@ -202,7 +203,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
                 {
                     arg.TaskInfo = await content.ReadAsAsync<ComputeClusterTaskInformation>();
                 }
-                catch(Exception e)
+                catch (Exception e)
                 {
                     this.Tracer.TraceError("Exception while read the task info {0}", e);
 
@@ -240,10 +241,33 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
         public void StartJobAndTaskExtendedData(string nodeName, StartJobAndTaskArg arg, string userName, string password, string extendedData, ProcessStartInfo startInfo, NodeCommunicatorCallBack<StartJobAndTaskArg> callback)
         {
+            string privateKey = null, publicKey = null;
+
+            try
+            {
+                XDocument xDoc = XDocument.Parse(extendedData);
+
+                var privateKeyNode = xDoc.Descendants("PrivateKey").FirstOrDefault();
+                var publicKeyNode = xDoc.Descendants("PublicKey").FirstOrDefault();
+                if (privateKeyNode != null)
+                {
+                    privateKey = privateKeyNode.Value;
+                }
+
+                if (publicKeyNode != null)
+                {
+                    publicKey = publicKeyNode.Value;
+                }
+            }
+            catch (Exception ex)
+            {
+                this.Tracer.TraceWarning("Error parsing extended data {0}, ex {1}", extendedData, ex);
+            }
+
             this.SendRequest("startjobandtask", "taskcompleted", nodeName, (content, ex) =>
             {
                 callback(nodeName, arg, ex);
-            }, Tuple.Create(arg, startInfo, userName, password, extendedData));
+            }, Tuple.Create(arg, startInfo, userName, password, privateKey, publicKey));
         }
 
         public void StartTask(string nodeName, StartTaskArg arg, ProcessStartInfo startInfo, NodeCommunicatorCallBack<StartTaskArg> callback)
@@ -330,8 +354,8 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
                 nodeMetricReported(this, new NodeMetricReportedEventArgs(metricInfo.Name, metricInfo.CoreCount, metricInfo.SocketCount, metricInfo.MemoryMegabytes)
                 {
-                     DistroInfo = metricInfo.DistroInfo,
-                     NetworksInfo = metricInfo.NetworkInfo,
+                    DistroInfo = metricInfo.DistroInfo,
+                    NetworksInfo = metricInfo.NetworkInfo,
                 });
             }
 
