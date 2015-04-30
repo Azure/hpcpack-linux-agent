@@ -8,6 +8,7 @@
 
 using namespace hpc::core;
 using namespace hpc::utils;
+using namespace hpc::data;
 
 Monitor::Monitor(const std::string& nodeName, const std::string& netName, int interval)
     : name(nodeName), networkName(netName), lock(PTHREAD_RWLOCK_INITIALIZER), intervalSeconds(interval),
@@ -32,33 +33,51 @@ Monitor::~Monitor()
     pthread_rwlock_destroy(&this->lock);
 }
 
-json::value Monitor::ToJson()
+void Monitor::SetNodeUuid(uuid& id)
 {
+    this->packet.Uuid.swap(id);
+}
+
+std::vector<unsigned char> Monitor::ToMonitorPacketData()
+{
+    std::vector<unsigned char> packetData(sizeof(MonitoringPacket<MaxCountersInPacket>));
+
+    ReaderLock readerLock(&this->lock);
+
+    if (this->isCollected)
+    {
+        // TODO: make the monitoring data configurable.
+        this->packet.Count = 3;
+        this->packet.TickCount = this->intervalSeconds;
+        std::transform(this->metricData.cbegin(), this->metricData.cend(), this->packet.Umids, [] (auto i)
+        {
+            return Umid(i.first, std::get<0>(i.second));
+        });
+
+        std::transform(this->metricData.cbegin(), this->metricData.cend(), this->packet.Values, [] (auto i)
+        {
+            return std::get<1>(i.second);
+        });
+
+        memcpy(&packetData[0], &this->packet, sizeof(MonitoringPacket<MaxCountersInPacket>));
+    }
+
+    return std::move(packetData);
+}
+
+json::value Monitor::GetRegisterInfo()
+{
+    ReaderLock lock(&this->lock);
+
     if (!this->isCollected)
     {
         return json::value::null();
     }
 
-    ReaderLock lock(&this->lock);
     json::value j;
-    j["Name"] = json::value::string(this->name);
+    j["NodeName"] = json::value::string(this->name);
     j["Time"] = json::value::string(this->metricTime);
 
-    std::vector<json::value> umids;
-    std::transform(this->metricData.cbegin(), this->metricData.cend(), std::back_inserter(umids), [](auto i)
-    {
-        json::value obj;
-        obj["MetricId"] = i.first;
-        obj["InstanceId"] = std::get<0>(i.second);
-        return std::move(obj);
-    });
-
-    std::vector<json::value> values;
-    std::transform(this->metricData.cbegin(), this->metricData.cend(), std::back_inserter(values), [](auto i) { return std::get<1>(i.second); });
-
-    j["Umids"] = json::value::array(umids);
-    j["Values"] = json::value::array(values);
-    j["TickCount"] = this->intervalSeconds;
     j["IpAddress"] = json::value::string(this->ipAddress);
     j["CoreCount"] = this->coreCount;
     j["SocketCount"] = this->socketCount;
@@ -79,7 +98,7 @@ json::value Monitor::ToJson()
         networkValues.push_back(v);
     }
 
-    j["NetworkInfo"] = json::value::array(networkValues);
+    j["NetworksInfo"] = json::value::array(networkValues);
 
     return std::move(j);
 }
@@ -146,7 +165,6 @@ void Monitor::Run()
             this->socketCount = sockets;
             this->distroInfo = distro;
             this->networkInfo = std::move(netInfo);
-
         }
 
         this->isCollected = true;

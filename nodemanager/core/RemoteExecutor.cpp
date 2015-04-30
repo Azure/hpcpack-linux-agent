@@ -1,7 +1,10 @@
 #include <cpprest/http_client.h>
 #include <memory>
+#include <boost/uuid/string_generator.hpp>
 
 #include "RemoteExecutor.h"
+#include "HttpReporter.h"
+#include "UdpReporter.h"
 #include "../utils/WriterLock.h"
 #include "../utils/ReaderLock.h"
 #include "../utils/Logger.h"
@@ -19,6 +22,14 @@ using namespace hpc::common;
 RemoteExecutor::RemoteExecutor(const std::string& networkName)
     : monitor(System::GetNodeName(), networkName, MetricReportInterval), lock(PTHREAD_RWLOCK_INITIALIZER)
 {
+    this->registerReporter =
+        std::unique_ptr<Reporter<json::value>>(
+            new HttpReporter(
+                this->LoadReportUri(this->RegisterUriFileName),
+                3,
+                this->RegisterInterval,
+                [this]() { return this->monitor.GetRegisterInfo(); }));
+
     this->Ping(this->LoadReportUri(this->NodeInfoUriFileName));
     this->Metric(this->LoadReportUri(this->MetricUriFileName));
 }
@@ -196,8 +207,6 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
         {
             Logger::Warn(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetTaskRequeueCount(),
                 "The task has started already.");
-            // Found the original process.
-            // TODO: assert the job task table call is the same.
         }
     }
 
@@ -356,7 +365,13 @@ json::value RemoteExecutor::EndTask(hpc::arguments::EndTaskArgs&& args)
 json::value RemoteExecutor::Ping(const std::string& callbackUri)
 {
     this->SaveReportUri(this->NodeInfoUriFileName, callbackUri);
-    this->nodeInfoReporter = std::unique_ptr<Reporter>(new Reporter(callbackUri, this->NodeInfoReportInterval, [this]() { return this->jobTaskTable.ToJson(); }));
+    this->nodeInfoReporter =
+        std::unique_ptr<Reporter<json::value>>(
+            new HttpReporter(
+                callbackUri,
+                0,
+                this->NodeInfoReportInterval,
+                [this]() { return this->jobTaskTable.ToJson(); }));
 
     return json::value();
 }
@@ -364,7 +379,22 @@ json::value RemoteExecutor::Ping(const std::string& callbackUri)
 json::value RemoteExecutor::Metric(const std::string& callbackUri)
 {
     this->SaveReportUri(this->MetricUriFileName, callbackUri);
-    this->metricReporter = std::unique_ptr<Reporter>(new Reporter(callbackUri, this->MetricReportInterval, [this]() { return this->monitor.ToJson(); }));
+
+    // callbackUri is like udp://server:port/api/nodeguid/metricreported
+    if (!callbackUri.empty())
+    {
+        auto tokens = String::Split(callbackUri, '/');
+        uuid id = string_generator()(tokens[4]);
+        this->monitor.SetNodeUuid(id);
+
+        this->metricReporter =
+            std::unique_ptr<Reporter<std::vector<unsigned char>>>(
+                new UdpReporter(
+                    callbackUri,
+                    0,
+                    this->MetricReportInterval,
+                    [this]() { return this->monitor.ToMonitorPacketData(); }));
+    }
 
     return json::value();
 }
@@ -389,7 +419,12 @@ std::string RemoteExecutor::LoadReportUri(const std::string& fileName)
 {
     std::ifstream fs(fileName, std::ios::in);
     std::string uri;
-    fs >> uri;
+
+    if (fs.good())
+    {
+        fs >> uri;
+    }
+
     fs.close();
 
     return std::move(uri);

@@ -3,10 +3,13 @@
 
 #include <cpprest/json.h>
 #include <map>
+#include <boost/uuid/uuid.hpp>
 
 #include "../utils/System.h"
+#include "../data/MonitoringPacket.h"
 
 using namespace web;
+using namespace boost::uuids;
 
 namespace hpc
 {
@@ -15,14 +18,25 @@ namespace hpc
         class Monitor
         {
             public:
-                Monitor(const std::string& nodeName, const std::string& networkName, int interval);
+                Monitor(
+                    const std::string& nodeName,
+                    const std::string& networkName,
+                    int interval);
+
                 ~Monitor();
 
-                json::value ToJson();
+                std::vector<unsigned char> ToMonitorPacketData();
+                json::value GetRegisterInfo();
+
+                void SetNodeUuid(uuid& id);
+
             protected:
             private:
                 void Run();
+
                 static void* MonitoringThread(void* arg);
+
+                static const int MaxCountersInPacket = 80;
 
                 std::string name;
                 std::string networkName;
@@ -34,6 +48,7 @@ namespace hpc
                 std::string ipAddress;
                 std::string distroInfo;
                 std::vector<hpc::utils::System::NetInfo> networkInfo;
+                hpc::data::MonitoringPacket<MaxCountersInPacket> packet = 1;
                 pthread_rwlock_t lock;
 
                 int intervalSeconds;

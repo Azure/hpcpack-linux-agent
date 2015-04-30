@@ -62,6 +62,8 @@
 		<Unit filename="arguments/StartTaskArgs.cpp" />
 		<Unit filename="arguments/StartTaskArgs.h" />
 		<Unit filename="common/ErrorCodes.h" />
+		<Unit filename="core/HttpReporter.cpp" />
+		<Unit filename="core/HttpReporter.h" />
 		<Unit filename="core/IRemoteExecutor.h" />
 		<Unit filename="core/JobTaskTable.cpp" />
 		<Unit filename="core/JobTaskTable.h" />
@@ -75,12 +77,18 @@
 		<Unit filename="core/RemoteExecutor.h" />
 		<Unit filename="core/Reporter.cpp" />
 		<Unit filename="core/Reporter.h" />
+		<Unit filename="core/UdpReporter.cpp" />
+		<Unit filename="core/UdpReporter.h" />
 		<Unit filename="data/JobInfo.cpp" />
 		<Unit filename="data/JobInfo.h" />
+		<Unit filename="data/MonitoringPacket.cpp" />
+		<Unit filename="data/MonitoringPacket.h" />
 		<Unit filename="data/NodeInfo.cpp" />
 		<Unit filename="data/NodeInfo.h" />
 		<Unit filename="data/TaskInfo.cpp" />
 		<Unit filename="data/TaskInfo.h" />
+		<Unit filename="data/Umid.cpp" />
+		<Unit filename="data/Umid.h" />
 		<Unit filename="main.cpp" />
 		<Unit filename="makefile" />
 		<Unit filename="scripts/CleanupTask.sh" />

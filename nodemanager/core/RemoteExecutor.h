@@ -37,16 +37,18 @@ namespace hpc
                 const int UnknowId = 999;
                 const int NodeInfoReportInterval = 30;
                 const int MetricReportInterval = 2;
+                const int RegisterInterval = 300;
                 const std::string NodeInfoUriFileName = "NodeInfoReportUri";
                 const std::string MetricUriFileName = "MetricReportUri";
+                const std::string RegisterUriFileName = "RegisterUri";
 
                 JobTaskTable jobTaskTable;
                 Monitor monitor;
 
-                std::unique_ptr<Reporter> nodeInfoReporter;
-                std::unique_ptr<Reporter> metricReporter;
+                std::unique_ptr<Reporter<json::value>> nodeInfoReporter;
+                std::unique_ptr<Reporter<json::value>> registerReporter;
+                std::unique_ptr<Reporter<std::vector<unsigned char>>> metricReporter;
 
-                // TODO: Make map hold Process directly.
                 std::map<long long, std::shared_ptr<Process>> processes;
                 std::map<int, std::tuple<std::string, bool, bool, bool, bool, std::string>> jobUsers;
                 std::map<std::string, std::set<int>> userJobs;

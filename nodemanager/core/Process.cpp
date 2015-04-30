@@ -94,7 +94,6 @@ void* Process::ForkThread(void* arg)
         p->message << "Task " << p->taskId << ": error when create task folder, ret " << ret << std::endl;
         Logger::Error(p->jobId, p->taskId, p->requeueCount, "error when create task folder, ret {0}", ret);
 
-        // TODO fetch the errno.
         p->SetExitCode(ret);
         goto Final;
     }
@@ -106,7 +105,6 @@ void* Process::ForkThread(void* arg)
         p->message << "Error when build script." << std::endl;
         Logger::Error(p->jobId, p->taskId, p->requeueCount, "Error when build script.");
 
-        // TODO fetch the errno.
         p->SetExitCode((int)ErrorCodes::BuildScriptError);
         goto Final;
     }

@@ -111,6 +111,7 @@ namespace hpc
                     { "1.2.1.3",
                         {
                             "Run as root when the user is admin on head node",
+                            "Change monitoring data to go through UDP packet",
                         }
                     },
                 };
