@@ -26,6 +26,7 @@ namespace hpc
             protected:
             private:
                 int s;
+                bool initialized = false;
         };
     }
 }

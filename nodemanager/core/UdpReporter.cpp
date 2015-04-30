@@ -28,6 +28,7 @@ UdpReporter::UdpReporter(
     hints.ai_protocol = 0;
 
     addrinfo* siRemote, *current;
+    Logger::Info("getaddrinfo server {0}, port {1}", server, port);
 
     int ret = getaddrinfo(server.c_str(), port.c_str(), &hints, &siRemote);
     if (ret != 0)
@@ -36,6 +37,7 @@ UdpReporter::UdpReporter(
         throw std::runtime_error(String::Join(" ", "getaddrinfo failed", gai_strerror(ret)));
     }
 
+    bool success = false;
     for (current = siRemote;
         current != nullptr;
         current = current->ai_next)
@@ -48,6 +50,7 @@ UdpReporter::UdpReporter(
 
         if (connect(this->s, current->ai_addr, current->ai_addrlen) != -1)
         {
+            success = true;
             break;
         }
 
@@ -55,6 +58,13 @@ UdpReporter::UdpReporter(
     }
 
     freeaddrinfo(siRemote);
+
+    if (!success)
+    {
+        throw std::runtime_error("Cannot connect to socket successfully");
+    }
+
+    this->initialized = true;
 }
 
 UdpReporter::~UdpReporter()
@@ -64,6 +74,8 @@ UdpReporter::~UdpReporter()
 
 void UdpReporter::Report()
 {
+    if (!this->initialized) { return; }
+
     const std::string& uri = this->reportUri;
 
     auto tokens = String::Split(String::Split(uri, '/')[2], ':');
@@ -71,6 +83,10 @@ void UdpReporter::Report()
     auto port = tokens[1];
 
     auto data = this->valueFetcher();
+
+//    std::vector<int> dataInt;
+//    std::transform(data.cbegin(), data.cend(), std::back_inserter(dataInt), [] (unsigned char c) { return c; });
+//    Logger::Debug("Report datasize {0}, data {1}", data.size(), String::Join<' '>(dataInt));
 
     auto buffer = &data[0];
 

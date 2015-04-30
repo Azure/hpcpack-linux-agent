@@ -33,14 +33,15 @@ Monitor::~Monitor()
     pthread_rwlock_destroy(&this->lock);
 }
 
-void Monitor::SetNodeUuid(uuid& id)
+void Monitor::SetNodeUuid(const uuid& id)
 {
-    this->packet.Uuid.swap(id);
+    this->packet.Uuid.AssignFrom(id);
 }
 
-std::vector<unsigned char> Monitor::ToMonitorPacketData()
+std::vector<unsigned char> Monitor::GetMonitorPacketData()
 {
-    std::vector<unsigned char> packetData(sizeof(MonitoringPacket<MaxCountersInPacket>));
+    const size_t MaxPacketSize = 1024;
+    std::vector<unsigned char> packetData(MaxPacketSize);
 
     ReaderLock readerLock(&this->lock);
 
@@ -49,6 +50,13 @@ std::vector<unsigned char> Monitor::ToMonitorPacketData()
         // TODO: make the monitoring data configurable.
         this->packet.Count = 3;
         this->packet.TickCount = this->intervalSeconds;
+
+        for (int i = 0; i < MaxCountersInPacket; i++)
+        {
+            this->packet.Umids[i] = Umid(0, 0);
+            this->packet.Values[i] = 0.0f;
+        }
+
         std::transform(this->metricData.cbegin(), this->metricData.cend(), this->packet.Umids, [] (auto i)
         {
             return Umid(i.first, std::get<0>(i.second));
@@ -59,7 +67,9 @@ std::vector<unsigned char> Monitor::ToMonitorPacketData()
             return std::get<1>(i.second);
         });
 
-        memcpy(&packetData[0], &this->packet, sizeof(MonitoringPacket<MaxCountersInPacket>));
+  //      Logger::Debug("GetMonitorPacketData, count {0}, TickCount {1}", this->packet.Count, this->packet.TickCount);
+
+        memcpy(&packetData[0], &this->packet, std::min(sizeof(this->packet), MaxPacketSize));
     }
 
     return std::move(packetData);

@@ -1,6 +1,7 @@
 #include <cpprest/http_client.h>
 #include <memory>
 #include <boost/uuid/string_generator.hpp>
+#include <boost/uuid/uuid_io.hpp>
 
 #include "RemoteExecutor.h"
 #include "HttpReporter.h"
@@ -385,6 +386,7 @@ json::value RemoteExecutor::Metric(const std::string& callbackUri)
     {
         auto tokens = String::Split(callbackUri, '/');
         uuid id = string_generator()(tokens[4]);
+
         this->monitor.SetNodeUuid(id);
 
         this->metricReporter =
