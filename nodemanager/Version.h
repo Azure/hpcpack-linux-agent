@@ -108,6 +108,11 @@ namespace hpc
                             "Wait for the node trust before running mpi job",
                         }
                     },
+                    { "1.2.1.3",
+                        {
+                            "Run as root when the user is admin on head node",
+                        }
+                    },
                 };
 
                 return versionHistory;

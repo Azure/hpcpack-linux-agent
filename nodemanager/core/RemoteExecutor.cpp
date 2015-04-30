@@ -28,9 +28,16 @@ json::value RemoteExecutor::StartJobAndTask(StartJobAndTaskArgs&& args, const st
     {
         WriterLock writerLock(&this->lock);
 
-        if (!args.UserName.empty())
+        const auto& envi = args.StartInfo.EnvironmentVariables;
+        auto isAdminIt = envi.find("CCP_ISADMIN");
+        bool isAdmin = isAdminIt != envi.end() && isAdminIt->second == "1";
+
+        // If is admin, we won't create the user, default to root.
+        // If username is empty, this is the old image, we use root.
+        if (!isAdmin && !args.UserName.empty())
         {
             std::string userName = String::GetUserName(args.UserName);
+
             int ret = System::CreateUser(userName, args.Password);
 
             bool existed = ret == 9;
@@ -82,13 +89,16 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
         if (this->processes.find(taskInfo->ProcessKey) == this->processes.end() &&
             isNewEntry)
         {
-
+            std::string userName = "root";
             auto jobUser = this->jobUsers.find(args.JobId);
             if (jobUser == this->jobUsers.end())
             {
                 Logger::Error(args.JobId, args.TaskId, args.StartInfo.TaskRequeueCount,
-                    "no user created");
-                throw new std::runtime_error("no user created");
+                    "no user created, run as root");
+            }
+            else
+            {
+                userName = std::get<0>(jobUser->second);
             }
 
             auto process = std::shared_ptr<Process>(new Process(
@@ -100,7 +110,7 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
                 std::move(args.StartInfo.StdErrFile),
                 std::move(args.StartInfo.StdInFile),
                 std::move(args.StartInfo.WorkDirectory),
-                std::get<0>(jobUser->second),
+                userName,
                 std::move(args.StartInfo.Affinity),
                 std::move(args.StartInfo.EnvironmentVariables),
                 [taskInfo, callbackUri, this] (int exitCode, std::string&& message, timeval userTime, timeval kernelTime)
