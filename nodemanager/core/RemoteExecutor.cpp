@@ -395,7 +395,7 @@ json::value RemoteExecutor::Metric(const std::string& callbackUri)
                     callbackUri,
                     0,
                     this->MetricReportInterval,
-                    [this]() { return this->monitor.ToMonitorPacketData(); }));
+                    [this]() { return this->monitor.GetMonitorPacketData(); }));
     }
 
     return json::value();
