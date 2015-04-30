@@ -114,6 +114,11 @@ namespace hpc
                             "Change monitoring data to go through UDP packet",
                         }
                     },
+                    { "1.2.1.4",
+                        {
+                            "Fix the monitoring data big-endian issue",
+                        }
+                    },
                 };
 
                 return versionHistory;
