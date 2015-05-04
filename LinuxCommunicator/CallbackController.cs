@@ -49,13 +49,13 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
         }
 
         [HttpPost]
-        [Route("api/{nodename}/metricreported")]
-        public int MetricReported(string nodeName, [FromBody] ComputeNodeMetricInformation metricInfo)
+        [Route("api/{nodename}/registerrequested")]
+        public int RegisterRequested(string nodeName, [FromBody] RegisterEventArgs registerInfo)
         {
             try
             {
-                LinuxCommunicator.Instance.Tracer.TraceInfo("Linux MetricReported. NodeName {0}, Metric Time {1} ", metricInfo.Name, metricInfo.Time);
-                LinuxCommunicator.Instance.OnNodeMetricReported(metricInfo);
+                LinuxCommunicator.Instance.Tracer.TraceInfo("Linux RegisterRequested. NodeName {0}, Distro {1} ", registerInfo.NodeName, registerInfo.DistroInfo);
+                LinuxCommunicator.Instance.OnRegisterRequested(registerInfo);
 
                 return -1;
             }

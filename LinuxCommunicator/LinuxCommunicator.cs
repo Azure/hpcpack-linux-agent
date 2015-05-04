@@ -15,6 +15,7 @@ using Microsoft.Hpc.Communicators.LinuxCommunicator.Monitoring;
 using System.IO;
 using System.Collections.Concurrent;
 using System.Xml.Linq;
+using System.Security.Principal;
 
 namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 {
@@ -27,7 +28,6 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
         private readonly string HeadNode = (string)Microsoft.Win32.Registry.GetValue(HpcFullKeyName, ClusterNameKeyName, null);
         private readonly int MonitoringPort = 9894;
-        private readonly TimeSpan ResyncPeriod = TimeSpan.FromSeconds(30.0);
 
         private HttpClient client;
         private WebServer server;
@@ -37,8 +37,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
         private CancellationTokenSource cancellationTokenSource;
 
         private static LinuxCommunicator instance;
-
-        private Timer resyncNodeGuid;
+        private Lazy<string> headNodeFqdn;
 
         public LinuxCommunicator()
         {
@@ -48,7 +47,10 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
             }
 
             instance = this;
+            this.headNodeFqdn = new Lazy<string>(() => Dns.GetHostEntryAsync(this.HeadNode).Result.HostName, LazyThreadSafetyMode.ExecutionAndPublication);
         }
+
+        public event EventHandler<RegisterEventArgs> RegisterRequested;
 
         public void Dispose()
         {
@@ -83,11 +85,28 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
         public NodeLocation Location { get { return NodeLocation.Linux; } }
 
-        public event EventHandler<NodeMetricReportedEventArgs> NodeMetricReported;
-
         public void SetTracer(INodeCommTracing tracer)
         {
             this.Tracer = tracer;
+        }
+
+        static bool IsAdmin(string userName, string password)
+        {
+            SafeToken token = Credentials.GetTokenFromCredentials(userName, password);
+            WindowsIdentity identity = new WindowsIdentity(token.DangerousGetHandle());
+            if (identity.IsSystem)
+            {
+                return true;
+            }
+
+            WindowsPrincipal principal = new WindowsPrincipal(identity);
+            if (principal.IsInRole(WindowsBuiltInRole.Administrator))
+            {
+                return true;
+            }
+
+            return false;
+
         }
 
         public bool Initialize()
@@ -112,28 +131,6 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
                 ArgumentNullException exp = new ArgumentNullException(ClusterNameKeyName);
                 Tracer.TraceError("Failed to find registry value: {0}. {1}", ClusterNameKeyName, exp);
                 throw exp;
-            }
-
-            this.sender = new Monitoring.CounterDataSender();
-            this.sender.OpenConnection(this.HeadNode, this.MonitoringPort);
-
-            this.resyncNodeGuid = new Timer(o =>
-            {
-                this.nodeMap.Clear();
-            }, null, ResyncPeriod, ResyncPeriod);
-
-            using (IScheduler scheduler = new Scheduler.Scheduler())
-            {
-                scheduler.Connect(this.HeadNode);
-                this.nodeMap = new ConcurrentDictionary<string, Guid>();
-                FilterCollection fc = new FilterCollection();
-                fc.Add(FilterOperator.Equal, NodePropertyIds.Location, NodeLocation.Linux);
-                foreach (ISchedulerNode node in scheduler.GetNodeList(fc, null))
-                {
-                    this.nodeMap.TryAdd(node.Name.ToLower(), node.Guid);
-                }
-
-                scheduler.Close();
             }
 
             this.Tracer.TraceInfo("Initialized LinuxCommunicator.");
@@ -165,7 +162,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
         public void EndJob(string nodeName, EndJobArg arg, NodeCommunicatorCallBack<EndJobArg> callback)
         {
-            this.SendRequest("endjob", "taskcompleted", nodeName, async (content, ex) =>
+            this.SendRequest("endjob", this.GetCallbackUri(nodeName, "taskcompleted"), nodeName, async (content, ex) =>
             {
                 Exception readEx = null;
 
@@ -195,7 +192,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
         public void EndTask(string nodeName, EndTaskArg arg, NodeCommunicatorCallBack<EndTaskArg> callback)
         {
-            this.SendRequest("endtask", "taskcompleted", nodeName, async (content, ex) =>
+            this.SendRequest("endtask", this.GetCallbackUri(nodeName, "taskcompleted"), nodeName, async (content, ex) =>
             {
                 Exception readEx = null;
 
@@ -225,7 +222,12 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
         public void StartJobAndTask(string nodeName, StartJobAndTaskArg arg, string userName, string password, ProcessStartInfo startInfo, NodeCommunicatorCallBack<StartJobAndTaskArg> callback)
         {
-            this.SendRequest("startjobandtask", "taskcompleted", nodeName, (content, ex) =>
+            if (IsAdmin(userName, password))
+            {
+                startInfo.EnvironmentVariables["CCP_ISADMIN"] = "1";
+            }
+
+            this.SendRequest("startjobandtask", this.GetCallbackUri(nodeName, "taskcompleted"), nodeName, (content, ex) =>
             {
                 callback(nodeName, arg, ex);
             }, Tuple.Create(arg, startInfo, userName, password));
@@ -233,7 +235,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
         public void StartJobAndTaskSoftCardCred(string nodeName, StartJobAndTaskArg arg, string userName, string password, byte[] certificate, ProcessStartInfo startInfo, NodeCommunicatorCallBack<StartJobAndTaskArg> callback)
         {
-            this.SendRequest("startjobandtask", "taskcompleted", nodeName, (content, ex) =>
+            this.SendRequest("startjobandtask", this.GetCallbackUri(nodeName, "taskcompleted"), nodeName, (content, ex) =>
             {
                 callback(nodeName, arg, ex);
             }, Tuple.Create(arg, startInfo, userName, password, certificate));
@@ -264,7 +266,12 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
                 this.Tracer.TraceWarning("Error parsing extended data {0}, ex {1}", extendedData, ex);
             }
 
-            this.SendRequest("startjobandtask", "taskcompleted", nodeName, (content, ex) =>
+            if (IsAdmin(userName, password))
+            {
+                startInfo.EnvironmentVariables["CCP_ISADMIN"] = "1";
+            }
+
+            this.SendRequest("startjobandtask", this.GetCallbackUri(nodeName, "taskcompleted"), nodeName, (content, ex) =>
             {
                 callback(nodeName, arg, ex);
             }, Tuple.Create(arg, startInfo, userName, password, privateKey, publicKey));
@@ -272,7 +279,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
         public void StartTask(string nodeName, StartTaskArg arg, ProcessStartInfo startInfo, NodeCommunicatorCallBack<StartTaskArg> callback)
         {
-            this.SendRequest("starttask", "taskcompleted", nodeName, (content, ex) =>
+            this.SendRequest("starttask", this.GetCallbackUri(nodeName, "taskcompleted"), nodeName, (content, ex) =>
             {
                 callback(nodeName, arg, ex);
             }, Tuple.Create(arg, startInfo));
@@ -280,26 +287,25 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
         public void Ping(string nodeName)
         {
-            this.SendRequest<NodeCommunicatorCallBackArg>("ping", "computenodereported", nodeName, (content, ex) =>
+            this.SendRequest<NodeCommunicatorCallBackArg>("ping", this.GetCallbackUri(nodeName, "computenodereported"), nodeName, (content, ex) =>
             {
                 this.Tracer.TraceInfo("Compute node {0} pinged. Ex {1}", nodeName, ex);
             }, null);
-
-            this.Metric(nodeName);
         }
 
-        public void Metric(string nodeName)
+        public void SetMetricGuid(string nodeName, Guid nodeGuid)
         {
-            this.SendRequest<NodeCommunicatorCallBackArg>("metric", "metricreported", nodeName, (content, ex) =>
+            var callbackUri = this.GetMetricCallbackUri(this.headNodeFqdn.Value, this.MonitoringPort, nodeGuid);
+            this.SendRequest<NodeCommunicatorCallBackArg>("metric", callbackUri, nodeName, (content, ex) =>
             {
-                this.Tracer.TraceInfo("Compute node {0} metric requested. Ex {1}", nodeName, ex);
+                this.Tracer.TraceInfo("Compute node {0} metric requested, callback {1}. Ex {2}", nodeGuid, callbackUri, ex);
             }, null);
         }
 
-        private void SendRequest<T>(string action, string callbackAction, string nodeName, Action<HttpContent, Exception> callback, T arg)
+        private void SendRequest<T>(string action, string callbackUri, string nodeName, Action<HttpContent, Exception> callback, T arg)
         {
             var request = new HttpRequestMessage(HttpMethod.Post, this.GetResoureUri(nodeName, action));
-            request.Headers.Add(CallbackUriHeaderName, this.GetCallbackUri(nodeName, callbackAction));
+            request.Headers.Add(CallbackUriHeaderName, callbackUri);
             var formatter = new JsonMediaTypeFormatter();
             request.Content = new ObjectContent<T>(arg, formatter);
 
@@ -325,8 +331,12 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
         private Uri GetResoureUri(string nodeName, string action)
         {
-            var hostName = this.LinuxServiceHost ?? nodeName;
-            return new Uri(string.Format(ResourceUriFormat, hostName, nodeName, action));
+            return new Uri(string.Format(ResourceUriFormat, nodeName, nodeName, action));
+        }
+
+        private string GetMetricCallbackUri(string headNodeName, int port, Guid nodeGuid)
+        {
+            return string.Format("udp://{0}:{1}/api/{2}/metricreported", headNodeName, port, nodeGuid);
         }
 
         private string GetCallbackUri(string nodeName, string action)
@@ -334,76 +344,13 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
             return string.Format("{0}/api/{1}/{2}", this.server.ListeningUri, nodeName, action);
         }
 
-        public void OnNodeMetricReported(Monitoring.ComputeNodeMetricInformation metricInfo)
+        public void OnRegisterRequested(RegisterEventArgs registerEventArgs)
         {
-            var nodeMetricReported = this.NodeMetricReported;
-            if (nodeMetricReported != null)
+            var registerRequested = this.RegisterRequested;
+            if (registerRequested != null)
             {
-                //this.Tracer.TraceDetail("Metric Name {0}, cores {1}, sockets {2}, memory {3}, ipaddress {4}", metricInfo.Name, metricInfo.CoreCount, metricInfo.SocketCount, metricInfo.MemoryMegabytes, metricInfo.IpAddress);
-
-                //if (metricInfo.NetworkInfo != null)
-                //{
-                //    foreach (var net in metricInfo.NetworkInfo)
-                //    {
-                //        this.Tracer.TraceDetail("Network {0}, {1}, {2}, {3}, {4}, {5}", net.Name, net.MacAddress, net.IpV4, net.IpV6, net.IsIB, metricInfo.Name);
-                //    }
-                //}
-
-                //this.Tracer.TraceDetail("Umids Count {0}", metricInfo.Umids.Count);
-                //this.Tracer.TraceInfo("Distro Info {0}", metricInfo.DistroInfo);
-
-                nodeMetricReported(this, new NodeMetricReportedEventArgs(metricInfo.Name, metricInfo.CoreCount, metricInfo.SocketCount, metricInfo.MemoryMegabytes)
-                {
-                    DistroInfo = metricInfo.DistroInfo,
-                    NetworksInfo = metricInfo.NetworkInfo,
-                });
+                registerRequested(this, registerEventArgs);
             }
-
-            Guid nodeid = GetNodeId(metricInfo.Name);
-            if (nodeid == Guid.Empty)
-            {
-                this.Tracer.TraceWarning("Ignore MetricData from unknown Node {0}.", metricInfo.Name);
-                return;
-            }
-
-            this.sender.SendData(nodeid, metricInfo.GetUmids(), metricInfo.GetValues(), metricInfo.TickCount);
-
-            this.Tracer.TraceInfo("Send MetricData from Node {0} ({1}).", metricInfo.Name, nodeid);
-        }
-
-        private Guid GetNodeId(string nodeName)
-        {
-            Guid guid = Guid.Empty;
-            if (string.IsNullOrEmpty(nodeName))
-            {
-                return guid;
-            }
-
-            string lower = nodeName.ToLower();
-            if (!this.nodeMap.TryGetValue(lower, out guid))
-            {
-                // new node added ? refresh the nodemap
-                using (IScheduler scheduler = new Scheduler.Scheduler())
-                {
-                    scheduler.Connect(this.HeadNode);
-                    FilterCollection fc = new FilterCollection();
-                    fc.Add(FilterOperator.Equal, NodePropertyIds.Location, NodeLocation.Linux);
-                    foreach (ISchedulerNode node in scheduler.GetNodeList(fc, null))
-                    {
-                        string l = node.Name.ToLower();
-                        this.nodeMap.AddOrUpdate(l, node.Guid, (k, g) => node.Guid);
-
-                        if (l.Equals(lower))
-                        {
-                            guid = node.Guid;
-                        }
-                    }
-
-                    scheduler.Close();
-                }
-            }
-
-            return guid;
         }
     }
 }
