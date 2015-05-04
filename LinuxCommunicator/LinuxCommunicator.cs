@@ -37,7 +37,8 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
         private CancellationTokenSource cancellationTokenSource;
 
         private static LinuxCommunicator instance;
-        
+        private Lazy<string> headNodeFqdn;
+
         public LinuxCommunicator()
         {
             if (instance != null)
@@ -46,6 +47,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
             }
 
             instance = this;
+            this.headNodeFqdn = new Lazy<string>(() => Dns.GetHostEntryAsync(this.HeadNode).Result.HostName, LazyThreadSafetyMode.ExecutionAndPublication);
         }
 
         public event EventHandler<RegisterEventArgs> RegisterRequested;
@@ -129,23 +131,6 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
                 ArgumentNullException exp = new ArgumentNullException(ClusterNameKeyName);
                 Tracer.TraceError("Failed to find registry value: {0}. {1}", ClusterNameKeyName, exp);
                 throw exp;
-            }
-
-            this.sender = new Monitoring.CounterDataSender();
-            this.sender.OpenConnection(this.HeadNode, this.MonitoringPort);
-
-            using (IScheduler scheduler = new Scheduler.Scheduler())
-            {
-                scheduler.Connect(this.HeadNode);
-                this.nodeMap = new ConcurrentDictionary<string, Guid>();
-                FilterCollection fc = new FilterCollection();
-                fc.Add(FilterOperator.Equal, NodePropertyIds.Location, NodeLocation.Linux);
-                foreach (ISchedulerNode node in scheduler.GetNodeList(fc, null))
-                {
-                    this.nodeMap.TryAdd(node.Name.ToLower(), node.Guid);
-                }
-
-                scheduler.Close();
             }
 
             this.Tracer.TraceInfo("Initialized LinuxCommunicator.");
@@ -310,7 +295,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
         public void SetMetricGuid(string nodeName, Guid nodeGuid)
         {
-            var callbackUri = this.GetMetricCallbackUri(this.HeadNode, this.MonitoringPort, nodeGuid);
+            var callbackUri = this.GetMetricCallbackUri(this.headNodeFqdn.Value, this.MonitoringPort, nodeGuid);
             this.SendRequest<NodeCommunicatorCallBackArg>("metric", callbackUri, nodeName, (content, ex) =>
             {
                 this.Tracer.TraceInfo("Compute node {0} metric requested, callback {1}. Ex {2}", nodeGuid, callbackUri, ex);
@@ -366,41 +351,6 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
             {
                 registerRequested(this, registerEventArgs);
             }
-        }
-
-        private Guid GetNodeId(string nodeName)
-        {
-            Guid guid = Guid.Empty;
-            if (string.IsNullOrEmpty(nodeName))
-            {
-                return guid;
-            }
-
-            string lower = nodeName.ToLower();
-            if (!this.nodeMap.TryGetValue(lower, out guid))
-            {
-                // new node added ? refresh the nodemap
-                using (IScheduler scheduler = new Scheduler.Scheduler())
-                {
-                    scheduler.Connect(this.HeadNode);
-                    FilterCollection fc = new FilterCollection();
-                    fc.Add(FilterOperator.Equal, NodePropertyIds.Location, NodeLocation.Linux);
-                    foreach (ISchedulerNode node in scheduler.GetNodeList(fc, null))
-                    {
-                        string l = node.Name.ToLower();
-                        this.nodeMap.AddOrUpdate(l, node.Guid, (k, g) => node.Guid);
-
-                        if (l.Equals(lower))
-                        {
-                            guid = node.Guid;
-                        }
-                    }
-
-                    scheduler.Close();
-                }
-            }
-
-            return guid;
         }
     }
 }
