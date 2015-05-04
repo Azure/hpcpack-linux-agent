@@ -34,7 +34,7 @@ UdpReporter::UdpReporter(
     if (ret != 0)
     {
         Logger::Error("getaddrinfo failed {0}", gai_strerror(ret));
-        throw std::runtime_error(String::Join(" ", "getaddrinfo failed", gai_strerror(ret)));
+        return;
     }
 
     bool success = false;

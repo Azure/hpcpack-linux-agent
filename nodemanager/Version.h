@@ -119,6 +119,11 @@ namespace hpc
                             "Fix the monitoring data big-endian issue",
                         }
                     },
+                    { "1.2.1.5",
+                        {
+                            "Fix the report uri cannot be resolved issue",
+                        }
+                    },
                 };
 
                 return versionHistory;
