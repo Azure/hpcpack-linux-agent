@@ -58,20 +58,43 @@ void Process::Kill(int forcedExitCode)
     if (!this->ended)
     {
         this->ExecuteCommand("/bin/bash", "EndTask.sh", this->taskExecutionId, this->processId);
-        this->GetStatisticsFromCGroup();
     }
 }
 
 void Process::GetStatisticsFromCGroup()
 {
-    // TODO: protect this section.
+    std::string stat;
+    System::ExecuteCommandOut(stat, "/bin/bash", "Statistics.sh", this->taskExecutionId);
+
+    std::istringstream statIn(stat);
+
+    statIn >> this->userTimeMs;
+    this->userTimeMs *= 10;
+
+    statIn >> this->kernelTimeMs;
+    this->kernelTimeMs *= 10;
+
+    statIn >> this->workingSetKb;
+    this->workingSetKb /= 1024;
+
+    int id;
+    while (statIn >> id)
+    {
+        this->processIds.push_back(id);
+    }
 }
 
 void Process::OnCompleted()
 {
     try
     {
-        this->callback(this->exitCode, this->message.str(), this->userTime, this->kernelTime);
+        this->callback(
+            this->exitCode,
+            this->message.str(),
+            this->userTimeMs,
+            this->kernelTimeMs,
+            std::move(this->processIds),
+            this->workingSetKb);
     }
     catch (const std::exception& ex)
     {
@@ -217,14 +240,9 @@ void Process::Monitor()
         this->message << "Process " << this->processId << ": wait4 status " << status << std::endl;
     }
 
-    // TODO: use cgroup to report.
-    this->userTime = usage.ru_utime;
-    this->kernelTime = usage.ru_stime;
+    this->GetStatisticsFromCGroup();
 
     Logger::Debug(this->jobId, this->taskId, this->requeueCount, "Process {0}: Monitor ended", this->processId);
-    // TODO: Number of process;
-    // TODO: ProcessIds
-    // TODO: WorkingSet
 }
 
 void Process::Run(const std::string& path)

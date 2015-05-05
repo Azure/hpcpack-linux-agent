@@ -1,6 +1,6 @@
 #!/bin/bash
 
-CGroupSubSys=cpuset,freezer
+CGroupSubSys=cpuacct,cpuset,memory,freezer
 CGroupRoot=/cgroup
 [ -d $CGroupRoot ] || CGroupRoot=/sys/fs/cgroup
 
@@ -13,27 +13,42 @@ function GetCGroupName
 	echo "nmgroup_$taskId"
 }
 
+function GetGroupPath
+{
+    local groupName=$1
+    local subsys=$2
+    [ "$CGroupRoot" == "/cgroup" ] && echo "$CGroupRoot/$groupName" || echo "$CGroupRoot/$subsys/$groupName"
+}
+
+function GetGroupFile
+{
+    local groupName=$1
+    local subsys=$2
+    local fileName=$3
+    echo "$(GetGroupPath $groupName $subsys)/$fileName"
+}
+
 function GetCpusFile
 {
 	local groupName=$1
-	[ "$CGroupRoot" == "/cgroup" ] && echo "$CGroupRoot/$groupName/cpuset.cpus" || echo "$CGroupRoot/cpuset/$groupName/cpuset.cpus"
+	echo "$(GetGroupFile $groupName cpuset cpuset.cpus)"
 }
 
 function GetMemsFile
 {
 	local groupName=$1
-	[ "$CGroupRoot" == "/cgroup" ] && echo "$CGroupRoot/$groupName/cpuset.mems" || echo "$CGroupRoot/cpuset/$groupName/cpuset.mems"
+	echo "$(GetGroupFile $groupName cpuset cpuset.mems)"
 }
 
 function GetCpusetTasksFile
 {
 	local groupName=$1
-	[ "$CGroupRoot" == "/cgroup" ] && echo "$CGroupRoot/$groupName/tasks" || echo "$CGroupRoot/cpuset/$groupName/tasks"
+	echo "$(GetGroupFile $groupName cpuset tasks)"
 }
 
 function GetFreezerStateFile
 {
 	local groupName=$1
-	[ "$CGroupRoot" == "/cgroup" ] && echo "$CGroupRoot/$groupName/freezer.state" || echo "$CGroupRoot/freezer/$groupName/freezer.state"
+	echo "$(GetGroupFile $groupName freezer freezer.state)"
 }
 

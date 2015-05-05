@@ -94,7 +94,10 @@
 		<Unit filename="scripts/CleanupTask.sh" />
 		<Unit filename="scripts/EndTask.sh" />
 		<Unit filename="scripts/PrepareTask.sh" />
+		<Unit filename="scripts/RunTask.sh" />
 		<Unit filename="scripts/StartTask.sh" />
+		<Unit filename="scripts/Statistics.sh" />
+		<Unit filename="scripts/WaitForTrust.sh" />
 		<Unit filename="scripts/common.sh" />
 		<Unit filename="test/ProcessTest.cpp" />
 		<Unit filename="test/ProcessTest.h" />

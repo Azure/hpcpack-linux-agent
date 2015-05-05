@@ -16,9 +16,7 @@ namespace hpc
         {
             public:
                 TaskInfo(int jobId, int taskId, const std::string& nodeName) :
-                    NodeName(nodeName), JobId(jobId), TaskId(taskId),
-                    ExitCode(0), Exited(false), KernelProcessorTime(0), UserProcessorTime(0),
-                    WorkingSet(0), NumberOfProcesses(0), IsPrimaryTask(true)
+                    NodeName(nodeName), JobId(jobId), TaskId(taskId)
                 {
                 }
 
@@ -52,15 +50,16 @@ namespace hpc
                         oldC, c, this->ProcessKey);
                 }
 
+                int GetProcessCount() const { return this->ProcessIds.size(); }
+
                 int JobId;
                 int TaskId;
-                int ExitCode;
-                bool Exited;
-                long long KernelProcessorTime;
-                long long UserProcessorTime;
-                int WorkingSet;
-                int NumberOfProcesses;
-                bool IsPrimaryTask;
+                int ExitCode = 0;
+                bool Exited = false;
+                uint64_t KernelProcessorTimeMs = 0;
+                uint64_t UserProcessorTimeMs = 0;
+                uint64_t WorkingSetKb = 0;
+                bool IsPrimaryTask = true;
                 long long ProcessKey;
 
                 std::string Message;

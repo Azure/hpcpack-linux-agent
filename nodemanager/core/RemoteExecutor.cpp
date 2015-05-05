@@ -64,6 +64,13 @@ json::value RemoteExecutor::StartJobAndTask(StartJobAndTaskArgs&& args, const st
             bool publicKeyAdded = 0 == System::AddSshKey(userName, args.PublicKey, "id_rsa.pub");
             bool authKeyAdded = 0 == System::AddAuthorizedKey(userName, args.PublicKey);
 
+            if (authKeyAdded)
+            {
+                std::string output;
+                std::string userAuthKeyFile = String::Join("", "/home/", userName, "/.ssh/authorized_keys");
+                System::ExecuteCommandOut(output, "chmod 600", userAuthKeyFile);
+            }
+
             this->jobUsers[args.JobId] =
                 std::tuple<std::string, bool, bool, bool, bool, std::string>(userName, existed, privateKeyAdded, publicKeyAdded, authKeyAdded, args.PublicKey);
 
@@ -125,7 +132,13 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
                 userName,
                 std::move(args.StartInfo.Affinity),
                 std::move(args.StartInfo.EnvironmentVariables),
-                [taskInfo, callbackUri, this] (int exitCode, std::string&& message, timeval userTime, timeval kernelTime)
+                [taskInfo, callbackUri, this] (
+                    int exitCode,
+                    std::string&& message,
+                    uint64_t userTimeMs,
+                    uint64_t kernelTimeMs,
+                    std::vector<int>&& processIds,
+                    uint64_t workingSetKb)
                 {
                     try
                     {
@@ -144,8 +157,10 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
                                 taskInfo->Exited = true;
                                 taskInfo->ExitCode = exitCode;
                                 taskInfo->Message = std::move(message);
-                                taskInfo->KernelProcessorTime = kernelTime.tv_sec * 1000000 + kernelTime.tv_usec;
-                                taskInfo->UserProcessorTime = userTime.tv_sec * 1000000 + userTime.tv_usec;
+                                taskInfo->KernelProcessorTimeMs = kernelTimeMs;
+                                taskInfo->UserProcessorTimeMs = userTimeMs;
+                                taskInfo->ProcessIds = std::move(processIds);
+                                taskInfo->WorkingSetKb = workingSetKb;
 
                                 jsonBody = taskInfo->ToCompletionEventArgJson();
                             }

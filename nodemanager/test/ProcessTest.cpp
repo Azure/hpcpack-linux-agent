@@ -63,12 +63,17 @@ a8lxTKnZCsRXU1HexqZs+DSc+30tz50bNqLdido/l5B4EJnQP03ciO0=\
         25, 28, 1, "echo 30", "", "", "", "", userName,
         std::vector<uint64_t>(), std::map<std::string, std::string>(),
         [&result, &callbacked]
-        (int exitCode, std::string&& message, timeval userTime, timeval kernelTime)
+        (int exitCode, std::string&& message,
+            uint64_t userTimeMs, uint64_t kernelTimeMs,
+            std::vector<int>&& processIds,
+            uint64_t workingSetKb)
         {
             if (exitCode != 0) result = false;
             if (message.empty()) result = false;
-            if (kernelTime.tv_sec * 1000000 + kernelTime.tv_usec < 0) result = false;
-            if (userTime.tv_sec * 1000000 + userTime.tv_usec < 0) result = false;
+            if (kernelTimeMs < 0) result = false;
+            if (userTimeMs < 0) result = false;
+            if (processIds.size() > 0) result = false;
+            if (workingSetKb < 0) result = false;
 
             Logger::Info("exitCode {0}, message {1}, result {2}", exitCode, message, result);
             callbacked = true;
@@ -150,12 +155,17 @@ a8lxTKnZCsRXU1HexqZs+DSc+30tz50bNqLdido/l5B4EJnQP03ciO0=\
         25, 28, 1, "echo 30", "", "", "", "", userName,
         std::vector<uint64_t>({ UINT64_C(4) }), std::map<std::string, std::string>(),
         [&result, &callbacked]
-        (int exitCode, std::string&& message, timeval userTime, timeval kernelTime)
+        (int exitCode, std::string&& message,
+            uint64_t userTimeMs, uint64_t kernelTimeMs,
+            std::vector<int>&& processIds,
+            uint64_t workingSetKb)
         {
             if (exitCode != 0) result = false;
             if (message.empty()) result = false;
-            if (kernelTime.tv_sec * 1000000 + kernelTime.tv_usec < 0) result = false;
-            if (userTime.tv_sec * 1000000 + userTime.tv_usec < 0) result = false;
+            if (kernelTimeMs < 0) result = false;
+            if (userTimeMs < 0) result = false;
+            if (processIds.size() > 0) result = false;
+            if (workingSetKb < 0) result = false;
 
             Logger::Info("exitCode {0}, message {1}, result {2}", exitCode, message, result);
             callbacked = true;

@@ -26,7 +26,13 @@ namespace hpc
         class Process
         {
             public:
-                typedef void Callback(int, std::string&&, timeval userTime, timeval kernelTime);
+                typedef void Callback(
+                    int,
+                    std::string&&,
+                    uint64_t userTimeMs,
+                    uint64_t kernelTimeMs,
+                    std::vector<int>&& processIds,
+                    uint64_t workingSetKb);
 
                 Process(
                     int jobId,
@@ -103,8 +109,10 @@ namespace hpc
                 std::ostringstream message;
                 int exitCode = (int)hpc::common::ErrorCodes::DefaultExitCode;
                 bool exitCodeSet = false;
-                timeval userTime = { 0, 0 };
-                timeval kernelTime = { 0, 0 };
+                uint64_t userTimeMs = 0;
+                uint64_t kernelTimeMs = 0;
+                std::vector<int> processIds;
+                uint64_t workingSetKb;
                 std::string taskFolder;
 
                 const int jobId;

@@ -14,10 +14,10 @@ json::value TaskInfo::ToJson() const
     j["TaskRequeueCount"] = this->taskRequeueCount;
     j["ExitCode"] = this->ExitCode;
     j["Exited"] = this->Exited;
-    j["KernelProcessorTime"] = (int64_t)this->KernelProcessorTime;
-    j["UserProcessorTime"] = (int64_t)this->UserProcessorTime;
-    j["WorkingSet"] = this->WorkingSet;
-    j["NumberOfProcesses"] = this->NumberOfProcesses;
+    j["KernelProcessorTime"] = this->KernelProcessorTimeMs;
+    j["UserProcessorTime"] = this->UserProcessorTimeMs;
+    j["WorkingSet"] = this->WorkingSetKb;
+    j["NumberOfProcesses"] = this->GetProcessCount();
     j["PrimaryTask"] = this->IsPrimaryTask;
     j["Message"] = JsonHelper<std::string>::ToJson(this->Message);
     j["ProcessIds"] = JsonHelper<std::string>::ToJson(String::Join<','>(this->ProcessIds));

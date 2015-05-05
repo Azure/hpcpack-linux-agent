@@ -124,6 +124,12 @@ namespace hpc
                             "Fix the report uri cannot be resolved issue",
                         }
                     },
+                    { "1.2.1.6",
+                        {
+                            "Correct the authorized_keys file permission",
+                            "Report resource usage through cgroup statistics",
+                        }
+                    },
                 };
 
                 return versionHistory;
