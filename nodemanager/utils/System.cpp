@@ -293,7 +293,7 @@ int System::AddSshKey(
     int ret = System::ExecuteCommandOut(
         output,
         "[ -d ", sshFolder, " ] || mkdir ", sshFolder,
-        " && chown ", userName, " ", sshFolder, " && chmod 775 ", sshFolder);
+        " && chown ", userName, " ", sshFolder, " && chmod 700 ", sshFolder);
 
     if (ret != 0)
     {

@@ -68,7 +68,24 @@ json::value RemoteExecutor::StartJobAndTask(StartJobAndTaskArgs&& args, const st
             {
                 std::string output;
                 std::string userAuthKeyFile = String::Join("", "/home/", userName, "/.ssh/authorized_keys");
-                System::ExecuteCommandOut(output, "chmod 600", userAuthKeyFile);
+                System::ExecuteCommandOut(output, "chmod 600", userAuthKeyFile,
+                    "&& chown", userName, userAuthKeyFile);
+            }
+
+            if (privateKeyAdded)
+            {
+                std::string output;
+                std::string privateKeyFile = String::Join("", "/home/", userName, "/.ssh/id_rsa");
+                System::ExecuteCommandOut(output, "chmod 600", privateKeyFile,
+                    "&& chown", userName, privateKeyFile);
+            }
+
+            if (publicKeyAdded)
+            {
+                std::string output;
+                std::string publicKeyFile = String::Join("", "/home/", userName, "/.ssh/id_rsa.pub");
+                System::ExecuteCommandOut(output, "chmod 644", publicKeyFile,
+                    "&& chown", userName, publicKeyFile);
             }
 
             this->jobUsers[args.JobId] =

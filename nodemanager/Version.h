@@ -131,6 +131,11 @@ namespace hpc
                             "Added Unit test for process count",
                         }
                     },
+                    { "1.2.1.7",
+                        {
+                            "Set correct permissions on key files",
+                        }
+                    },
                 };
 
                 return versionHistory;
