@@ -14,6 +14,7 @@ namespace hpc
 
                 static bool SimpleEcho();
                 static bool Affinity();
+                static bool RemainingProcess();
 
             protected:
             private:

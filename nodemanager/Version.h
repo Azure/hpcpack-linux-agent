@@ -128,6 +128,7 @@ namespace hpc
                         {
                             "Correct the authorized_keys file permission",
                             "Report resource usage through cgroup statistics",
+                            "Added Unit test for process count",
                         }
                     },
                 };
