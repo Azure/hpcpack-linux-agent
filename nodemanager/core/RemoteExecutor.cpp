@@ -88,8 +88,11 @@ json::value RemoteExecutor::StartJobAndTask(StartJobAndTaskArgs&& args, const st
                     "&& chown", userName, publicKeyFile);
             }
 
-            this->jobUsers[args.JobId] =
-                std::tuple<std::string, bool, bool, bool, bool, std::string>(userName, existed, privateKeyAdded, publicKeyAdded, authKeyAdded, args.PublicKey);
+            if (this->jobUsers.find(args.JobId) == this->jobUsers.end())
+            {
+                this->jobUsers[args.JobId] =
+                    std::tuple<std::string, bool, bool, bool, bool, std::string>(userName, existed, privateKeyAdded, publicKeyAdded, authKeyAdded, args.PublicKey);
+            }
 
             auto it = this->userJobs.find(userName);
 
