@@ -136,6 +136,12 @@ namespace hpc
                             "Set correct permissions on key files",
                         }
                     },
+                    { "1.3.1.1",
+                        {
+                            "Add graceful preemption support",
+                            "prevent the common user with root name to run as root",
+                        }
+                    },
                 };
 
                 return versionHistory;
