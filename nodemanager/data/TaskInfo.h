@@ -7,6 +7,7 @@
 #include <memory>
 
 #include "../utils/Logger.h"
+#include "../data/ProcessStatistics.h"
 
 namespace hpc
 {
@@ -51,6 +52,8 @@ namespace hpc
                 }
 
                 int GetProcessCount() const { return this->ProcessIds.size(); }
+
+                void AssignFromStat(const ProcessStatistics& stat);
 
                 int JobId;
                 int TaskId;

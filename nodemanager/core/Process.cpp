@@ -7,10 +7,12 @@
 #include "../utils/Logger.h"
 #include "../utils/String.h"
 #include "../common/ErrorCodes.h"
+#include "../utils/WriterLock.h"
 
 using namespace hpc::core;
 using namespace hpc::utils;
 using namespace hpc::common;
+using namespace hpc::data;
 
 Process::Process(
     int jobId,
@@ -36,6 +38,7 @@ Process::Process(
 Process::~Process()
 {
     this->Kill();
+    pthread_rwlock_destroy(&this->lock);
 }
 
 pplx::task<pid_t> Process::Start()
@@ -47,7 +50,7 @@ pplx::task<pid_t> Process::Start()
     return pplx::task<pid_t>(this->started);
 }
 
-void Process::Kill(int forcedExitCode)
+void Process::Kill(int forcedExitCode, bool forced)
 {
     if (forcedExitCode != 0x0FFFFFFF)
     {
@@ -57,31 +60,36 @@ void Process::Kill(int forcedExitCode)
 
     if (!this->ended)
     {
-        this->ExecuteCommand("/bin/bash", "EndTask.sh", this->taskExecutionId, this->processId);
+        this->ExecuteCommand("/bin/bash", "EndTask.sh", this->taskExecutionId, this->processId, forced ? "1" : "0");
     }
 }
 
-void Process::GetStatisticsFromCGroup()
+const ProcessStatistics& Process::GetStatisticsFromCGroup()
 {
     std::string stat;
     System::ExecuteCommandOut(stat, "/bin/bash", "Statistics.sh", this->taskExecutionId);
 
     std::istringstream statIn(stat);
 
-    statIn >> this->userTimeMs;
-    this->userTimeMs *= 10;
+    WriterLock writerLock(&this->lock);
+    statIn >> this->statistics.UserTimeMs;
+    this->statistics.UserTimeMs *= 10;
 
-    statIn >> this->kernelTimeMs;
-    this->kernelTimeMs *= 10;
+    statIn >> this->statistics.KernelTimeMs;
+    this->statistics.KernelTimeMs *= 10;
 
-    statIn >> this->workingSetKb;
-    this->workingSetKb /= 1024;
+    statIn >> this->statistics.WorkingSetKb;
+    this->statistics.WorkingSetKb /= 1024;
+
+    this->statistics.ProcessIds.clear();
 
     int id;
     while (statIn >> id)
     {
-        this->processIds.push_back(id);
+        this->statistics.ProcessIds.push_back(id);
     }
+
+    return this->statistics;
 }
 
 void Process::OnCompleted()
@@ -91,10 +99,7 @@ void Process::OnCompleted()
         this->callback(
             this->exitCode,
             this->message.str(),
-            this->userTimeMs,
-            this->kernelTimeMs,
-            std::move(this->processIds),
-            this->workingSetKb);
+            this->statistics);
     }
     catch (const std::exception& ex)
     {

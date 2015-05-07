@@ -5,9 +5,11 @@
 
 [ -z "$1" ] && echo "task id not specified" && exit 202
 [ -z "$2" ] && echo "process id not specified" && exit 202
+[ -z "$3" ] && echo "forced not specified" && exit 202
 
 taskId=$1
 processId=$2
+forced=$3
 
 if $CGInstalled; then
 	groupName=$(GetCGroupName $taskId)
@@ -29,22 +31,30 @@ if $CGInstalled; then
 	done
 
 	# kill all tasks
-	for pid in $(cat $tasks); 
+	for pid in $(cat $tasks);
 	do
-		[ -d /proc/$pid ] && kill -TERM $pid
+		if [ $forced == "1" ]; then
+			[ -d /proc/$pid ] && kill -TERM $pid
+		else
+			[ -d /proc/$pid ] && kill -SIGINT $pid
+		fi
 	done
 
 	# resume tasks
 	echo THAWED > $freezerState
 
 	maxLoop=20
-	while [ -f $freezerState ] && ! grep -Fxq THAWED $freezerState && [ $maxLoop -gt 0 ] 
+	while [ -f $freezerState ] && ! grep -Fxq THAWED $freezerState && [ $maxLoop -gt 0 ]
 	do
 		sleep .1
 		((maxLoop--))
 	done
 else
-	kill -s TERM $(pstree -l -p $processId | grep "([[:digit:]]*)" -o | tr -d '()')
+	if [ $forced == "1" ]; then
+		kill -s TERM $(pstree -l -p $processId | grep "([[:digit:]]*)" -o | tr -d '()')
+	else
+		kill -s SIGINT $(pstree -l -p $processId | grep "([[:digit:]]*)" -o | tr -d '()')
+	fi
 fi
 
 exit 0

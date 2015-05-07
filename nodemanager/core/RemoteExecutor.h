@@ -9,6 +9,7 @@
 #include "Monitor.h"
 #include "Process.h"
 #include "Reporter.h"
+#include "../data/ProcessStatistics.h"
 
 namespace hpc
 {
@@ -24,15 +25,21 @@ namespace hpc
                 virtual web::json::value StartJobAndTask(hpc::arguments::StartJobAndTaskArgs&& args, const std::string& callbackUri);
                 virtual web::json::value StartTask(hpc::arguments::StartTaskArgs&& args, const std::string& callbackUri);
                 virtual web::json::value EndJob(hpc::arguments::EndJobArgs&& args);
-                virtual web::json::value EndTask(hpc::arguments::EndTaskArgs&& args);
+                virtual web::json::value EndTask(hpc::arguments::EndTaskArgs&& args, const std::string& callbackUri);
                 virtual web::json::value Ping(const std::string& callbackUri);
                 virtual web::json::value Metric(const std::string& callbackUri);
 
             protected:
             private:
+                static void* GracePeriodElapsed(void* data);
+
                 std::string LoadReportUri(const std::string& fileName);
                 void SaveReportUri(const std::string& fileName, const std::string& uri);
-                bool TerminateTask(int processKey, int exitCode);
+                const hpc::data::ProcessStatistics* TerminateTask(
+                    int jobId, int taskId, int requeueCount,
+                    int processKey, int exitCode, bool forced);
+
+                void ReportTaskCompletion(int jobId, int taskId, int taskRequeueCount, json::value jsonBody, const std::string& callbackUri);
 
                 const int UnknowId = 999;
                 const int NodeInfoReportInterval = 30;

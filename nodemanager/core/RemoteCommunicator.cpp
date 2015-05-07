@@ -152,7 +152,7 @@ json::value RemoteCommunicator::EndJob(const json::value& val, const std::string
 json::value RemoteCommunicator::EndTask(const json::value& val, const std::string& callbackUri)
 {
     auto args = EndTaskArgs::FromJson(val);
-    return this->executor.EndTask(std::move(args));
+    return this->executor.EndTask(std::move(args), callbackUri);
 }
 
 json::value RemoteCommunicator::Ping(const json::value& val, const std::string& callbackUri)
