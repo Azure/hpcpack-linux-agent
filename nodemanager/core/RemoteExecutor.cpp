@@ -447,7 +447,7 @@ void* RemoteExecutor::GracePeriodElapsed(void* data)
             taskInfo->AssignFromStat(*stat);
         }
 
-        jsonBody = taskInfo->ToJson();
+        jsonBody = taskInfo->ToCompletionEventArgJson();
         Logger::Info(jobId, taskId, e->UnknowId, "EndTask: ended {0}", jsonBody);
     }
     else
