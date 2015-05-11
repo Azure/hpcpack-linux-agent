@@ -136,6 +136,13 @@ namespace hpc
                             "Set correct permissions on key files",
                         }
                     },
+                    { "1.2.1.8",
+                        {
+                            "Remove the user even if it is logged on",
+                            "Won't overwrite the keys if private key is not created",
+                            "Work around the bug of removing multi-subsys cgroup in old version of CGroup tools",
+                        }
+                    },
                 };
 
                 return versionHistory;

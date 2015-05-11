@@ -90,6 +90,18 @@ namespace hpc
                     return ret;
                 }
 
+                template <typename ... Args>
+                int ExecuteCommandNoCapture(const std::string& cmd,  const Args& ... args)
+                {
+                    std::string output;
+                    std::string cmdLine = String::Join(" ", cmd, args...);
+                    int ret = System::ExecuteCommandOut(output, cmd, args...);
+
+                    Logger::Debug(this->jobId, this->taskId, this->requeueCount, "'{0}', exitCode {1}, output {2}.", cmdLine, ret, output);
+
+                    return ret;
+                }
+
                 static void* ForkThread(void*);
 
                 std::string GetAffinity();

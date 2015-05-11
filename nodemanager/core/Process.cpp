@@ -165,7 +165,7 @@ void* Process::ForkThread(void* arg)
     }
 
 Final:
-    p->ExecuteCommand("/bin/bash", "CleanupTask.sh", p->taskExecutionId, p->processId);
+    p->ExecuteCommandNoCapture("/bin/bash", "CleanupTask.sh", p->taskExecutionId, p->processId);
     p->ExecuteCommand("rm -rf", p->taskFolder);
     p->ended = true;
     p->OnCompleted();

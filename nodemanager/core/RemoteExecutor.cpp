@@ -61,8 +61,9 @@ json::value RemoteExecutor::StartJobAndTask(StartJobAndTaskArgs&& args, const st
             }
 
             bool privateKeyAdded = 0 == System::AddSshKey(userName, args.PrivateKey, "id_rsa");
-            bool publicKeyAdded = 0 == System::AddSshKey(userName, args.PublicKey, "id_rsa.pub");
-            bool authKeyAdded = 0 == System::AddAuthorizedKey(userName, args.PublicKey);
+            bool publicKeyAdded = privateKeyAdded && (0 == System::AddSshKey(userName, args.PublicKey, "id_rsa.pub"));
+
+            bool authKeyAdded = privateKeyAdded && publicKeyAdded && (0 == System::AddAuthorizedKey(userName, args.PublicKey));
 
             if (authKeyAdded)
             {
