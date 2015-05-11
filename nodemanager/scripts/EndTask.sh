@@ -34,7 +34,7 @@ if $CGInstalled; then
 	for pid in $(cat $tasks);
 	do
 		if [ $forced == "1" ]; then
-			[ -d /proc/$pid ] && kill -TERM $pid
+			[ -d /proc/$pid ] && kill -9 $pid
 		else
 			[ -d /proc/$pid ] && kill -SIGINT $pid
 		fi

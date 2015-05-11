@@ -139,7 +139,12 @@ namespace hpc
                     { "1.3.1.1",
                         {
                             "Add graceful preemption support",
-                            "prevent the common user with root name to run as root",
+                            "Prevent the common user with root name to run as root",
+                        }
+                    },
+                    { "1.3.1.2",
+                        {
+                            "Kill the process immediately after the period expires",
                         }
                     },
                 };
