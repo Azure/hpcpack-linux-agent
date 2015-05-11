@@ -141,6 +141,7 @@ namespace hpc
                             "Remove the user even if it is logged on",
                             "Won't overwrite the keys if private key is not created",
                             "Work around the bug of removing multi-subsys cgroup in old version of CGroup tools",
+                            "Fix the network usage monitoring issue",
                         }
                     },
                 };

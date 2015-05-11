@@ -24,10 +24,10 @@ namespace hpc
 
                 static std::vector<NetInfo> GetNetworkInfo();
                 static std::string GetIpAddress(IpAddressVersion version, const std::string& name);
-                static void CPUUsage(long int &total, long int &idle);
-                static void Memory(unsigned long &available, unsigned long &total);
+                static void CPUUsage(uint64_t &total, uint64_t &idle);
+                static void Memory(uint64_t &available, uint64_t &total);
                 static void CPU(int &cores, int &sockets);
-                static int NetworkUsage(long int &network, const std::string& netName);
+                static int NetworkUsage(uint64_t &network, const std::string& netName);
                 static const std::string& GetNodeName();
                 static bool IsCGroupInstalled();
 
