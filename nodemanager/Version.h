@@ -144,6 +144,11 @@ namespace hpc
                             "Fix the network usage monitoring issue",
                         }
                     },
+                    { "1.2.1.9",
+                        {
+                            "Placeholder for linux extension bug fix",
+                        }
+                    },
                 };
 
                 return versionHistory;
