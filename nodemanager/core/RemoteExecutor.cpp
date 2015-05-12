@@ -89,8 +89,15 @@ json::value RemoteExecutor::StartJobAndTask(StartJobAndTaskArgs&& args, const st
                     "&& chown", userName, publicKeyFile);
             }
 
+            Logger::Debug(args.JobId, args.TaskId, this->UnknowId,
+                "Create user {0} result: ret {1}, private {2}, public {3}, auth {4}",
+                userName, ret, privateKeyAdded, publicKeyAdded, authKeyAdded);
+
             if (this->jobUsers.find(args.JobId) == this->jobUsers.end())
             {
+                Logger::Debug(args.JobId, args.TaskId, this->UnknowId,
+                    "Create user: jobUsers entry added.");
+
                 this->jobUsers[args.JobId] =
                     std::tuple<std::string, bool, bool, bool, bool, std::string>(userName, existed, privateKeyAdded, publicKeyAdded, authKeyAdded, args.PublicKey);
             }

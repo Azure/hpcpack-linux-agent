@@ -149,6 +149,11 @@ namespace hpc
                             "Placeholder for linux extension bug fix",
                         }
                     },
+                    { "1.2.1.10",
+                        {
+                            "Added logs for users left problem",
+                        }
+                    },
                 };
 
                 return versionHistory;

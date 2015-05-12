@@ -29,22 +29,22 @@ if $CGInstalled; then
 	done
 
 	# kill all tasks
-	for pid in $(cat $tasks); 
+	for pid in $(cat $tasks);
 	do
-		[ -d /proc/$pid ] && kill -TERM $pid
+		[ -d /proc/$pid ] && kill -9 $pid
 	done
 
 	# resume tasks
 	echo THAWED > $freezerState
 
 	maxLoop=20
-	while [ -f $freezerState ] && ! grep -Fxq THAWED $freezerState && [ $maxLoop -gt 0 ] 
+	while [ -f $freezerState ] && ! grep -Fxq THAWED $freezerState && [ $maxLoop -gt 0 ]
 	do
 		sleep .1
 		((maxLoop--))
 	done
 else
-	kill -s TERM $(pstree -l -p $processId | grep "([[:digit:]]*)" -o | tr -d '()')
+	kill -s 9 $(pstree -l -p $processId | grep "([[:digit:]]*)" -o | tr -d '()')
 fi
 
 exit 0
