@@ -21,6 +21,12 @@ using namespace hpc::utils;
 using namespace hpc;
 using namespace hpc::common;
 
+void Cleanup()
+{
+    Logger::Info("Cleaning up zombie processes");
+    Process::Cleanup();
+}
+
 int main(int argc, char* argv[])
 {
     if (argc > 1)
@@ -68,6 +74,8 @@ int main(int argc, char* argv[])
     }
 
 #endif // DEBUG
+
+    Cleanup();
 
     const std::string networkName = "eth0";
     RemoteExecutor executor(networkName);

@@ -147,6 +147,11 @@ namespace hpc
                             "Kill the process immediately after the period expires",
                         }
                     },
+                    { "1.3.1.3",
+                        {
+                            "Cleaning up zombie processes when startup",
+                        }
+                    },
                 };
 
                 return versionHistory;

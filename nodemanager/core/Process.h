@@ -54,6 +54,8 @@ namespace hpc
                 void Kill(int forcedExitCode = 0x0FFFFFFF, bool forced = true);
                 const hpc::data::ProcessStatistics& GetStatisticsFromCGroup();
 
+                static void Cleanup();
+
             protected:
             private:
                 void SetExitCode(int exitCode)

@@ -41,6 +41,13 @@ Process::~Process()
     pthread_rwlock_destroy(&this->lock);
 }
 
+void Process::Cleanup()
+{
+    std::string output;
+    System::ExecuteCommandOut(output, "/bin/bash", "CleanupAllTasks.sh");
+    Logger::Info("Cleanup zombie result: {0}", output);
+}
+
 pplx::task<pid_t> Process::Start()
 {
     pthread_create(&this->threadId, nullptr, ForkThread, this);
