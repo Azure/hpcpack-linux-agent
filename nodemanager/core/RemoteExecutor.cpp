@@ -211,7 +211,7 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
                             http_response response = client.request(methods::POST, "", jsonBody).get();
 
                             Logger::Info(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetTaskRequeueCount(),
-                                "Callback to {0} response code {1}, value {2}", callbackUri, response.status_code(), response.extract_string());
+                                "Callback to {0} response code {1}, value {2}", callbackUri, response.status_code(), response.extract_string().get());
                         }
 
                         // this won't remove the task entry added later as attempt id doesn't match
