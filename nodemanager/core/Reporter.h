@@ -44,6 +44,7 @@ namespace hpc
             protected:
                 const std::string reportUri;
                 std::function<ReportType()> valueFetcher;
+                int intervalSeconds;
 
             private:
                 static void* ReportingThread(void* arg)
@@ -69,7 +70,6 @@ namespace hpc
                     pthread_exit(nullptr);
                 }
 
-                int intervalSeconds;
                 int holdSeconds;
 
                 pthread_t threadId;

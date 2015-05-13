@@ -154,6 +154,11 @@ namespace hpc
                             "Added logs for users left problem",
                         }
                     },
+                    { "1.2.1.11",
+                        {
+                            "Treat the return value of the heart beat to adjust interval",
+                        }
+                    },
                 };
 
                 return versionHistory;
