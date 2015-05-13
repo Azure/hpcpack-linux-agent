@@ -31,8 +31,6 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
         private HttpClient client;
         private WebServer server;
-        private Monitoring.CounterDataSender sender;
-        private ConcurrentDictionary<string, Guid> nodeMap;
 
         private CancellationTokenSource cancellationTokenSource;
 
@@ -54,7 +52,6 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
         public void Dispose()
         {
-            this.sender.CloseConnection();
             this.server.Dispose();
             this.client.Dispose();
             GC.SuppressFinalize(this);
@@ -269,6 +266,32 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
             if (IsAdmin(userName, password))
             {
                 startInfo.EnvironmentVariables["CCP_ISADMIN"] = "1";
+            }
+
+            if (startInfo.EnvironmentVariables.Contains("CCP_NODES"))
+            {
+                var nodes = startInfo.EnvironmentVariables["CCP_NODES"] as string;
+
+                var tokens = nodes.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+                for (int i = 1; i + 1 < tokens.Length; i += 2)
+                {
+                    int coreCount = 1;
+                    var row = this.SchedulerCallbacks.GetNodeProperties(tokens[i], NodePropertyIds.NumCores);
+                    var col = row.FirstOrDefault();
+                    if (col != null)
+                    {
+                        coreCount = (int)col.Value;
+                    }
+                    else
+                    {
+                        this.Tracer.TraceWarning("Cannot get corecount for node {0}", nodeName);
+                    }
+
+                    tokens[i + 1] = coreCount.ToString();
+                }
+
+                startInfo.EnvironmentVariables["CCP_NODES_CORES"] = string.Join(" ", tokens);
+                this.Tracer.TraceDetail("Converted CCP_NODES_CORES variable {0}", startInfo.EnvironmentVariables["CCP_NODES_CORES"]);
             }
 
             this.SendRequest("startjobandtask", this.GetCallbackUri(nodeName, "taskcompleted"), nodeName, (content, ex) =>
