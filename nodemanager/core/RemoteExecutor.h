@@ -19,7 +19,6 @@ namespace hpc
         {
             public:
                 RemoteExecutor(const std::string& networkName);
-                // TODO: delete all processes in destructor.
                 ~RemoteExecutor() { pthread_rwlock_destroy(&this->lock); }
 
                 virtual web::json::value StartJobAndTask(hpc::arguments::StartJobAndTaskArgs&& args, const std::string& callbackUri);

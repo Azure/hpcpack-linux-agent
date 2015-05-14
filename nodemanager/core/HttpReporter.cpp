@@ -28,7 +28,6 @@ void HttpReporter::Report()
     try
     {
         http_response response = client.request(methods::POST, "", jsonBody, this->cts.get_token()).get();
-
         Logger::Debug("---------> Reported to {0} response code {1}", uri, response.status_code());
     }
     catch (const http_exception& httpEx)

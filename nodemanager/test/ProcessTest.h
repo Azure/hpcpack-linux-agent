@@ -12,6 +12,7 @@ namespace hpc
             public:
                 ProcessTest();
 
+                static bool ClusRun();
                 static bool SimpleEcho();
                 static bool Affinity();
                 static bool RemainingProcess();

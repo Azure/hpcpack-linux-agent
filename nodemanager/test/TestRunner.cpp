@@ -13,6 +13,7 @@ TestRunner::TestRunner()
     this->tests["SimpleEcho"] = []() { return ProcessTest::SimpleEcho(); };
     this->tests["Affinity"] = []() { return ProcessTest::Affinity(); };
     this->tests["RemainingProcess"] = []() { return ProcessTest::RemainingProcess(); };
+    this->tests["ClusRun"] = []() { return ProcessTest::ClusRun(); };
 }
 
 bool TestRunner::Run()

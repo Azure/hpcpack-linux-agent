@@ -152,6 +152,11 @@ namespace hpc
                             "Cleaning up zombie processes when startup",
                         }
                     },
+                    { "1.3.1.4",
+                        {
+                            "Enable clusrun support",
+                        }
+                    },
                 };
 
                 return versionHistory;

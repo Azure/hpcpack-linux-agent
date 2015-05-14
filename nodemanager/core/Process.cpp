@@ -2,17 +2,21 @@
 #include <sys/wait.h>
 #include <sys/resource.h>
 #include <fstream>
+#include <cpprest/http_client.h>
+#include <boost/algorithm/string/predicate.hpp>
 
 #include "Process.h"
 #include "../utils/Logger.h"
 #include "../utils/String.h"
 #include "../common/ErrorCodes.h"
 #include "../utils/WriterLock.h"
+#include "../data/OutputData.h"
 
 using namespace hpc::core;
 using namespace hpc::utils;
 using namespace hpc::common;
 using namespace hpc::data;
+using namespace http;
 
 Process::Process(
     int jobId,
@@ -32,12 +36,24 @@ Process::Process(
     workDirectory(workDir), userName(user.empty() ? "root" : user),
     affinity(cpuAffinity), environments(envi), callback(completed), processId(0)
 {
-
+    this->streamOutput = boost::algorithm::starts_with(stdOutFile, "http://") ||
+        boost::algorithm::starts_with(stdOutFile, "https://");
 }
 
 Process::~Process()
 {
     this->Kill();
+
+    if (this->threadId != 0)
+    {
+        pthread_join(this->threadId, nullptr);
+    }
+
+    if (this->outputThreadId != 0)
+    {
+        pthread_join(this->outputThreadId, nullptr);
+    }
+
     pthread_rwlock_destroy(&this->lock);
 }
 
@@ -149,6 +165,18 @@ void* Process::ForkThread(void* arg)
         goto Final;
     }
 
+    if (p->streamOutput)
+    {
+        if (-1 == pipe(p->stdoutPipe))
+        {
+            p->message << "Error when create stdout pipe." << std::endl;
+            Logger::Error(p->jobId, p->taskId, p->requeueCount, "Error when create stdout pipe.");
+
+            p->SetExitCode(errno);
+            goto Final;
+        }
+    }
+
     p->processId = fork();
 
     if (p->processId < 0)
@@ -184,10 +212,75 @@ Final:
     pthread_exit(nullptr);
 }
 
+void* Process::ReadPipeThread(void* p)
+{
+    Logger::Info("Started reading pipe thread");
+    const auto* process = static_cast<Process*>(p);
+
+    const std::string& uri = process->stdOutFile;
+    close(process->stdoutPipe[1]);
+
+    int bytesRead = 0;
+    char buffer[1024];
+    int order = 0;
+    while ((bytesRead = read(process->stdoutPipe[0], buffer, sizeof(buffer) - 1)) > 0)
+    {
+        buffer[bytesRead] = '\0';
+        auto readStr = String::Join("", buffer);
+
+        // send out readStr
+        process->SendbackOutput(uri, readStr, order++);
+    }
+
+    close(process->stdoutPipe[0]);
+
+    pthread_exit(nullptr);
+}
+
+void Process::SendbackOutput(const std::string& uri, const std::string& output, int order) const
+{
+    try
+    {
+        OutputData od(System::GetNodeName(), order, output);
+
+        auto jsonBody = od.ToJson();
+        if (!jsonBody.is_null())
+        {
+            Logger::Debug(this->jobId, this->taskId, this->requeueCount,
+                "Callback to {0} with {1}", uri, jsonBody);
+
+            client::http_client_config config;
+            config.set_validate_certificates(false);
+            utility::seconds timeout(5l);
+            config.set_timeout(timeout);
+
+            Logger::Debug(this->jobId, this->taskId, this->requeueCount,
+                "Callback to {0}, configure: timeout {1} seconds, chuck size {2}",
+                uri, config.timeout().count(), config.chunksize());
+
+            client::http_client client(uri, config);
+            http_response response = client.request(methods::POST, "", jsonBody).get();
+
+            Logger::Info(this->jobId, this->taskId, this->requeueCount,
+                "Callback to {0} response code {1}", uri, response.status_code());
+        }
+    }
+    catch (const std::exception& ex)
+    {
+        Logger::Error(this->jobId, this->taskId, this->requeueCount,
+            "Exception when sending back output. {0}", ex.what());
+    }
+}
+
 void Process::Monitor()
 {
     assert(this->processId > 0);
     Logger::Debug(this->jobId, this->taskId, this->requeueCount, "Monitor the forked process {0}", this->processId);
+
+    if (this->streamOutput)
+    {
+        pthread_create(&this->outputThreadId, nullptr, Process::ReadPipeThread, this);
+    }
 
     int status;
     rusage usage;
@@ -219,17 +312,20 @@ void Process::Monitor()
             "Process {0}: exite code {1}", this->processId, WEXITSTATUS(status));
         this->SetExitCode(WEXITSTATUS(status));
 
-        std::string output;
-        int ret = System::ExecuteCommandOut(output, "head -c 1500", this->stdOutFile);
-        if (ret == 0)
+        if (!this->streamOutput)
         {
-            this->message << "STDOUT: " << output << std::endl;
-        }
+            std::string output;
+            int ret = System::ExecuteCommandOut(output, "head -c 1500", this->stdOutFile);
+            if (ret == 0)
+            {
+                this->message << "STDOUT: " << output << std::endl;
+            }
 
-        ret = System::ExecuteCommandOut(output, "head -c 1500", this->stdErrFile);
-        if (ret == 0)
-        {
-            this->message << "STDERR: " << output << std::endl;
+            ret = System::ExecuteCommandOut(output, "head -c 1500", this->stdErrFile);
+            if (ret == 0)
+            {
+                this->message << "STDERR: " << output << std::endl;
+            }
         }
     }
     else
@@ -259,6 +355,13 @@ void Process::Monitor()
 
 void Process::Run(const std::string& path)
 {
+    if (this->streamOutput)
+    {
+        dup2(this->stdoutPipe[1], 1);
+        close(this->stdoutPipe[0]);
+        close(this->stdoutPipe[1]);
+    }
+
     std::vector<char> pathBuffer(path.cbegin(), path.cend());
     pathBuffer.push_back('\0');
 
@@ -388,9 +491,16 @@ std::string Process::BuildScript()
     if (this->stdOutFile.empty()) this->stdOutFile = this->taskFolder + "/stdout.txt";
     if (this->stdErrFile.empty()) this->stdErrFile = this->taskFolder + "/stderr.txt";
 
-    fs << " /bin/bash " << cmd
-        << " >" << this->stdOutFile
-        << " 2>" << this->stdErrFile;
+    if (this->streamOutput)
+    {
+        fs << "/bin/bash " << cmd << " 2>&1";
+    }
+    else
+    {
+        fs << "/bin/bash " << cmd
+            << " >" << this->stdOutFile
+            << " 2>" << this->stdErrFile;
+    }
 
     if (!this->stdInFile.empty())
     {
@@ -412,7 +522,7 @@ std::string Process::BuildScript()
     }
     else
     {
-        fsRunUser << " /bin/bash " << runDirInOut << std::endl;
+        fsRunUser << "/bin/bash " << runDirInOut << std::endl;
     }
 
     fsRunUser.close();

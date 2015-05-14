@@ -100,6 +100,8 @@ namespace hpc
                 }
 
                 void Run(const std::string& path);
+                static void* ReadPipeThread(void* p);
+                void SendbackOutput(const std::string& uri, const std::string& output, int order) const;
                 void Monitor();
                 std::string BuildScript();
                 std::unique_ptr<const char* []> PrepareEnvironment();
@@ -127,10 +129,13 @@ namespace hpc
                 const std::vector<uint64_t> affinity;
                 const std::map<std::string, std::string> environments;
                 std::vector<std::string> environmentsBuffer;
+                bool streamOutput = false;
+                int stdoutPipe[2];
 
                 const std::function<Callback> callback;
 
-                pthread_t threadId;
+                pthread_t threadId = 0;
+                pthread_t outputThreadId = 0;
                 pid_t processId;
                 bool ended = false;
 
