@@ -11,9 +11,6 @@ using Microsoft.Hpc.Scheduler;
 using Microsoft.Hpc.Scheduler.Communicator;
 using System.Net;
 using Microsoft.Hpc.Scheduler.Properties;
-using Microsoft.Hpc.Communicators.LinuxCommunicator.Monitoring;
-using System.IO;
-using System.Collections.Concurrent;
 using System.Xml.Linq;
 using System.Security.Principal;
 
@@ -31,8 +28,6 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
         private HttpClient client;
         private WebServer server;
-        private Monitoring.CounterDataSender sender;
-        private ConcurrentDictionary<string, Guid> nodeMap;
 
         private CancellationTokenSource cancellationTokenSource;
 
@@ -54,7 +49,6 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
         public void Dispose()
         {
-            this.sender.CloseConnection();
             this.server.Dispose();
             this.client.Dispose();
             GC.SuppressFinalize(this);
@@ -269,7 +263,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
             if (IsAdmin(userName, password))
             {
                 startInfo.EnvironmentVariables["CCP_ISADMIN"] = "1";
-            }
+            }           
 
             this.SendRequest("startjobandtask", this.GetCallbackUri(nodeName, "taskcompleted"), nodeName, (content, ex) =>
             {
