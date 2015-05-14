@@ -11,9 +11,6 @@ using Microsoft.Hpc.Scheduler;
 using Microsoft.Hpc.Scheduler.Communicator;
 using System.Net;
 using Microsoft.Hpc.Scheduler.Properties;
-using Microsoft.Hpc.Communicators.LinuxCommunicator.Monitoring;
-using System.IO;
-using System.Collections.Concurrent;
 using System.Xml.Linq;
 using System.Security.Principal;
 
@@ -266,33 +263,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
             if (IsAdmin(userName, password))
             {
                 startInfo.EnvironmentVariables["CCP_ISADMIN"] = "1";
-            }
-
-            if (startInfo.EnvironmentVariables.Contains("CCP_NODES"))
-            {
-                var nodes = startInfo.EnvironmentVariables["CCP_NODES"] as string;
-
-                var tokens = nodes.Split(new char[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
-                for (int i = 1; i + 1 < tokens.Length; i += 2)
-                {
-                    int coreCount = 1;
-                    var row = this.SchedulerCallbacks.GetNodeProperties(tokens[i], NodePropertyIds.NumCores);
-                    var col = row.FirstOrDefault();
-                    if (col != null)
-                    {
-                        coreCount = (int)col.Value;
-                    }
-                    else
-                    {
-                        this.Tracer.TraceWarning("Cannot get corecount for node {0}", nodeName);
-                    }
-
-                    tokens[i + 1] = coreCount.ToString();
-                }
-
-                startInfo.EnvironmentVariables["CCP_NODES_CORES"] = string.Join(" ", tokens);
-                this.Tracer.TraceDetail("Converted CCP_NODES_CORES variable {0}", startInfo.EnvironmentVariables["CCP_NODES_CORES"]);
-            }
+            }           
 
             this.SendRequest("startjobandtask", this.GetCallbackUri(nodeName, "taskcompleted"), nodeName, (content, ex) =>
             {
