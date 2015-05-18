@@ -58,5 +58,6 @@ if $finished; then
 	exit 0;
 else
 #	echo "not all trusted"
+	echo "Cannot establish trust relationship between nodes. Probably you have already configured ssh keys for $userName, please cleanup the keys and try again" > /dev/stderr
 	exit -1;
 fi
