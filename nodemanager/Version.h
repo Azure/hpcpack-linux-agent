@@ -157,6 +157,11 @@ namespace hpc
                             "Enable clusrun support",
                         }
                     },
+                    { "1.3.1.5",
+                        {
+                            "Fix the stdout/stderr/stdin handling issues",
+                        }
+                    },
                 };
 
                 return versionHistory;
