@@ -164,7 +164,7 @@ namespace hpc
                     },
                     { "1.3.1.6",
                         {
-                            "Fix the crashing issue when using gdb to debug",
+                            "Fix the virtual method initialization race condition",
                             "Print meaningful error messages when node trust fails",
                         }
                     },
