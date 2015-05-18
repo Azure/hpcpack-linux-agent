@@ -162,6 +162,12 @@ namespace hpc
                             "Fix the stdout/stderr/stdin handling issues",
                         }
                     },
+                    { "1.3.1.6",
+                        {
+                            "Fix the crashing issue when using gdb to debug",
+                            "Print meaningful error messages when node trust fails",
+                        }
+                    },
                 };
 
                 return versionHistory;

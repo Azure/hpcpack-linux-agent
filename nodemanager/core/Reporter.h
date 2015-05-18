@@ -19,7 +19,11 @@ namespace hpc
                 Reporter(const std::string& uri, int hold, int interval, std::function<ReportType()> fetcher)
                     : reportUri(uri), valueFetcher(fetcher), intervalSeconds(interval), holdSeconds(hold)
                 {
-                    if (!uri.empty())
+                }
+
+                void Start()
+                {
+                    if (!this->reportUri.empty())
                     {
                         pthread_create(&this->threadId, nullptr, ReportingThread, this);
                     }
