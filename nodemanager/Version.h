@@ -159,6 +159,11 @@ namespace hpc
                             "Treat the return value of the heart beat to adjust interval",
                         }
                     },
+                    { "1.2.1.12",
+                        {
+                            "Fix the crashing issue when using gdb to debug",
+                        }
+                    },
                 };
 
                 return versionHistory;
