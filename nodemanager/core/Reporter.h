@@ -76,7 +76,7 @@ namespace hpc
 
                 int holdSeconds;
 
-                pthread_t threadId;
+                pthread_t threadId = 0;
                 bool isRunning = true;
                 bool inRequest = false;
         };

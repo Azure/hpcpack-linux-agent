@@ -143,7 +143,7 @@ namespace hpc
 
                 const std::function<Callback> callback;
 
-                pthread_t threadId;
+                pthread_t threadId = 0;
                 pid_t processId;
                 bool ended = false;
 

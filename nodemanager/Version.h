@@ -161,7 +161,12 @@ namespace hpc
                     },
                     { "1.2.1.12",
                         {
-                            "Fix the crashing issue when using gdb to debug",
+                            "Fix the virtual method initialization race condition",
+                        }
+                    },
+                    { "1.2.1.13",
+                        {
+                            "Fix the crashing issue of not properly initialized thread ID",
                         }
                     },
                 };
