@@ -1,15 +1,18 @@
 #include <sstream>
+#include <stdlib.h>
 
 #include "RemoteCommunicator.h"
 #include "../utils/String.h"
 #include "../utils/System.h"
 #include "../arguments/StartJobAndTaskArgs.h"
+#include "../common/ErrorCodes.h"
 
 using namespace web::http;
 using namespace web;
 using namespace hpc::utils;
 using namespace hpc::arguments;
 using namespace hpc::core;
+using namespace hpc::common;
 
 RemoteCommunicator::RemoteCommunicator(const std::string& networkName, IRemoteExecutor& exec) :
     listeningUri(this->GetListeningUri(networkName)), isListening(false), executor(exec), listener(listeningUri)
@@ -42,6 +45,11 @@ void RemoteCommunicator::Open()
                 "Opening at {0}, result {1}",
                 this->listener.uri().to_string(),
                 this->isListening ? "opened." : "failed.");
+
+            if (!this->isListening)
+            {
+                exit((int)ErrorCodes::FailedToOpenPort);
+            }
         });
     }
 }

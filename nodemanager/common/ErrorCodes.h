@@ -7,14 +7,15 @@ namespace hpc
     {
         enum class ErrorCodes
         {
-            EndJobExitCode = -101,
-            EndTaskExitCode = -102,
-            BuildScriptError = -103,
-            DefaultExitCode = -999,
-            GetHostNameError = -104,
-            PopenError = -105,
-            SetUserPermission = -106,
-            TestRunFailed = -107,
+            DefaultExitCode = 254,
+            EndJobExitCode = 170,
+            EndTaskExitCode = 171,
+            BuildScriptError = 172,
+            GetHostNameError = 173,
+            PopenError = 174,
+            SetUserPermission = 175,
+            TestRunFailed = 176,
+            FailedToOpenPort = 177,
         };
     }
 }

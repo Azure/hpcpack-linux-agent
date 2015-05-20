@@ -168,6 +168,11 @@ namespace hpc
                             "Print meaningful error messages when node trust fails",
                         }
                     },
+                    { "1.3.1.7",
+                        {
+                            "Exit immediately if the port cannot be opened",
+                        }
+                    },
                 };
 
                 return versionHistory;
