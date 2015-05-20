@@ -335,16 +335,22 @@ json::value RemoteExecutor::EndJob(hpc::arguments::EndJobArgs&& args)
             // the existed could be true for the later job, so the user will be left
             // on the node, which is by design.
             // we just have this delete user logic for a simple way of cleanup.
+            // if delete user failed, cleanup keys as necessary.
+
+            bool cleanupKeys = true;
+
             if (!existed)
             {
                 if (!userName.empty())
                 {
                     Logger::Info(args.JobId, this->UnknowId, this->UnknowId,
                         "EndJob: Delete user {0}", userName);
-                    System::DeleteUser(userName);
+
+                    cleanupKeys = 0 != System::DeleteUser(userName);
                 }
             }
-            else
+
+            if (cleanupKeys)
             {
                 if (privateKeyAdded)
                 {

@@ -167,6 +167,7 @@ namespace hpc
                     { "1.2.1.13",
                         {
                             "Fix the crashing issue of not properly initialized thread ID",
+                            "Fix the trust failure issue caused by a wrongly specified node name",
                         }
                     },
                 };

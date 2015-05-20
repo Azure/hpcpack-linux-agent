@@ -410,7 +410,10 @@ int System::DeleteUser(const std::string& userName)
 {
     std::string output;
 
-    int ret = System::ExecuteCommandOut(output, "userdel", userName, "-r -f");
+    // kill all processes associated with this user.
+    int ret = System::ExecuteCommandOut(output, "pkill -KILL -U `id -ur", userName, "`;",
+        "userdel", userName, "-r -f");
+
     if (ret != 0)
     {
         Logger::Error("userdel {0} error code {1}", userName, ret);

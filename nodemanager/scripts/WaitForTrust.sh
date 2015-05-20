@@ -6,11 +6,13 @@ nodes=()
 testpids=()
 userName=$1
 
+echo "Preparing"
+
 for host in ${!hosts[@]}
 do
 	if [ $(($host % 2 )) == 1 ]; then
 		nodes+=(${hosts[$host]})
-		echo "adding ${hosts[$host]}"
+		echo "    adding ${hosts[$host]}"
 	fi
 done
 
@@ -24,29 +26,32 @@ for node in ${nodes[@]}
 do
 	sudo -u $userName ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=3 $userName@$node echo 1 > /dev/null 2>&1 &
 	testpids+=($!)
-	echo "created $! for $node"
+	echo "    created $! for $node"
 done
 
 start=$SECONDS
 echo $SECONDS
 finished=false
-while ! $finished && [ $((SECONDS-start)) -lt 15 ] 
+loopCount=0
+while ! $finished && [ $((SECONDS-start)) -lt 15 ]
 do
-	echo "looping"
+	((loopCount++))
+	echo "looping $loopCount"
 	finished=true
 	for i in ${!testpids[@]}
 	do
-		echo "pid is ${testpids[$i]}"
-		wait ${testpids[$i]} && echo "trusted ${nodes[$i]}" && unset testpids[$i] && unset nodes[$i]
+		echo "    pid is ${testpids[$i]}"
+		wait ${testpids[$i]} && echo "    trusted ${nodes[$i]}" && unset testpids[$i] && unset nodes[$i]
 		exitcode=$?
-		echo "exit code is $exitcode"
+		echo "    exit code is $exitcode"
 		if [ $exitcode != 0 ]; then
 			finished=false
-			sudo -u $userName ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=3 $userName@$node echo 1 > /dev/null 2>&1 &
+			sudo -u $userName ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=3 $userName@${nodes[$i]} echo 1 > /dev/null 2>&1 &
 			testpids[$i]=$!
-			echo "line: ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=3 $userName@${nodes[$i]} echo 1 > /dev/null 2>&1 &"
-			echo "untrust ${nodes[$i]}, exitcode $exitcode, new pid $!"
+			echo "    line: ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=3 $userName@${nodes[$i]} echo 1 > /dev/null 2>&1 &"
+			echo "    untrust ${nodes[$i]}, exitcode $exitcode, new pid $!"
 		fi
+		echo ""
 	done
 
 	if ! $finished; then sleep 1; fi
