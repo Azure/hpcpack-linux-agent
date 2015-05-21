@@ -23,7 +23,6 @@ namespace hpc
                     std::function<json::value()> fetcher)
                 : Reporter<json::value>(uri, hold, interval, fetcher)
                 {
-                    this->Start();
                 }
 
                 virtual ~HttpReporter() { this->cts.cancel(); }

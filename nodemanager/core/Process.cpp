@@ -111,6 +111,7 @@ void* Process::ForkThread(void* arg)
     Process* const p = static_cast<Process* const>(arg);
     std::string path;
 
+Start:
     int ret = p->CreateTaskFolder();
     if (ret != 0)
     {
@@ -165,8 +166,17 @@ void* Process::ForkThread(void* arg)
     }
 
 Final:
-    p->ExecuteCommandNoCapture("/bin/bash", "CleanupTask.sh", p->taskExecutionId, p->processId);
+    ret = p->ExecuteCommandNoCapture("/bin/bash", "CleanupTask.sh", p->taskExecutionId, p->processId);
     p->ExecuteCommand("rm -rf", p->taskFolder);
+
+    if (p->exitCode == 82 && ret == 96)
+    {
+        p->exitCodeSet = false;
+        p->exitCode = (int)hpc::common::ErrorCodes::DefaultExitCode;
+        Logger::Error(p->jobId, p->taskId, p->requeueCount, "Cgroup error, reset exit code and retry to fork()");
+        goto Start;
+    }
+
     p->ended = true;
     p->OnCompleted();
     pthread_exit(nullptr);

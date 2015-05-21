@@ -170,6 +170,19 @@ namespace hpc
                             "Fix the trust failure issue caused by a wrongly specified node name",
                         }
                     },
+                    { "1.2.1.14",
+                        {
+                            "Kill all processes associated with the user before deleting user",
+                        }
+                    },
+                    { "1.2.1.15",
+                        {
+                            "Fix a crash issue due to the reporter thread race condition",
+                            "Retry when the CGroup tools exit with code 82 and 96, CGroup tools bug",
+                            "Change wait for trust period to 30 seconds",
+                            "Keep all untrusted history",
+                        }
+                    },
                 };
 
                 return versionHistory;

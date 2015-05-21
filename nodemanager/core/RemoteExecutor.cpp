@@ -31,6 +31,8 @@ RemoteExecutor::RemoteExecutor(const std::string& networkName)
                 this->RegisterInterval,
                 [this]() { return this->monitor.GetRegisterInfo(); }));
 
+    this->registerReporter->Start();
+
     this->Ping(this->LoadReportUri(this->NodeInfoUriFileName));
     this->Metric(this->LoadReportUri(this->MetricUriFileName));
 }
@@ -423,6 +425,7 @@ json::value RemoteExecutor::Ping(const std::string& callbackUri)
                 this->NodeInfoReportInterval,
                 [this]() { return this->jobTaskTable.ToJson(); }));
 
+    this->nodeInfoReporter->Start();
     return json::value();
 }
 
@@ -445,6 +448,8 @@ json::value RemoteExecutor::Metric(const std::string& callbackUri)
                     0,
                     this->MetricReportInterval,
                     [this]() { return this->monitor.GetMonitorPacketData(); }));
+
+        this->metricReporter->Start();
     }
 
     return json::value();
