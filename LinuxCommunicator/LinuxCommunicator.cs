@@ -298,6 +298,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
         private void SendRequest<T>(string action, string callbackUri, string nodeName, Action<HttpContent, Exception> callback, T arg)
         {
+            this.Tracer.TraceDetail("Sending out request, action {0}, callback {1}, nodeName {2}", action, callbackUri, nodeName);
             var request = new HttpRequestMessage(HttpMethod.Post, this.GetResoureUri(nodeName, action));
             request.Headers.Add(CallbackUriHeaderName, callbackUri);
             var formatter = new JsonMediaTypeFormatter();
@@ -306,6 +307,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
             this.client.SendAsync(request, this.cancellationTokenSource.Token).ContinueWith(t =>
             {
                 Exception ex = t.Exception;
+                this.Tracer.TraceDetail("Sending out request task completed, action {0}, callback {1}, nodeName {2} ex {3}", action, callbackUri, nodeName, ex);
 
                 if (ex == null)
                 {
