@@ -183,6 +183,13 @@ namespace hpc
                             "Keep all untrusted history",
                         }
                     },
+                    { "1.2.1.16",
+                        {
+                            "Retry for permission issue of stdout and stderr",
+                            "Refine the logic of keeping the state when trust failed",
+                            "Fix a crash issue of reporter",
+                        }
+                    },
                 };
 
                 return versionHistory;

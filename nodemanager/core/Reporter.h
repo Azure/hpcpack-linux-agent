@@ -29,10 +29,8 @@ namespace hpc
                     }
                 }
 
-                virtual ~Reporter()
+                void Stop()
                 {
-                    Logger::Debug("Destruct Reporter {0}", this->reportUri);
-
                     this->isRunning = false;
                     if (this->threadId != 0)
                     {
@@ -41,6 +39,11 @@ namespace hpc
                         pthread_join(this->threadId, nullptr);
                         Logger::Debug("Destructed Reporter {0}", this->reportUri);
                     }
+                }
+
+                virtual ~Reporter()
+                {
+                    Logger::Debug("Destruct Reporter {0}", this->reportUri);
                 }
 
                 virtual void Report() = 0;

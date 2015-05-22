@@ -70,6 +70,7 @@ UdpReporter::UdpReporter(
 UdpReporter::~UdpReporter()
 {
     close(this->s);
+    this->Stop();
 }
 
 void UdpReporter::Report()

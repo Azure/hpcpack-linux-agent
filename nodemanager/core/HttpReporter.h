@@ -25,7 +25,11 @@ namespace hpc
                 {
                 }
 
-                virtual ~HttpReporter() { this->cts.cancel(); }
+                virtual ~HttpReporter()
+                {
+                    this->cts.cancel();
+                    this->Stop();
+                }
 
                 virtual void Report();
 

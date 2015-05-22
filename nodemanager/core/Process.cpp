@@ -169,11 +169,12 @@ Final:
     ret = p->ExecuteCommandNoCapture("/bin/bash", "CleanupTask.sh", p->taskExecutionId, p->processId);
     p->ExecuteCommand("rm -rf", p->taskFolder);
 
-    if (p->exitCode == 82 && ret == 96)
+    // TODO: Add logic to precisely define 253 error.
+    if ((p->exitCode == 82 && ret == 96) || p->exitCode == 253)
     {
         p->exitCodeSet = false;
         p->exitCode = (int)hpc::common::ErrorCodes::DefaultExitCode;
-        Logger::Error(p->jobId, p->taskId, p->requeueCount, "Cgroup error, reset exit code and retry to fork()");
+        Logger::Error(p->jobId, p->taskId, p->requeueCount, "Exit Code {0} Reset exit code and retry to fork()", p->exitCode);
         goto Start;
     }
 
@@ -385,6 +386,9 @@ std::string Process::BuildScript()
 
     if (this->stdOutFile.empty()) this->stdOutFile = this->taskFolder + "/stdout.txt";
     if (this->stdErrFile.empty()) this->stdErrFile = this->taskFolder + "/stderr.txt";
+
+    fs << "echo 1 >" << this->taskFolder << "/stdout.txt 2>" << this->taskFolder << "/stderr.txt";
+    fs << " || ([ \"$?\" = \"1\" ] && exit 253)" << std::endl;
 
     fs << " /bin/bash " << cmd
         << " >" << this->stdOutFile
