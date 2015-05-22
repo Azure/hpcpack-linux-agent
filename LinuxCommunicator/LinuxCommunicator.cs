@@ -3,11 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Formatting;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Hpc.Activation;
-using Microsoft.Hpc.Scheduler;
 using Microsoft.Hpc.Scheduler.Communicator;
 using System.Net;
 using Microsoft.Hpc.Scheduler.Properties;
@@ -22,9 +20,12 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
         private const string CallbackUriHeaderName = "CallbackUri";
         private const string HpcFullKeyName = @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\HPC";
         private const string ClusterNameKeyName = "ClusterName";
+        private const int AutoRetryLimit = 5;
 
         private readonly string HeadNode = (string)Microsoft.Win32.Registry.GetValue(HpcFullKeyName, ClusterNameKeyName, null);
         private readonly int MonitoringPort = 9894;
+        private readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(20);
+        private readonly TimeSpan DelayBetweenRetry = TimeSpan.FromSeconds(3);
 
         private HttpClient client;
         private WebServer server;
@@ -118,6 +119,8 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
             };
 
             this.client = new HttpClient();
+            this.client.Timeout = this.RequestTimeout;
+
             this.server = new WebServer();
 
             if (this.HeadNode == null)
@@ -296,7 +299,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
             }, null);
         }
 
-        private void SendRequest<T>(string action, string callbackUri, string nodeName, Action<HttpContent, Exception> callback, T arg)
+        private void SendRequest<T>(string action, string callbackUri, string nodeName, Action<HttpContent, Exception> callback, T arg, int retryCount = 0)
         {
             this.Tracer.TraceDetail("Sending out request, action {0}, callback {1}, nodeName {2}", action, callbackUri, nodeName);
             var request = new HttpRequestMessage(HttpMethod.Post, this.GetResoureUri(nodeName, action));
@@ -304,16 +307,19 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
             var formatter = new JsonMediaTypeFormatter();
             request.Content = new ObjectContent<T>(arg, formatter);
 
-            this.client.SendAsync(request, this.cancellationTokenSource.Token).ContinueWith(t =>
+            this.client.SendAsync(request, this.cancellationTokenSource.Token).ContinueWith(async t =>
             {
                 Exception ex = t.Exception;
                 this.Tracer.TraceDetail("Sending out request task completed, action {0}, callback {1}, nodeName {2} ex {3}", action, callbackUri, nodeName, ex);
+
+                HttpContent content = null;
 
                 if (ex == null)
                 {
                     try
                     {
                         t.Result.EnsureSuccessStatusCode();
+                        content = t.Result.Content;
                     }
                     catch (Exception e)
                     {
@@ -321,8 +327,35 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
                     }
                 }
 
-                callback(t.Result.Content, ex);
+                if (this.CanRetry(ex) && retryCount < AutoRetryLimit)
+                {
+                    await Task.Delay(DelayBetweenRetry);
+                    this.SendRequest(action, callbackUri, nodeName, callback, arg, retryCount + 1);
+                    return;
+                }
+                else
+                {
+                    callback(content, ex);
+                }
             }, this.cancellationTokenSource.Token);
+        }
+
+        private bool CanRetry(Exception exception)
+        {
+            if (exception is HttpRequestException ||
+                exception is WebException)
+            {
+                return true;
+            }
+
+            var aggregateEx = exception as AggregateException;
+            if (aggregateEx != null)
+            {
+                aggregateEx = aggregateEx.Flatten();
+                return aggregateEx.InnerExceptions.Any(e => this.CanRetry(e));
+            }
+
+            return false;
         }
 
         private Uri GetResoureUri(string nodeName, string action)
