@@ -167,7 +167,12 @@ Start:
 
 Final:
     ret = p->ExecuteCommandNoCapture("/bin/bash", "CleanupTask.sh", p->taskExecutionId, p->processId);
-    p->ExecuteCommand("rm -rf", p->taskFolder);
+
+    // Only clean up the folder when success.
+    if (p->exitCode == 0)
+    {
+        p->ExecuteCommand("rm -rf", p->taskFolder);
+    }
 
     // TODO: Add logic to precisely define 253 error.
     if ((p->exitCode == 82 && ret == 96) || p->exitCode == 253)
@@ -387,9 +392,15 @@ std::string Process::BuildScript()
     if (this->stdOutFile.empty()) this->stdOutFile = this->taskFolder + "/stdout.txt";
     if (this->stdErrFile.empty()) this->stdErrFile = this->taskFolder + "/stderr.txt";
 
-    fs << "echo 1 >" << this->taskFolder << "/stdout.txt 2>" << this->taskFolder << "/stderr.txt";
+    // before
+    fs << "echo before >" << this->taskFolder << "/before1.txt 2>" << this->taskFolder << "/before2.txt";
     fs << " || ([ \"$?\" = \"1\" ] && exit 253)" << std::endl;
 
+    // test
+    fs << "echo test >" << this->taskFolder << "/stdout.txt 2>" << this->taskFolder << "/stderr.txt";
+    fs << " || ([ \"$?\" = \"1\" ] && exit 253)" << std::endl << std::endl;
+
+    // run
     fs << " /bin/bash " << cmd
         << " >" << this->stdOutFile
         << " 2>" << this->stdErrFile;
@@ -400,6 +411,10 @@ std::string Process::BuildScript()
     }
 
     fs << std::endl << std::endl;
+
+    // after
+    fs << "echo after >" << this->taskFolder << "/after1.txt 2>" << this->taskFolder << "/after2.txt";
+    fs << " || ([ \"$?\" = \"1\" ] && exit 253)" << std::endl;
 
     fs.close();
 

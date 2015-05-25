@@ -5,8 +5,9 @@ hosts=($CCP_NODES)
 nodes=()
 testpids=()
 userName=$1
+taskExecutionId=$2
 
-echo "Preparing"
+echo "Preparing for $taskExecutionId"
 
 for host in ${!hosts[@]}
 do
@@ -24,48 +25,50 @@ fi
 
 for node in ${nodes[@]}
 do
-	sudo -u $userName ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=3 $userName@$node echo 1 > /dev/null 2>&1 &
+	timeout -s SIGKILL 3s sudo -u $userName ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=3 $userName@$node echo 1 > /dev/null 2>&1 &
 	testpids+=($!)
 	echo "    created $! for $node"
 done
 
 start=$SECONDS
-echo "start=$start"
+echo "start=$start task=$taskExecutionId"
 finished=false
 loopCount=0
 while ! $finished && [ $((SECONDS-start)) -lt 30 ]
 do
 	((loopCount++))
-	echo "looping $loopCount"
+	echo "looping $loopCount SECONDS=$SECONDS task=$taskExecutionId"
 	finished=true
 	for i in ${!testpids[@]}
 	do
-		echo "    pid is ${testpids[$i]}"
-		wait ${testpids[$i]} && echo "    trusted ${nodes[$i]}" && unset testpids[$i] && unset nodes[$i]
+		echo "    pid is ${testpids[$i]} SECONDS=$SECONDS task=$taskExecutionId"
+		wait ${testpids[$i]} && echo "    trusted ${nodes[$i]} SECONDS=$SECONDS" && unset testpids[$i] && unset nodes[$i]
 		exitcode=$?
-		echo "    exit code is $exitcode SECONDS=$SECONDS"
+		echo "    exit code is $exitcode SECONDS=$SECONDS task=$taskExecutionId"
 		if [ $exitcode != 0 ]; then
 			finished=false
-			sudo -u $userName ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=3 $userName@${nodes[$i]} echo 1 > /dev/null 2>&1 &
+			timeout -s SIGKILL 3s sudo -u $userName ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=3 $userName@${nodes[$i]} echo 1 > /dev/null 2>&1 &
 			testpids[$i]=$!
-			echo "    line: ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=3 $userName@${nodes[$i]} echo 1 > /dev/null 2>&1 &"
-			echo "    untrust ${nodes[$i]}, exitcode $exitcode, new pid $!"
+			echo "    line: timeout -s SIGKILL 3s ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=3 $userName@${nodes[$i]} echo 1 > /dev/null 2>&1 &"
+			echo "    untrust ${nodes[$i]}, exitcode $exitcode, new pid $! task=$taskExecutionId"
 		fi
 		echo ""
 	done
 
-	echo "ending loop $loopCount, finished=$finished, SECONDS=$SECONDS"
+	echo "ending loop $loopCount, finished=$finished, SECONDS=$SECONDS task=$taskExecutionId"
 	if ! $finished; then sleep 1; fi
 done
 
-echo "ending finished=$finished, SECONDS=$SECONDS, start=$start, elapsed=$((SECONDS-start))"
+echo "ending finished=$finished, SECONDS=$SECONDS, start=$start, elapsed=$((SECONDS-start)), task=$taskExecutionId"
 
 kill -9 $(jobs -p)
 
 if $finished; then
-	echo "all trusted"
+	echo "all trusted task=$taskExecutionId"
+	sync
 	exit 0;
 else
-	echo "not all trusted"
+	echo "not all trusted task=$taskExecutionId"
+	sync
 	exit -1;
 fi
