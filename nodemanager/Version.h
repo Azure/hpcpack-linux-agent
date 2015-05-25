@@ -190,6 +190,19 @@ namespace hpc
                             "Fix a crash issue of reporter",
                         }
                     },
+                    { "1.2.1.17",
+                        {
+                            "Keep the task folder in failed situation",
+                            "Test stdout/stderr file access before and after the task run",
+                            "Keep the trust related logs in separate folders per tasks",
+                            "Enhance the log of wait for trust",
+                        }
+                    },
+                    { "1.2.1.18",
+                        {
+                            "Skip to delete users",
+                        }
+                    },
                 };
 
                 return versionHistory;

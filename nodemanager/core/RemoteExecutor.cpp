@@ -341,16 +341,16 @@ json::value RemoteExecutor::EndJob(hpc::arguments::EndJobArgs&& args)
 
             bool cleanupKeys = true;
 
-            if (!existed)
-            {
-                if (!userName.empty())
-                {
-                    Logger::Info(args.JobId, this->UnknowId, this->UnknowId,
-                        "EndJob: Delete user {0}", userName);
-
-                    cleanupKeys = 0 != System::DeleteUser(userName);
-                }
-            }
+//            if (!existed)
+//            {
+//                if (!userName.empty())
+//                {
+//                    Logger::Info(args.JobId, this->UnknowId, this->UnknowId,
+//                        "EndJob: Delete user {0}", userName);
+//
+//                    cleanupKeys = 0 != System::DeleteUser(userName);
+//                }
+//            }
 
             if (cleanupKeys)
             {
