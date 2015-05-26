@@ -69,6 +69,22 @@ if $finished; then
 	exit 0;
 else
 	echo "not all trusted task=$taskExecutionId"
+
+	echo ""
+	echo "Saving logs"
+
+	for node in ${nodes[@]}
+	do
+		echo "    Saving ${node} SECONDS=$SECONDS task=$taskExecutionId"
+		ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=3 root@${node} "mkdir $trustKeysDir && cp -rf ${sshFolder}* $trustKeysDir"
+		ec=$?
+		if [ $? -ne 0 ]; then
+			echo "    Failed to save for ${node}, exit code $ec"
+		else
+			echo "    Saved for ${node}"
+		fi
+	done
+	echo "Saved logs"
 	sync
 	exit -1;
 fi

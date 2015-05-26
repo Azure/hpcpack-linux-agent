@@ -200,7 +200,12 @@ namespace hpc
                     },
                     { "1.2.1.18",
                         {
-                            "Skip to delete users",
+                            "Skip deleting users",
+                        }
+                    },
+                    { "1.2.1.19",
+                        {
+                            "Enhance logs for trouble shooting",
                         }
                     },
                 };
