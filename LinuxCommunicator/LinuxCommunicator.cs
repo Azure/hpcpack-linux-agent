@@ -385,7 +385,14 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
                 }
                 else
                 {
-                    callback(content, ex);
+                    try
+                    {
+                        callback(content, ex);
+                    }
+                    catch (Exception callbackEx)
+                    {
+                        this.Tracer.TraceError("Finished sending, callback error: action {0}, callback {1}, nodeName {2} retry count {3}, ex {4}", action, callbackUri, nodeName, retryCount, callbackEx);
+                    }
                 }
             }
 
@@ -400,7 +407,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
         {
             this.SendRequestInternal(action, callbackUri, nodeName, callback, arg, retryCount).ContinueWith(t =>
             {
-                this.Tracer.TraceDetail("Finished sending, action {0}, callback {1}, nodeName {2} retry count {3}", action, callbackUri, retryCount);
+                this.Tracer.TraceDetail("Finished sending, action {0}, callback {1}, nodeName {2} retry count {3}", action, callbackUri, nodeName, retryCount);
             });
         }
 
