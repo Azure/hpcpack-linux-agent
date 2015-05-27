@@ -208,6 +208,17 @@ namespace hpc
                             "Enhance logs for trouble shooting",
                         }
                     },
+                    { "1.2.1.20",
+                        {
+                            "Enhance wait for trust logs for trouble shooting",
+                        }
+                    },
+                    { "1.2.1.21",
+                        {
+                            "Capture the error code for popen error",
+                            "Tune the wait for trust period",
+                        }
+                    },
                 };
 
                 return versionHistory;

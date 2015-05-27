@@ -87,10 +87,10 @@ namespace hpc
                 {
                     std::string command = String::Join(" ", cmd, args...);
                     //Logger::Debug("Executing cmd: {0}", command);
-                    FILE* stream = popen(command.c_str(), "r");
                     int exitCode = (int)hpc::common::ErrorCodes::PopenError;
 
                     std::ostringstream result;
+                    FILE* stream = popen(command.c_str(), "r");
 
                     if (stream)
                     {
@@ -105,8 +105,9 @@ namespace hpc
                     }
                     else
                     {
-                        Logger::Error("Error when popen {0}", command);
-                        result << "error when popen " << command << std::endl;
+                        int err = errno;
+                        Logger::Error("Error when popen {0}, errno {1}", command, err);
+                        result << "error when popen " << command << ", errno " << err << std::endl;
                     }
 
                     output = result.str();

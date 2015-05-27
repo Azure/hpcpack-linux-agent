@@ -25,7 +25,7 @@ fi
 
 for node in ${nodes[@]}
 do
-	timeout -s SIGKILL 3s sudo -u $userName ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=3 $userName@$node echo 1 > /dev/null 2>&1 &
+	timeout -s SIGKILL 30s sudo -u $userName ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=30 $userName@$node echo 1 > /dev/null 2>&1 &
 	testpids+=($!)
 	echo "    created $! for $node"
 done
@@ -34,7 +34,7 @@ start=$SECONDS
 echo "start=$start task=$taskExecutionId"
 finished=false
 loopCount=0
-while ! $finished && [ $((SECONDS-start)) -lt 30 ]
+while ! $finished && [ $((SECONDS-start)) -lt 300 ]
 do
 	((loopCount++))
 	echo "looping $loopCount SECONDS=$SECONDS task=$taskExecutionId"
@@ -47,9 +47,9 @@ do
 		echo "    exit code is $exitcode SECONDS=$SECONDS task=$taskExecutionId"
 		if [ $exitcode != 0 ]; then
 			finished=false
-			timeout -s SIGKILL 3s sudo -u $userName ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=3 $userName@${nodes[$i]} echo 1 > /dev/null 2>&1 &
+			timeout -s SIGKILL 30s sudo -u $userName ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=30 $userName@${nodes[$i]} echo 1 > /dev/null 2>&1 &
 			testpids[$i]=$!
-			echo "    line: timeout -s SIGKILL 3s ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=3 $userName@${nodes[$i]} echo 1 > /dev/null 2>&1 &"
+			echo "    line: timeout -s SIGKILL 30s ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=30 $userName@${nodes[$i]} echo 1 > /dev/null 2>&1 &"
 			echo "    untrust ${nodes[$i]}, exitcode $exitcode, new pid $! task=$taskExecutionId"
 		fi
 		echo ""
@@ -72,13 +72,19 @@ else
 
 	echo ""
 	echo "Saving logs"
+	rootLogFolder=/opt/hpcnodemanager/logs
+	trustKeysDir=${rootLogFolder}/${taskExecutionId}_${userName}/
+	sshFolder=/home/${userName}/.ssh/
+	if [ "$userName" = "root" ]; then
+		sshFolder=/root/.ssh/
+	fi
 
 	for node in ${nodes[@]}
 	do
 		echo "    Saving ${node} SECONDS=$SECONDS task=$taskExecutionId"
-		ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=3 root@${node} "mkdir $trustKeysDir && cp -rf ${sshFolder}* $trustKeysDir"
+		ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=5 root@${node} "mkdir $trustKeysDir && cp -rf ${sshFolder}* $trustKeysDir"
 		ec=$?
-		if [ $? -ne 0 ]; then
+		if [ $ec -ne 0 ]; then
 			echo "    Failed to save for ${node}, exit code $ec"
 		else
 			echo "    Saved for ${node}"
