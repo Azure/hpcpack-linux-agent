@@ -219,6 +219,16 @@ namespace hpc
                             "Tune the wait for trust period",
                         }
                     },
+                    { "1.2.1.22",
+                        {
+                            "Turned on ssh verbose log",
+                        }
+                    },
+                    { "1.2.1.23",
+                        {
+                            "Prints ssh verbose log directly",
+                        }
+                    },
                 };
 
                 return versionHistory;

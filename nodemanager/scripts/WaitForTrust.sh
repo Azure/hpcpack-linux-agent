@@ -25,7 +25,7 @@ fi
 
 for node in ${nodes[@]}
 do
-	timeout -s SIGKILL 30s sudo -u $userName ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=30 $userName@$node echo 1 > /dev/null 2>&1 &
+	timeout -s SIGKILL 30s sudo -u $userName ssh -v -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=30 $userName@$node echo 1 &
 	testpids+=($!)
 	echo "    created $! for $node"
 done
@@ -47,9 +47,9 @@ do
 		echo "    exit code is $exitcode SECONDS=$SECONDS task=$taskExecutionId"
 		if [ $exitcode != 0 ]; then
 			finished=false
-			timeout -s SIGKILL 30s sudo -u $userName ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=30 $userName@${nodes[$i]} echo 1 > /dev/null 2>&1 &
+			timeout -s SIGKILL 30s sudo -u $userName ssh -v -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=30 $userName@${nodes[$i]} echo 1 &
 			testpids[$i]=$!
-			echo "    line: timeout -s SIGKILL 30s ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=30 $userName@${nodes[$i]} echo 1 > /dev/null 2>&1 &"
+			echo "    line: timeout -s SIGKILL 30s ssh -v -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=30 $userName@${nodes[$i]} echo 1 &"
 			echo "    untrust ${nodes[$i]}, exitcode $exitcode, new pid $! task=$taskExecutionId"
 		fi
 		echo ""
@@ -82,7 +82,7 @@ else
 	for node in ${nodes[@]}
 	do
 		echo "    Saving ${node} SECONDS=$SECONDS task=$taskExecutionId"
-		ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=5 root@${node} "mkdir $trustKeysDir && cp -rf ${sshFolder}* $trustKeysDir"
+		ssh -v -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=5 root@${node} "mkdir $trustKeysDir && cp -rf ${sshFolder}* $trustKeysDir"
 		ec=$?
 		if [ $ec -ne 0 ]; then
 			echo "    Failed to save for ${node}, exit code $ec"
