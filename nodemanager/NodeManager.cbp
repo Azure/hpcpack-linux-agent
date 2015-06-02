@@ -85,12 +85,15 @@
 		<Unit filename="data/MonitoringPacket.h" />
 		<Unit filename="data/NodeInfo.cpp" />
 		<Unit filename="data/NodeInfo.h" />
+		<Unit filename="data/OutputData.cpp" />
+		<Unit filename="data/OutputData.h" />
 		<Unit filename="data/TaskInfo.cpp" />
 		<Unit filename="data/TaskInfo.h" />
 		<Unit filename="data/Umid.cpp" />
 		<Unit filename="data/Umid.h" />
 		<Unit filename="main.cpp" />
 		<Unit filename="makefile" />
+		<Unit filename="scripts/CleanupAllTasks.sh" />
 		<Unit filename="scripts/CleanupTask.sh" />
 		<Unit filename="scripts/EndTask.sh" />
 		<Unit filename="scripts/PrepareTask.sh" />

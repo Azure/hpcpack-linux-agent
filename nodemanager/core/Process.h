@@ -16,6 +16,7 @@
 #include "../utils/Logger.h"
 #include "../utils/System.h"
 #include "../common/ErrorCodes.h"
+#include "../data/ProcessStatistics.h"
 
 using namespace hpc::utils;
 
@@ -29,10 +30,7 @@ namespace hpc
                 typedef void Callback(
                     int,
                     std::string&&,
-                    uint64_t userTimeMs,
-                    uint64_t kernelTimeMs,
-                    std::vector<int>&& processIds,
-                    uint64_t workingSetKb);
+                    const hpc::data::ProcessStatistics& stat);
 
                 Process(
                     int jobId,
@@ -53,7 +51,10 @@ namespace hpc
                 virtual ~Process();
 
                 pplx::task<pid_t> Start();
-                void Kill(int forcedExitCode = 0x0FFFFFFF);
+                void Kill(int forcedExitCode = 0x0FFFFFFF, bool forced = true);
+                const hpc::data::ProcessStatistics& GetStatisticsFromCGroup();
+
+                static void Cleanup();
 
             protected:
             private:
@@ -67,7 +68,6 @@ namespace hpc
                 }
 
                 void OnCompleted();
-                void GetStatisticsFromCGroup();
                 int CreateTaskFolder();
 
                 template <typename ... Args>
@@ -112,6 +112,8 @@ namespace hpc
                 }
 
                 void Run(const std::string& path);
+                static void* ReadPipeThread(void* p);
+                void SendbackOutput(const std::string& uri, const std::string& output, int order) const;
                 void Monitor();
                 std::string BuildScript();
                 std::unique_ptr<const char* []> PrepareEnvironment();
@@ -121,10 +123,9 @@ namespace hpc
                 std::ostringstream message;
                 int exitCode = (int)hpc::common::ErrorCodes::DefaultExitCode;
                 bool exitCodeSet = false;
-                uint64_t userTimeMs = 0;
-                uint64_t kernelTimeMs = 0;
-                std::vector<int> processIds;
-                uint64_t workingSetKb;
+
+                hpc::data::ProcessStatistics statistics;
+
                 std::string taskFolder;
 
                 const int jobId;
@@ -140,12 +141,17 @@ namespace hpc
                 const std::vector<uint64_t> affinity;
                 const std::map<std::string, std::string> environments;
                 std::vector<std::string> environmentsBuffer;
+                bool streamOutput = false;
+                int stdoutPipe[2];
 
                 const std::function<Callback> callback;
 
                 pthread_t threadId = 0;
+                pthread_t outputThreadId = 0;
                 pid_t processId;
                 bool ended = false;
+
+                pthread_rwlock_t lock = PTHREAD_RWLOCK_INITIALIZER;
 
                 pplx::task_completion_event<pid_t> started;
         };

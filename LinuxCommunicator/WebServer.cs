@@ -55,6 +55,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
         {
             await Task.Yield();
 
+            if (this.source != null) { this.source.Dispose(); }
             this.source = new CancellationTokenSource();
 
             LinuxCommunicator.Instance.Tracer.TraceInfo("Start listening on {0}", this.ListeningUri);

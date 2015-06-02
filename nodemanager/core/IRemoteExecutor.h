@@ -16,7 +16,7 @@ namespace hpc
                 virtual web::json::value StartJobAndTask(hpc::arguments::StartJobAndTaskArgs&& args, const std::string& callbackUri) = 0;
                 virtual web::json::value StartTask(hpc::arguments::StartTaskArgs&& args, const std::string& callbackUri) = 0;
                 virtual web::json::value EndJob(hpc::arguments::EndJobArgs&& args) = 0;
-                virtual web::json::value EndTask(hpc::arguments::EndTaskArgs&& args) = 0;
+                virtual web::json::value EndTask(hpc::arguments::EndTaskArgs&& args, const std::string& callbackUri) = 0;
                 virtual web::json::value Ping(const std::string& callbackUri) = 0;
                 virtual web::json::value Metric(const std::string& callbackUri) = 0;
         };

@@ -2,14 +2,87 @@
 
 #ifdef DEBUG
 
+#include <cpprest/http_listener.h>
+#include "../utils/JsonHelper.h"
 #include "../core/Process.h"
 
 using namespace hpc::tests;
 using namespace hpc::core;
+using namespace hpc::data;
+
+using namespace web::http;
+using namespace web;
 
 ProcessTest::ProcessTest()
 {
     //ctor
+}
+
+bool ProcessTest::ClusRun()
+{
+    const std::string listeningUri = "http://localhost:50002/api/test";
+    web::http::experimental::listener::http_listener listener(listeningUri);
+    bool result = true;
+    bool started = false;
+    int callbackCount = 0;
+    bool callbacked = false;
+
+    listener.support(
+        methods::POST,
+        [&result, &callbackCount](auto request)
+        {
+            auto j = request.extract_json().get();
+            Logger::Debug("Received: {0}", j.serialize());
+
+            auto content = JsonHelper<std::string>::Read("Content", j);
+            bool eq = content == "30\n" || content == "31\n";
+
+            result = result && eq;
+            callbackCount++;
+            request.reply(status_codes::OK, "OK");
+        });
+
+    listener.open().wait();
+
+    Logger::Info("Listener opened");
+
+    Process p(
+        25, 28, 1, "echo 30; sleep 1; echo 31", listeningUri, "", "", "", "root",
+        std::vector<uint64_t>(), std::map<std::string, std::string>(),
+        [&result, &callbacked]
+        (int exitCode, std::string&& message, const ProcessStatistics& stat)
+        {
+            if (exitCode != 0) result = false;
+           // if (message.empty()) result = false;
+            if (stat.KernelTimeMs < 0) result = false;
+            if (stat.UserTimeMs < 0) result = false;
+            if (stat.ProcessIds.size() > 0) result = false;
+            if (stat.WorkingSetKb < 0) result = false;
+
+            Logger::Info("exitCode {0}, message {1}, result {2}", exitCode, message, result);
+            callbacked = true;
+        });
+
+    p.Start().then([&result, &started] (pid_t pid)
+    {
+        if (pid <= 0) result = false;
+
+        Logger::Info("pid {0}, result {1}", pid, result);
+
+        started = true;
+    });
+
+    sleep(2);
+
+    if (!(callbacked && started)) result = false;
+
+    Logger::Info("calbackCount {0}", callbackCount);
+
+    result = result && callbackCount == 2;
+
+    Logger::Info("result {0}", result);
+
+    return result;
 }
 
 bool ProcessTest::SimpleEcho()
@@ -63,17 +136,14 @@ a8lxTKnZCsRXU1HexqZs+DSc+30tz50bNqLdido/l5B4EJnQP03ciO0=\
         25, 28, 1, "echo 30", "", "", "", "", userName,
         std::vector<uint64_t>(), std::map<std::string, std::string>(),
         [&result, &callbacked]
-        (int exitCode, std::string&& message,
-            uint64_t userTimeMs, uint64_t kernelTimeMs,
-            std::vector<int>&& processIds,
-            uint64_t workingSetKb)
+        (int exitCode, std::string&& message, const ProcessStatistics& stat)
         {
             if (exitCode != 0) result = false;
             if (message.empty()) result = false;
-            if (kernelTimeMs < 0) result = false;
-            if (userTimeMs < 0) result = false;
-            if (processIds.size() > 0) result = false;
-            if (workingSetKb < 0) result = false;
+            if (stat.KernelTimeMs < 0) result = false;
+            if (stat.UserTimeMs < 0) result = false;
+            if (stat.ProcessIds.size() > 0) result = false;
+            if (stat.WorkingSetKb < 0) result = false;
 
             Logger::Info("exitCode {0}, message {1}, result {2}", exitCode, message, result);
             callbacked = true;
@@ -155,17 +225,14 @@ a8lxTKnZCsRXU1HexqZs+DSc+30tz50bNqLdido/l5B4EJnQP03ciO0=\
         25, 28, 1, "echo 30", "", "", "", "", userName,
         std::vector<uint64_t>({ UINT64_C(4) }), std::map<std::string, std::string>(),
         [&result, &callbacked]
-        (int exitCode, std::string&& message,
-            uint64_t userTimeMs, uint64_t kernelTimeMs,
-            std::vector<int>&& processIds,
-            uint64_t workingSetKb)
+        (int exitCode, std::string&& message, const ProcessStatistics& stat)
         {
             if (exitCode != 0) result = false;
             if (message.empty()) result = false;
-            if (kernelTimeMs < 0) result = false;
-            if (userTimeMs < 0) result = false;
-            if (processIds.size() > 0) result = false;
-            if (workingSetKb < 0) result = false;
+            if (stat.KernelTimeMs < 0) result = false;
+            if (stat.UserTimeMs < 0) result = false;
+            if (stat.ProcessIds.size() > 0) result = false;
+            if (stat.WorkingSetKb < 0) result = false;
 
             Logger::Info("exitCode {0}, message {1}, result {2}", exitCode, message, result);
             callbacked = true;
@@ -247,17 +314,14 @@ a8lxTKnZCsRXU1HexqZs+DSc+30tz50bNqLdido/l5B4EJnQP03ciO0=\
         25, 28, 1, "echo 30; sleep 5 &", "", "", "", "", userName,
         std::vector<uint64_t>({ UINT64_C(4) }), std::map<std::string, std::string>(),
         [&result, &callbacked]
-        (int exitCode, std::string&& message,
-            uint64_t userTimeMs, uint64_t kernelTimeMs,
-            std::vector<int>&& processIds,
-            uint64_t workingSetKb)
+        (int exitCode, std::string&& message, const ProcessStatistics& stat)
         {
             if (exitCode != 0) result = false;
             if (message.empty()) result = false;
-            if (kernelTimeMs < 0) result = false;
-            if (userTimeMs < 0) result = false;
-            if (processIds.size() != 1) result = false;
-            if (workingSetKb < 0) result = false;
+            if (stat.KernelTimeMs < 0) result = false;
+            if (stat.UserTimeMs < 0) result = false;
+            if (stat.ProcessIds.size() != 1) result = false;
+            if (stat.WorkingSetKb < 0) result = false;
 
             Logger::Info("exitCode {0}, message {1}, result {2}", exitCode, message, result);
             callbacked = true;

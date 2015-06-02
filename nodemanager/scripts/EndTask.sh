@@ -5,9 +5,11 @@
 
 [ -z "$1" ] && echo "task id not specified" && exit 202
 [ -z "$2" ] && echo "process id not specified" && exit 202
+[ -z "$3" ] && echo "forced not specified" && exit 202
 
 taskId=$1
 processId=$2
+forced=$3
 
 if $CGInstalled; then
 	groupName=$(GetCGroupName $taskId)
@@ -31,7 +33,11 @@ if $CGInstalled; then
 	# kill all tasks
 	for pid in $(cat $tasks);
 	do
-		[ -d /proc/$pid ] && kill -9 $pid
+		if [ $forced == "1" ]; then
+			[ -d /proc/$pid ] && kill -9 $pid
+		else
+			[ -d /proc/$pid ] && kill -SIGINT $pid
+		fi
 	done
 
 	# resume tasks
@@ -44,7 +50,11 @@ if $CGInstalled; then
 		((maxLoop--))
 	done
 else
-	kill -s 9 $(pstree -l -p $processId | grep "([[:digit:]]*)" -o | tr -d '()')
+	if [ $forced == "1" ]; then
+		kill -s 9 $(pstree -l -p $processId | grep "([[:digit:]]*)" -o | tr -d '()')
+	else
+		kill -s SIGINT $(pstree -l -p $processId | grep "([[:digit:]]*)" -o | tr -d '()')
+	fi
 fi
 
 exit 0

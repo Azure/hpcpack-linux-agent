@@ -3,17 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Formatting;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.Hpc.Activation;
-using Microsoft.Hpc.Scheduler;
 using Microsoft.Hpc.Scheduler.Communicator;
 using System.Net;
 using Microsoft.Hpc.Scheduler.Properties;
-using Microsoft.Hpc.Communicators.LinuxCommunicator.Monitoring;
-using System.IO;
-using System.Collections.Concurrent;
 using System.Xml.Linq;
 using System.Security.Principal;
 
@@ -25,14 +20,16 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
         private const string CallbackUriHeaderName = "CallbackUri";
         private const string HpcFullKeyName = @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\HPC";
         private const string ClusterNameKeyName = "ClusterName";
+        private const int AutoRetrySendLimit = 3;
+        private const int AutoRetryStartLimit = 3;
 
         private readonly string HeadNode = (string)Microsoft.Win32.Registry.GetValue(HpcFullKeyName, ClusterNameKeyName, null);
         private readonly int MonitoringPort = 9894;
+        private readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(40);
+        private readonly TimeSpan DelayBetweenRetry = TimeSpan.FromSeconds(3);
+        private readonly TimeSpan RetryStartInterval = TimeSpan.FromSeconds(10);
 
-        private HttpClient client;
         private WebServer server;
-        private Monitoring.CounterDataSender sender;
-        private ConcurrentDictionary<string, Guid> nodeMap;
 
         private CancellationTokenSource cancellationTokenSource;
 
@@ -54,9 +51,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
         public void Dispose()
         {
-            this.sender.CloseConnection();
             this.server.Dispose();
-            this.client.Dispose();
             GC.SuppressFinalize(this);
         }
 
@@ -123,7 +118,6 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
                 return sslPolicyErrors == System.Net.Security.SslPolicyErrors.None;
             };
 
-            this.client = new HttpClient();
             this.server = new WebServer();
 
             if (this.HeadNode == null)
@@ -139,10 +133,43 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
         public bool Start()
         {
-            this.Tracer.TraceInfo("Starting LinuxCommunicator.");
-            this.cancellationTokenSource = new CancellationTokenSource();
-            this.server.Start().Wait();
+            return this.Start(0);
+        }
 
+        private bool Start(int retryCount)
+        {
+            this.Tracer.TraceInfo("Starting LinuxCommunicator. RetryCount {0}", retryCount);
+
+            if (retryCount >= AutoRetryStartLimit)
+            {
+                this.Tracer.TraceInfo("Exceeding the auto retry start limit {0}", AutoRetryStartLimit);
+
+                return false;
+            }
+
+            if (this.cancellationTokenSource != null) { this.cancellationTokenSource.Dispose(); }
+            this.cancellationTokenSource = new CancellationTokenSource();
+
+            try
+            {
+                this.server.Start().Wait();
+            }
+            catch(AggregateException aggrEx)
+            {
+                if (aggrEx.InnerExceptions.Any(e => e is HttpListenerException))
+                {
+                    this.Tracer.TraceWarning("Failed to start http listener {0}", aggrEx);
+                    return this.Start(retryCount + 1);
+                }
+
+                throw;
+            }
+            catch (HttpListenerException ex)
+            {
+                this.Tracer.TraceWarning("Failed to start http listener {0}", ex);
+                return this.Start(retryCount + 1);
+            }
+            
             return true;
         }
 
@@ -168,7 +195,10 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
                 try
                 {
-                    arg.JobInfo = await content.ReadAsAsync<ComputeClusterJobInformation>();
+                    if (content != null)
+                    {
+                        arg.JobInfo = await content.ReadAsAsync<ComputeClusterJobInformation>();
+                    }
                 }
                 catch (Exception e)
                 {
@@ -198,7 +228,10 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
                 try
                 {
-                    arg.TaskInfo = await content.ReadAsAsync<ComputeClusterTaskInformation>();
+                    if (content != null)
+                    {
+                        arg.TaskInfo = await content.ReadAsAsync<ComputeClusterTaskInformation>();
+                    }
                 }
                 catch (Exception e)
                 {
@@ -245,25 +278,28 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
         {
             string privateKey = null, publicKey = null;
 
-            try
+            if (extendedData != null)
             {
-                XDocument xDoc = XDocument.Parse(extendedData);
-
-                var privateKeyNode = xDoc.Descendants("PrivateKey").FirstOrDefault();
-                var publicKeyNode = xDoc.Descendants("PublicKey").FirstOrDefault();
-                if (privateKeyNode != null)
+                try
                 {
-                    privateKey = privateKeyNode.Value;
-                }
+                    XDocument xDoc = XDocument.Parse(extendedData);
 
-                if (publicKeyNode != null)
-                {
-                    publicKey = publicKeyNode.Value;
+                    var privateKeyNode = xDoc.Descendants("PrivateKey").FirstOrDefault();
+                    var publicKeyNode = xDoc.Descendants("PublicKey").FirstOrDefault();
+                    if (privateKeyNode != null)
+                    {
+                        privateKey = privateKeyNode.Value;
+                    }
+
+                    if (publicKeyNode != null)
+                    {
+                        publicKey = publicKeyNode.Value;
+                    }
                 }
-            }
-            catch (Exception ex)
-            {
-                this.Tracer.TraceWarning("Error parsing extended data {0}, ex {1}", extendedData, ex);
+                catch (Exception ex)
+                {
+                    this.Tracer.TraceWarning("Error parsing extended data {0}, ex {1}", extendedData, ex);
+                }
             }
 
             if (IsAdmin(userName, password))
@@ -302,22 +338,40 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
             }, null);
         }
 
-        private void SendRequest<T>(string action, string callbackUri, string nodeName, Action<HttpContent, Exception> callback, T arg)
+        private async Task SendRequestInternal<T>(string action, string callbackUri, string nodeName, Action<HttpContent, Exception> callback, T arg, int retryCount = 0)
         {
+            this.Tracer.TraceDetail("Sending out request, action {0}, callback {1}, nodeName {2}", action, callbackUri, nodeName);
             var request = new HttpRequestMessage(HttpMethod.Post, this.GetResoureUri(nodeName, action));
             request.Headers.Add(CallbackUriHeaderName, callbackUri);
             var formatter = new JsonMediaTypeFormatter();
             request.Content = new ObjectContent<T>(arg, formatter);
 
-            this.client.SendAsync(request, this.cancellationTokenSource.Token).ContinueWith(t =>
+            Exception ex = null;
+            HttpContent content = null;
+            bool retry = false;
+
+            using (HttpClient client = new HttpClient())
             {
-                Exception ex = t.Exception;
+                client.Timeout = this.RequestTimeout;
+
+                HttpResponseMessage response = null;
+                try
+                {
+                    response = await client.SendAsync(request, this.cancellationTokenSource.Token);
+                }
+                catch (Exception e)
+                {
+                    ex = e;
+                }
+
+                this.Tracer.TraceDetail("Sending out request task completed, action {0}, callback {1}, nodeName {2} ex {3}", action, callbackUri, nodeName, ex);
 
                 if (ex == null)
                 {
                     try
                     {
-                        t.Result.EnsureSuccessStatusCode();
+                        response.EnsureSuccessStatusCode();
+                        content = response.Content;
                     }
                     catch (Exception e)
                     {
@@ -325,8 +379,60 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
                     }
                 }
 
-                callback(t.Result.Content, ex);
-            }, this.cancellationTokenSource.Token);
+                if (this.CanRetry(ex) && retryCount < AutoRetrySendLimit)
+                {
+                    retry = true;
+                }
+                else
+                {
+                    try
+                    {
+                        callback(content, ex);
+                    }
+                    catch (Exception callbackEx)
+                    {
+                        this.Tracer.TraceError("Finished sending, callback error: action {0}, callback {1}, nodeName {2} retry count {3}, ex {4}", action, callbackUri, nodeName, retryCount, callbackEx);
+                    }
+                }
+            }
+
+            if (retry)
+            {
+                await Task.Delay(DelayBetweenRetry);
+                this.SendRequest(action, callbackUri, nodeName, callback, arg, retryCount + 1);
+            }
+        }
+
+        private void SendRequest<T>(string action, string callbackUri, string nodeName, Action<HttpContent, Exception> callback, T arg, int retryCount = 0)
+        {
+            this.SendRequestInternal(action, callbackUri, nodeName, callback, arg, retryCount).ContinueWith(t =>
+            {
+                this.Tracer.TraceDetail("Finished sending, action {0}, callback {1}, nodeName {2} retry count {3}", action, callbackUri, nodeName, retryCount);
+            });
+        }
+
+        private bool CanRetry(Exception exception)
+        {
+            if (this.cancellationTokenSource.IsCancellationRequested)
+            {
+                return false;
+            }
+
+            if (exception is HttpRequestException ||
+                exception is WebException ||
+                exception is TaskCanceledException)
+            {
+                return true;
+            }
+
+            var aggregateEx = exception as AggregateException;
+            if (aggregateEx != null)
+            {
+                aggregateEx = aggregateEx.Flatten();
+                return aggregateEx.InnerExceptions.Any(e => this.CanRetry(e));
+            }
+
+            return false;
         }
 
         private Uri GetResoureUri(string nodeName, string action)

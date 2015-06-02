@@ -10,10 +10,11 @@ namespace hpc
         struct EndTaskArgs
         {
             public:
-                EndTaskArgs(int jobId, int taskId);
+                EndTaskArgs(int jobId, int taskId, int gracePeriodSeconds);
 
                 int JobId;
                 int TaskId;
+                int TaskCancelGracePeriodSeconds;
 
                 static EndTaskArgs FromJson(const web::json::value& jsonValue);
 

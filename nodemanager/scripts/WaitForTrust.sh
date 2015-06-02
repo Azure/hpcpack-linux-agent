@@ -1,6 +1,6 @@
 #!/bin/bash
 
-echo $CCP_NODES
+#echo $CCP_NODES
 hosts=($CCP_NODES)
 nodes=()
 testpids=()
@@ -19,7 +19,7 @@ done
 
 if [ ${#nodes[@]} -lt 2 ]; then
 	finished=true
-	echo "no need to test trust for single node"
+#	echo "no need to test trust for single node"
 	exit 0
 fi
 
@@ -45,6 +45,7 @@ do
 		wait ${testpids[$i]} && echo "    trusted ${nodes[$i]} SECONDS=$SECONDS" && unset testpids[$i] && unset nodes[$i]
 		exitcode=$?
 		echo "    exit code is $exitcode SECONDS=$SECONDS task=$taskExecutionId"
+
 		if [ $exitcode != 0 ]; then
 			finished=false
 			timeout -s SIGKILL 30s sudo -u $userName ssh -v -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=30 $userName@${nodes[$i]} echo 1 &

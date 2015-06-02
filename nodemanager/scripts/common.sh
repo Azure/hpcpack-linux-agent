@@ -13,6 +13,11 @@ function GetCGroupName
 	echo "nmgroup_$taskId"
 }
 
+function GetExistingCGroupNames
+{
+	lscgroup | grep 'nmgroup_.*' | sed -e 's/.*nmgroup_\(.*\)/\1/' | uniq
+}
+
 function GetGroupPath
 {
     local groupName=$1

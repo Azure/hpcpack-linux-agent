@@ -9,7 +9,7 @@
 taskId=$1
 processId=$2
 
-/bin/bash ./EndTask.sh "$1" "$2"
+/bin/bash ./EndTask.sh "$1" "$2" "1"
 
 if $CGInstalled; then
 	groupName=$(GetCGroupName $taskId)

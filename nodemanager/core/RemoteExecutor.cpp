@@ -11,6 +11,7 @@
 #include "../utils/Logger.h"
 #include "../utils/System.h"
 #include "../common/ErrorCodes.h"
+#include "../data/ProcessStatistics.h"
 
 using namespace web::http;
 using namespace web;
@@ -51,6 +52,7 @@ json::value RemoteExecutor::StartJobAndTask(StartJobAndTaskArgs&& args, const st
         if (!isAdmin && !args.UserName.empty())
         {
             std::string userName = String::GetUserName(args.UserName);
+            if (userName == "root") { userName = "hpc_faked_root"; }
 
             int ret = System::CreateUser(userName, args.Password);
 
@@ -165,10 +167,7 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
                 [taskInfo, callbackUri, this] (
                     int exitCode,
                     std::string&& message,
-                    uint64_t userTimeMs,
-                    uint64_t kernelTimeMs,
-                    std::vector<int>&& processIds,
-                    uint64_t workingSetKb)
+                    const ProcessStatistics& stat)
                 {
                     try
                     {
@@ -187,41 +186,20 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
                                 taskInfo->Exited = true;
                                 taskInfo->ExitCode = exitCode;
                                 taskInfo->Message = std::move(message);
-                                taskInfo->KernelProcessorTimeMs = kernelTimeMs;
-                                taskInfo->UserProcessorTimeMs = userTimeMs;
-                                taskInfo->ProcessIds = std::move(processIds);
-                                taskInfo->WorkingSetKb = workingSetKb;
+                                taskInfo->AssignFromStat(stat);
 
                                 jsonBody = taskInfo->ToCompletionEventArgJson();
                             }
                         }
 
-                        if (!jsonBody.is_null())
-                        {
-                            Logger::Debug(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetTaskRequeueCount(),
-                                "Callback to {0} with {1}", callbackUri, jsonBody);
-                            client::http_client_config config;
-                            config.set_validate_certificates(false);
-                            utility::seconds timeout(5l);
-                            config.set_timeout(timeout);
-
-                            Logger::Debug(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetTaskRequeueCount(),
-                                "Callback to {0}, configure: timeout {1} seconds, chuck size {2}",
-                                callbackUri, config.timeout().count(), config.chunksize());
-
-                            client::http_client client(callbackUri, config);
-                            http_response response = client.request(methods::POST, "", jsonBody).get();
-
-                            Logger::Info(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetTaskRequeueCount(),
-                                "Callback to {0} response code {1}, value {2}", callbackUri, response.status_code(), response.extract_string().get());
-                        }
+                        this->ReportTaskCompletion(taskInfo->JobId, taskInfo->TaskId,
+                            taskInfo->GetTaskRequeueCount(), jsonBody, callbackUri);
 
                         // this won't remove the task entry added later as attempt id doesn't match
                         this->jobTaskTable.RemoveTask(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetAttemptId());
                     }
                     catch (const std::exception& ex)
                     {
-                        this->jobTaskTable.RequestResync();
                         Logger::Error(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetTaskRequeueCount(),
                             "Exception when sending back task result. {0}", ex.what());
                     }
@@ -273,15 +251,20 @@ json::value RemoteExecutor::EndJob(hpc::arguments::EndJobArgs&& args)
     {
         for (auto& taskPair : jobInfo->Tasks)
         {
-            this->TerminateTask(taskPair.second->ProcessKey, (int)ErrorCodes::EndJobExitCode);
-
             auto taskInfo = taskPair.second;
 
             if (taskInfo)
             {
-                taskInfo->Exited = true;
-                taskInfo->ExitCode = (int)ErrorCodes::EndJobExitCode;
-                Logger::Debug(args.JobId, taskPair.first, taskInfo->GetTaskRequeueCount(), "EndJob: starting");
+                const auto* stat = this->TerminateTask(
+                    args.JobId, taskPair.first, taskInfo->GetTaskRequeueCount(),
+                    taskInfo->ProcessKey, (int)ErrorCodes::EndJobExitCode, true);
+                Logger::Debug(args.JobId, taskPair.first, taskInfo->GetTaskRequeueCount(), "EndJob: Terminating task");
+                if (stat != nullptr)
+                {
+                    taskInfo->Exited = stat->IsTerminated();
+                    taskInfo->ExitCode = (int)ErrorCodes::EndJobExitCode;
+                    taskInfo->AssignFromStat(*stat);
+                }
             }
             else
             {
@@ -386,7 +369,7 @@ json::value RemoteExecutor::EndJob(hpc::arguments::EndJobArgs&& args)
     return jsonBody;
 }
 
-json::value RemoteExecutor::EndTask(hpc::arguments::EndTaskArgs&& args)
+json::value RemoteExecutor::EndTask(hpc::arguments::EndTaskArgs&& args, const std::string& callbackUri)
 {
     ReaderLock readerLock(&this->lock);
     Logger::Info(args.JobId, args.TaskId, this->UnknowId, "EndTask: starting");
@@ -397,11 +380,37 @@ json::value RemoteExecutor::EndTask(hpc::arguments::EndTaskArgs&& args)
 
     if (taskInfo)
     {
-        this->TerminateTask(taskInfo->ProcessKey, (int)ErrorCodes::EndTaskExitCode);
-        this->jobTaskTable.RemoveTask(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetAttemptId());
+        const auto* stat = this->TerminateTask(
+            args.JobId, args.TaskId, taskInfo->GetTaskRequeueCount(),
+            taskInfo->ProcessKey,
+            (int)ErrorCodes::EndTaskExitCode,
+            false);
 
-        taskInfo->Exited = true;
         taskInfo->ExitCode = (int)ErrorCodes::EndTaskExitCode;
+
+        if (stat == nullptr || stat->IsTerminated())
+        {
+            this->jobTaskTable.RemoveTask(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetAttemptId());
+
+            taskInfo->Exited = true;
+            if (stat != nullptr)
+            {
+                taskInfo->AssignFromStat(*stat);
+            }
+        }
+        else
+        {
+            taskInfo->Exited = false;
+            taskInfo->AssignFromStat(*stat);
+
+            // start a thread to kill the task after a period of time;
+            pthread_t threadId;
+            auto* taskIds = new std::tuple<int, int, int, std::string, int, RemoteExecutor*>(
+                taskInfo->JobId, taskInfo->TaskId, taskInfo->GetTaskRequeueCount(),
+                callbackUri, args.TaskCancelGracePeriodSeconds, this);
+
+            pthread_create(&threadId, nullptr, RemoteExecutor::GracePeriodElapsed, taskIds);
+        }
 
         jsonBody = taskInfo->ToJson();
         Logger::Info(args.JobId, args.TaskId, this->UnknowId, "EndTask: ended {0}", jsonBody);
@@ -412,6 +421,94 @@ json::value RemoteExecutor::EndTask(hpc::arguments::EndTaskArgs&& args)
     }
 
     return jsonBody;
+}
+
+void* RemoteExecutor::GracePeriodElapsed(void* data)
+{
+    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, nullptr);
+    pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, nullptr);
+
+    auto* ids = static_cast<std::tuple<int, int, int, std::string, int, RemoteExecutor*>*>(data);
+
+    int jobId, taskId, requeueCount, period;
+    std::string callbackUri;
+    RemoteExecutor* e;
+    std::tie(jobId, taskId, requeueCount, callbackUri, period, e) = *ids;
+
+    delete ids;
+
+    sleep(period);
+
+    WriterLock writerLock(&e->lock);
+
+    Logger::Info(jobId, taskId, e->UnknowId, "GracePeriodElapsed: starting");
+
+    auto taskInfo = e->jobTaskTable.GetTask(jobId, taskId);
+    json::value jsonBody;
+
+    if (taskInfo)
+    {
+        const auto* stat = e->TerminateTask(
+            jobId, taskId, requeueCount,
+            taskInfo->ProcessKey,
+            (int)ErrorCodes::EndTaskExitCode,
+            true);
+
+        taskInfo->Exited = true;
+        taskInfo->ExitCode = (int)ErrorCodes::EndTaskExitCode;
+        e->jobTaskTable.RemoveTask(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetAttemptId());
+
+        if (stat != nullptr)
+        {
+            taskInfo->AssignFromStat(*stat);
+        }
+
+        jsonBody = taskInfo->ToCompletionEventArgJson();
+        Logger::Info(jobId, taskId, e->UnknowId, "EndTask: ended {0}", jsonBody);
+    }
+    else
+    {
+        Logger::Warn(jobId, taskId, e->UnknowId, "EndTask: Task is already finished");
+    }
+
+    e->ReportTaskCompletion(jobId, taskId, requeueCount, jsonBody, callbackUri);
+
+    pthread_exit(nullptr);
+}
+
+void RemoteExecutor::ReportTaskCompletion(
+    int jobId, int taskId, int taskRequeueCount, json::value jsonBody,
+    const std::string& callbackUri)
+{
+    try
+    {
+        if (!jsonBody.is_null())
+        {
+            Logger::Debug(jobId, taskId, taskRequeueCount,
+                "Callback to {0} with {1}", callbackUri, jsonBody);
+
+            client::http_client_config config;
+            config.set_validate_certificates(false);
+            utility::seconds timeout(5l);
+            config.set_timeout(timeout);
+
+            Logger::Debug(jobId, taskId, taskRequeueCount,
+                "Callback to {0}, configure: timeout {1} seconds, chuck size {2}",
+                callbackUri, config.timeout().count(), config.chunksize());
+
+            client::http_client client(callbackUri, config);
+            http_response response = client.request(methods::POST, "", jsonBody).get();
+
+            Logger::Info(jobId, taskId, taskRequeueCount,
+                "Callback to {0} response code {1}", callbackUri, response.status_code());
+        }
+    }
+    catch (const std::exception& ex)
+    {
+        this->jobTaskTable.RequestResync();
+        Logger::Error(jobId, taskId, taskRequeueCount,
+            "Exception when sending back task result. {0}", ex.what());
+    }
 }
 
 json::value RemoteExecutor::Ping(const std::string& callbackUri)
@@ -455,19 +552,37 @@ json::value RemoteExecutor::Metric(const std::string& callbackUri)
     return json::value();
 }
 
-bool RemoteExecutor::TerminateTask(int processKey, int exitCode)
+const ProcessStatistics* RemoteExecutor::TerminateTask(
+    int jobId, int taskId, int requeueCount,
+    int processKey, int exitCode, bool forced)
 {
     auto p = this->processes.find(processKey);
 
     if (p != this->processes.end())
     {
-        p->second->Kill(exitCode);
+        p->second->Kill(exitCode, forced);
 
-        return true;
+        const auto* stat = &p->second->GetStatisticsFromCGroup();
+
+        int times = 5;
+        while (!stat->IsTerminated() && times-- > 0)
+        {
+            sleep(0.1);
+            stat = &p->second->GetStatisticsFromCGroup();
+        }
+
+        if (!stat->IsTerminated())
+        {
+            Logger::Warn(jobId, taskId, requeueCount,
+                "The task didn't exit within 0.5s, process Ids {0}",
+                String::Join<' '>(stat->ProcessIds));
+        }
+
+        return stat;
     }
     else
     {
-        return false;
+        return nullptr;
     }
 }
 

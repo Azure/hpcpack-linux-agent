@@ -36,3 +36,11 @@ json::value TaskInfo::ToCompletionEventArgJson() const
 
     return jobIdArg;
 }
+
+void TaskInfo::AssignFromStat(const ProcessStatistics& stat)
+{
+    this->KernelProcessorTimeMs = stat.KernelTimeMs;
+    this->UserProcessorTimeMs = stat.UserTimeMs;
+    this->ProcessIds = stat.ProcessIds;
+    this->WorkingSetKb = stat.WorkingSetKb;
+}

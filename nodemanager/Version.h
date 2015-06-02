@@ -229,6 +229,48 @@ namespace hpc
                             "Prints ssh verbose log directly",
                         }
                     },
+                    { "1.3.1.1",
+                        {
+                            "Add graceful preemption support",
+                            "Prevent the common user with root name to run as root",
+                        }
+                    },
+                    { "1.3.1.2",
+                        {
+                            "Kill the process immediately after the period expires",
+                        }
+                    },
+                    { "1.3.1.3",
+                        {
+                            "Cleaning up zombie processes when startup",
+                        }
+                    },
+                    { "1.3.1.4",
+                        {
+                            "Enable clusrun support",
+                        }
+                    },
+                    { "1.3.1.5",
+                        {
+                            "Fix the stdout/stderr/stdin handling issues",
+                        }
+                    },
+                    { "1.3.1.6",
+                        {
+                            "Fix the virtual method initialization race condition",
+                            "Print meaningful error messages when node trust fails",
+                        }
+                    },
+                    { "1.3.1.7",
+                        {
+                            "Exit immediately if the port cannot be opened",
+                        }
+                    },
+                    { "1.3.1.8",
+                        {
+                            "Merging with 1.2",
+                        }
+                    },
                 };
 
                 return versionHistory;
