@@ -271,6 +271,12 @@ namespace hpc
                             "Merging with 1.2",
                         }
                     },
+                    { "1.3.1.9",
+                        {
+                            "Fix the exit code not captured issue",
+                            "Terminate the task properly when end task called",
+                        }
+                    },
                 };
 
                 return versionHistory;

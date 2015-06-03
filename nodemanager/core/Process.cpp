@@ -558,6 +558,10 @@ std::string Process::BuildScript()
         fs << " <" << this->stdInFile;
     }
 
+    fs << std::endl;
+    fs << "ec=$?" << std::endl;
+    fs << "[ $ec -ne 0 ] && exit $ec" << std::endl;
+
     fs << std::endl << std::endl;
 
     // after
