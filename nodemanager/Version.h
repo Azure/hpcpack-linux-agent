@@ -277,6 +277,13 @@ namespace hpc
                             "Terminate the task properly when end task called",
                         }
                     },
+                    { "1.3.1.10",
+                        {
+                            "Avoid duplicated cleanup of zombie process",
+                            "Fixed a crash due to merge of the code",
+                            "Print an error message when node trust failed",
+                        }
+                    },
                 };
 
                 return versionHistory;

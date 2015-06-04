@@ -65,7 +65,6 @@ UdpReporter::UdpReporter(
     }
 
     this->initialized = true;
-    this->Start();
 }
 
 UdpReporter::~UdpReporter()

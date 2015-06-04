@@ -69,7 +69,7 @@ if $finished; then
 	sync
 	exit 0;
 else
-	echo "not all trusted task=$taskExecutionId"
+	echo "not all trusted task=$taskExecutionId. If you pre-configured any ssh keys, make sure they are working for establishing trust relationship between nodes." > /dev/stderr
 
 	echo ""
 	echo "Saving logs"

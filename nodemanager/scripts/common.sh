@@ -15,7 +15,7 @@ function GetCGroupName
 
 function GetExistingCGroupNames
 {
-	lscgroup | grep 'nmgroup_.*' | sed -e 's/.*nmgroup_\(.*\)/\1/' | uniq
+	lscgroup | grep 'cpuset:/nmgroup_.*' | sed -e 's/.*nmgroup_\(.*\)/\1/' | uniq
 }
 
 function GetGroupPath
