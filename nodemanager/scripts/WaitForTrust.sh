@@ -7,7 +7,7 @@ testpids=()
 userName=$1
 taskExecutionId=$2
 
-echo "Preparing for $taskExecutionId"
+echo "Preparing for $taskExecutionId" > /dev/stdout
 
 for host in ${!hosts[@]}
 do
@@ -25,7 +25,13 @@ fi
 
 for node in ${nodes[@]}
 do
-	timeout -s SIGKILL 30s sudo -u $userName ssh -v -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=30 $userName@$node echo 1 &
+	nodeLogFile=logs/ssh_${taskExecutionId}_${node}.log
+	touch $nodeLogFile
+	chown $userName $nodeLogFile
+	echo >> $nodeLogFile
+	echo ">> SECONDS=$SECONDS" >> $nodeLogFile
+	sync
+	timeout -s SIGKILL 10s sudo -u $userName ssh -v -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=10 $userName@$node echo 1 >> $nodeLogFile 2>&1 &
 	testpids+=($!)
 	echo "    created $! for $node"
 done
@@ -34,7 +40,7 @@ start=$SECONDS
 echo "start=$start task=$taskExecutionId"
 finished=false
 loopCount=0
-while ! $finished && [ $((SECONDS-start)) -lt 300 ]
+while ! $finished && [ $((SECONDS-start)) -lt 60 ]
 do
 	((loopCount++))
 	echo "looping $loopCount SECONDS=$SECONDS task=$taskExecutionId"
@@ -48,7 +54,11 @@ do
 
 		if [ $exitcode != 0 ]; then
 			finished=false
-			timeout -s SIGKILL 30s sudo -u $userName ssh -v -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=30 $userName@${nodes[$i]} echo 1 &
+			nodeLogFile=logs/ssh_${taskExecutionId}_${nodes[$i]}.log
+			echo >> $nodeLogFile
+			echo ">> SECONDS=$SECONDS" >> $nodeLogFile
+			sync
+			timeout -s SIGKILL 10s sudo -u $userName ssh -v -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=10 $userName@${nodes[$i]} echo 1 >> $nodeLogFile 2>&1 &
 			testpids[$i]=$!
 			echo "    line: timeout -s SIGKILL 30s ssh -v -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=30 $userName@${nodes[$i]} echo 1 &"
 			echo "    untrust ${nodes[$i]}, exitcode $exitcode, new pid $! task=$taskExecutionId"
@@ -62,7 +72,7 @@ done
 
 echo "ending finished=$finished, SECONDS=$SECONDS, start=$start, elapsed=$((SECONDS-start)), task=$taskExecutionId"
 
-kill -9 $(jobs -p)
+[ -z $(jobs -p) ] || kill -9 $(jobs -p)
 
 if $finished; then
 	echo "all trusted task=$taskExecutionId"
@@ -70,8 +80,7 @@ if $finished; then
 	exit 0;
 else
 	echo "not all trusted task=$taskExecutionId. If you pre-configured any ssh keys, make sure they are working for establishing trust relationship between nodes." > /dev/stderr
-
-	echo ""
+	echo
 	echo "Saving logs"
 	rootLogFolder=/opt/hpcnodemanager/logs
 	trustKeysDir=${rootLogFolder}/${taskExecutionId}_${userName}/
@@ -83,7 +92,7 @@ else
 	for node in ${nodes[@]}
 	do
 		echo "    Saving ${node} SECONDS=$SECONDS task=$taskExecutionId"
-		ssh -v -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=5 root@${node} "mkdir $trustKeysDir && cp -rf ${sshFolder}* $trustKeysDir"
+		ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=5 root@${node} "mkdir -p $trustKeysDir && cp -rf ${sshFolder}* $trustKeysDir"
 		ec=$?
 		if [ $ec -ne 0 ]; then
 			echo "    Failed to save for ${node}, exit code $ec"

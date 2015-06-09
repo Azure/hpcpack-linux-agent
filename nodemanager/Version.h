@@ -284,6 +284,11 @@ namespace hpc
                             "Print an error message when node trust failed",
                         }
                     },
+                    { "1.3.1.11",
+                        {
+                            "Added logs for trust process",
+                        }
+                    },
                 };
 
                 return versionHistory;

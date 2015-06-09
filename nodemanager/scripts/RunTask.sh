@@ -18,7 +18,8 @@ fi
 /bin/bash WaitForTrust.sh "$3" "$1" > $trustLogFile 2>&1
 if [ $? -ne 0 ]; then
 	mv $trustLogFile $failedTrustLogFile;
-	mkdir $trustKeysDir && cp -rf ${sshFolder}* $trustKeysDir;
+	mkdir -p $trustKeysDir > /dev/null
+	cp -rf ${sshFolder}* $trustKeysDir;
 
 	exit 203
 fi
