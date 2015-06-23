@@ -38,6 +38,7 @@ Process::Process(
 {
     this->streamOutput = boost::algorithm::starts_with(stdOutFile, "http://") ||
         boost::algorithm::starts_with(stdOutFile, "https://");
+    Logger::Debug(this->jobId, this->taskId, this->requeueCount, "{0}, stream ? {1}", stdOutFile, this->streamOutput);
 }
 
 Process::~Process()
@@ -134,6 +135,7 @@ void* Process::ForkThread(void* arg)
     Process* const p = static_cast<Process* const>(arg);
     std::string path;
 
+Start:
     int ret = p->CreateTaskFolder();
     if (ret != 0)
     {
@@ -197,8 +199,23 @@ void* Process::ForkThread(void* arg)
     }
 
 Final:
-    p->ExecuteCommand("/bin/bash", "CleanupTask.sh", p->taskExecutionId, p->processId);
-    p->ExecuteCommand("rm -rf", p->taskFolder);
+    ret = p->ExecuteCommandNoCapture("/bin/bash", "CleanupTask.sh", p->taskExecutionId, p->processId);
+
+    // Only clean up the folder when success.
+    if (p->exitCode == 0)
+    {
+        p->ExecuteCommand("rm -rf", p->taskFolder);
+    }
+
+    // TODO: Add logic to precisely define 253 error.
+    if ((p->exitCode == 82 && ret == 96) || p->exitCode == 253)
+    {
+        p->exitCodeSet = false;
+        p->exitCode = (int)hpc::common::ErrorCodes::DefaultExitCode;
+        Logger::Error(p->jobId, p->taskId, p->requeueCount, "Exit Code {0} Reset exit code and retry to fork()", p->exitCode);
+        goto Start;
+    }
+
     p->ended = true;
 
     if (p->outputThreadId != 0)
@@ -241,6 +258,8 @@ void* Process::ReadPipeThread(void* p)
         }
     }
 
+    process->SendbackOutput(uri, std::string(), order++);
+
     close(process->stdoutPipe[0]);
 
     pthread_exit(nullptr);
@@ -251,6 +270,8 @@ void Process::SendbackOutput(const std::string& uri, const std::string& output, 
     try
     {
         OutputData od(System::GetNodeName(), order, output);
+
+        if (output.empty()) { od.Eof = true; }
 
         auto jsonBody = od.ToJson();
         if (!jsonBody.is_null())
@@ -510,6 +531,15 @@ std::string Process::BuildScript()
     if (this->stdOutFile.empty()) this->stdOutFile = this->taskFolder + "/stdout.txt";
     if (this->stdErrFile.empty()) this->stdErrFile = this->taskFolder + "/stderr.txt";
 
+    // before
+    fs << "echo before >" << this->taskFolder << "/before1.txt 2>" << this->taskFolder << "/before2.txt";
+    fs << " || ([ \"$?\" = \"1\" ] && exit 253)" << std::endl;
+
+    // test
+    fs << "echo test >" << this->taskFolder << "/stdout.txt 2>" << this->taskFolder << "/stderr.txt";
+    fs << " || ([ \"$?\" = \"1\" ] && exit 253)" << std::endl << std::endl;
+
+    // run
     if (this->streamOutput)
     {
         fs << "/bin/bash " << cmd << " 2>&1";
@@ -529,6 +559,10 @@ std::string Process::BuildScript()
     }
 
     fs << std::endl << std::endl;
+
+    // after
+    fs << "echo after >" << this->taskFolder << "/after1.txt 2>" << this->taskFolder << "/after2.txt";
+    fs << " || ([ \"$?\" = \"1\" ] && exit 253)" << std::endl;
 
     fs.close();
 

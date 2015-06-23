@@ -115,28 +115,28 @@ json::value Monitor::GetRegisterInfo()
 
 void Monitor::Run()
 {
-    long int cpuLast = 0, idleLast = 0, networkLast = 0;
+    uint64_t cpuLast = 0, idleLast = 0, networkLast = 0;
 
     while (true)
     {
         time_t t;
         time(&t);
 
-        long int cpuCurrent = cpuLast + 1, idleCurrent = idleLast;
+        uint64_t cpuCurrent = cpuLast + 1, idleCurrent = idleLast;
 
         System::CPUUsage(cpuCurrent, idleCurrent);
-        long int totalDiff = cpuCurrent - cpuLast;
-        long int idleDiff = idleCurrent - idleLast;
+        uint64_t totalDiff = cpuCurrent - cpuLast;
+        uint64_t idleDiff = idleCurrent - idleLast;
         float cpuUsage = (float)(100.0f * (totalDiff - idleDiff) / totalDiff);
         cpuLast = cpuCurrent;
         idleLast = idleCurrent;
 
-        unsigned long available, total;
+        uint64_t available, total;
         System::Memory(available, total);
         float availableMemoryMb = (float)available / 1024.0f;
         float totalMemoryMb = (float)total / 1024.0f;
 
-        long int networkCurrent = 0;
+        uint64_t networkCurrent = 0;
         int ret = System::NetworkUsage(networkCurrent, "eth0");
 
         if (ret != 0)

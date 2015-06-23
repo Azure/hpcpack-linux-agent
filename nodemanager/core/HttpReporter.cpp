@@ -28,7 +28,17 @@ void HttpReporter::Report()
     try
     {
         http_response response = client.request(methods::POST, "", jsonBody, this->cts.get_token()).get();
-        Logger::Debug("---------> Reported to {0} response code {1}", uri, response.status_code());
+
+        auto str = response.extract_string().get();
+        std::istringstream iss(str);
+        int milliseconds = 30000;
+        iss >> milliseconds;
+        if (milliseconds > 0)
+        {
+            this->intervalSeconds = milliseconds / 1000;
+        }
+
+        Logger::Debug("---------> Reported to {0} response code {1}, value {2}", uri, response.status_code(), milliseconds);
     }
     catch (const http_exception& httpEx)
     {

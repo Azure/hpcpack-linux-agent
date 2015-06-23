@@ -29,10 +29,8 @@ namespace hpc
                     }
                 }
 
-                virtual ~Reporter()
+                void Stop()
                 {
-                    Logger::Debug("Destruct Reporter {0}", this->reportUri);
-
                     this->isRunning = false;
                     if (this->threadId != 0)
                     {
@@ -43,11 +41,17 @@ namespace hpc
                     }
                 }
 
+                virtual ~Reporter()
+                {
+                    Logger::Debug("Destruct Reporter {0}", this->reportUri);
+                }
+
                 virtual void Report() = 0;
 
             protected:
                 const std::string reportUri;
                 std::function<ReportType()> valueFetcher;
+                int intervalSeconds;
 
             private:
                 static void* ReportingThread(void* arg)
@@ -73,10 +77,9 @@ namespace hpc
                     pthread_exit(nullptr);
                 }
 
-                int intervalSeconds;
                 int holdSeconds;
 
-                pthread_t threadId;
+                pthread_t threadId = 0;
                 bool isRunning = true;
                 bool inRequest = false;
         };

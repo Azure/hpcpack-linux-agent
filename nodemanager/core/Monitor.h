@@ -53,7 +53,7 @@ namespace hpc
 
                 int intervalSeconds;
                 bool isCollected;
-                pthread_t threadId;
+                pthread_t threadId = 0;
         };
     }
 }

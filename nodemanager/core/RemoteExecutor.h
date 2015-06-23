@@ -55,7 +55,7 @@ namespace hpc
                 std::unique_ptr<Reporter<json::value>> registerReporter;
                 std::unique_ptr<Reporter<std::vector<unsigned char>>> metricReporter;
 
-                std::map<long long, std::shared_ptr<Process>> processes;
+                std::map<uint64_t, std::shared_ptr<Process>> processes;
                 std::map<int, std::tuple<std::string, bool, bool, bool, bool, std::string>> jobUsers;
                 std::map<std::string, std::set<int>> userJobs;
                 pthread_rwlock_t lock;

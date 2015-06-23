@@ -80,7 +80,7 @@ std::shared_ptr<JobInfo> JobTaskTable::RemoveJob(int jobId)
     return job;
 }
 
-void JobTaskTable::RemoveTask(int jobId, int taskId, long long attemptId)
+void JobTaskTable::RemoveTask(int jobId, int taskId, uint64_t attemptId)
 {
     WriterLock writerLock(&this->lock);
 

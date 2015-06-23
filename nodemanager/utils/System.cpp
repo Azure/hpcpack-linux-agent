@@ -121,13 +121,13 @@ std::string System::GetIpAddress(IpAddressVersion version, const std::string& na
     return std::move(ip);
 }
 
-void System::CPUUsage(long int &total, long int &idle)
+void System::CPUUsage(uint64_t &total, uint64_t &idle)
 {
     try
     {
         std::ifstream fs("/proc/stat", std::ios::in);
         std::string cpu;
-        long int user, nice, sys, iowait, irq, softirq;
+        uint64_t user, nice, sys, iowait, irq, softirq;
 
         fs >> cpu >> user >> nice >> sys >> idle >> iowait >> irq >> softirq;
         fs.close();
@@ -140,7 +140,7 @@ void System::CPUUsage(long int &total, long int &idle)
     }
 }
 
-void System::Memory(unsigned long &availableKb, unsigned long &totalKb)
+void System::Memory(uint64_t &availableKb, uint64_t &totalKb)
 {
     std::ifstream fs("/proc/meminfo", std::ios::in);
     std::string name, unit;
@@ -185,12 +185,12 @@ void System::CPU(int &cores, int &sockets)
     fs.close();
 }
 
-int System::NetworkUsage(long int &network, const std::string& netName)
+int System::NetworkUsage(uint64_t &network, const std::string& netName)
 {
     int ret = 1;
     std::ifstream fs("/proc/net/dev", std::ios::in);
     std::string name;
-    int receive, send;
+    uint64_t receive, send;
 
     fs.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     fs.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
@@ -410,7 +410,10 @@ int System::DeleteUser(const std::string& userName)
 {
     std::string output;
 
-    int ret = System::ExecuteCommandOut(output, "userdel", userName, "-r");
+    // kill all processes associated with this user.
+    int ret = System::ExecuteCommandOut(output, "pkill -KILL -U `id -ur", userName, "`;",
+        "userdel", userName, "-r -f");
+
     if (ret != 0)
     {
         Logger::Error("userdel {0} error code {1}", userName, ret);

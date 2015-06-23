@@ -24,10 +24,10 @@ namespace hpc
 
                 static std::vector<NetInfo> GetNetworkInfo();
                 static std::string GetIpAddress(IpAddressVersion version, const std::string& name);
-                static void CPUUsage(long int &total, long int &idle);
-                static void Memory(unsigned long &available, unsigned long &total);
+                static void CPUUsage(uint64_t &total, uint64_t &idle);
+                static void Memory(uint64_t &available, uint64_t &total);
                 static void CPU(int &cores, int &sockets);
-                static int NetworkUsage(long int &network, const std::string& netName);
+                static int NetworkUsage(uint64_t &network, const std::string& netName);
                 static const std::string& GetNodeName();
                 static bool IsCGroupInstalled();
 
@@ -87,10 +87,10 @@ namespace hpc
                 {
                     std::string command = String::Join(" ", cmd, args...);
                     //Logger::Debug("Executing cmd: {0}", command);
-                    FILE* stream = popen(command.c_str(), "r");
                     int exitCode = (int)hpc::common::ErrorCodes::PopenError;
 
                     std::ostringstream result;
+                    FILE* stream = popen(command.c_str(), "r");
 
                     if (stream)
                     {
@@ -105,8 +105,9 @@ namespace hpc
                     }
                     else
                     {
-                        Logger::Error("Error when popen {0}", command);
-                        result << "error when popen " << command << std::endl;
+                        int err = errno;
+                        Logger::Error("Error when popen {0}, errno {1}", command, err);
+                        result << "error when popen " << command << ", errno " << err << std::endl;
                     }
 
                     output = result.str();

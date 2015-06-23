@@ -28,9 +28,9 @@ namespace hpc
 
                 const std::string& NodeName;
 
-                long long GetAttemptId() const
+                uint64_t GetAttemptId() const
                 {
-                    return ((long long)taskRequeueCount << 32) + TaskId;
+                    return ((uint64_t)taskRequeueCount << 32) + TaskId;
                 }
 
                 int GetTaskRequeueCount() const { return this->taskRequeueCount; }
@@ -63,7 +63,7 @@ namespace hpc
                 uint64_t UserProcessorTimeMs = 0;
                 uint64_t WorkingSetKb = 0;
                 bool IsPrimaryTask = true;
-                long long ProcessKey;
+                uint64_t ProcessKey;
 
                 std::string Message;
                 std::vector<int> ProcessIds;

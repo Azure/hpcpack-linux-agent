@@ -19,6 +19,7 @@ class OutputData
         std::string NodeName;
         int Order;
         std::string Content;
+        bool Eof = false;
 
     protected:
     private:

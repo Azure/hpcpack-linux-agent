@@ -136,6 +136,99 @@ namespace hpc
                             "Set correct permissions on key files",
                         }
                     },
+                    { "1.2.1.8",
+                        {
+                            "Remove the user even if it is logged on",
+                            "Won't overwrite the keys if private key is not created",
+                            "Work around the bug of removing multi-subsys cgroup in old version of CGroup tools",
+                            "Fix the network usage monitoring issue",
+                        }
+                    },
+                    { "1.2.1.9",
+                        {
+                            "Placeholder for linux extension bug fix",
+                        }
+                    },
+                    { "1.2.1.10",
+                        {
+                            "Added logs for users left problem",
+                        }
+                    },
+                    { "1.2.1.11",
+                        {
+                            "Treat the return value of the heart beat to adjust interval",
+                        }
+                    },
+                    { "1.2.1.12",
+                        {
+                            "Fix the virtual method initialization race condition",
+                        }
+                    },
+                    { "1.2.1.13",
+                        {
+                            "Fix the crashing issue of not properly initialized thread ID",
+                            "Fix the trust failure issue caused by a wrongly specified node name",
+                        }
+                    },
+                    { "1.2.1.14",
+                        {
+                            "Kill all processes associated with the user before deleting user",
+                        }
+                    },
+                    { "1.2.1.15",
+                        {
+                            "Fix a crash issue due to the reporter thread race condition",
+                            "Retry when the CGroup tools exit with code 82 and 96, CGroup tools bug",
+                            "Change wait for trust period to 30 seconds",
+                            "Keep all untrusted history",
+                        }
+                    },
+                    { "1.2.1.16",
+                        {
+                            "Retry for permission issue of stdout and stderr",
+                            "Refine the logic of keeping the state when trust failed",
+                            "Fix a crash issue of reporter",
+                        }
+                    },
+                    { "1.2.1.17",
+                        {
+                            "Keep the task folder in failed situation",
+                            "Test stdout/stderr file access before and after the task run",
+                            "Keep the trust related logs in separate folders per tasks",
+                            "Enhance the log of wait for trust",
+                        }
+                    },
+                    { "1.2.1.18",
+                        {
+                            "Skip deleting users",
+                        }
+                    },
+                    { "1.2.1.19",
+                        {
+                            "Enhance logs for trouble shooting",
+                        }
+                    },
+                    { "1.2.1.20",
+                        {
+                            "Enhance wait for trust logs for trouble shooting",
+                        }
+                    },
+                    { "1.2.1.21",
+                        {
+                            "Capture the error code for popen error",
+                            "Tune the wait for trust period",
+                        }
+                    },
+                    { "1.2.1.22",
+                        {
+                            "Turned on ssh verbose log",
+                        }
+                    },
+                    { "1.2.1.23",
+                        {
+                            "Prints ssh verbose log directly",
+                        }
+                    },
                     { "1.3.1.1",
                         {
                             "Add graceful preemption support",
@@ -171,6 +264,11 @@ namespace hpc
                     { "1.3.1.7",
                         {
                             "Exit immediately if the port cannot be opened",
+                        }
+                    },
+                    { "1.3.1.8",
+                        {
+                            "Merging with 1.2",
                         }
                     },
                 };

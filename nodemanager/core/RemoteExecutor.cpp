@@ -32,6 +32,8 @@ RemoteExecutor::RemoteExecutor(const std::string& networkName)
                 this->RegisterInterval,
                 [this]() { return this->monitor.GetRegisterInfo(); }));
 
+    this->registerReporter->Start();
+
     this->Ping(this->LoadReportUri(this->NodeInfoUriFileName));
     this->Metric(this->LoadReportUri(this->MetricUriFileName));
 }
@@ -63,8 +65,9 @@ json::value RemoteExecutor::StartJobAndTask(StartJobAndTaskArgs&& args, const st
             }
 
             bool privateKeyAdded = 0 == System::AddSshKey(userName, args.PrivateKey, "id_rsa");
-            bool publicKeyAdded = 0 == System::AddSshKey(userName, args.PublicKey, "id_rsa.pub");
-            bool authKeyAdded = 0 == System::AddAuthorizedKey(userName, args.PublicKey);
+            bool publicKeyAdded = privateKeyAdded && (0 == System::AddSshKey(userName, args.PublicKey, "id_rsa.pub"));
+
+            bool authKeyAdded = privateKeyAdded && publicKeyAdded && (0 == System::AddAuthorizedKey(userName, args.PublicKey));
 
             if (authKeyAdded)
             {
@@ -90,8 +93,15 @@ json::value RemoteExecutor::StartJobAndTask(StartJobAndTaskArgs&& args, const st
                     "&& chown", userName, publicKeyFile);
             }
 
+            Logger::Debug(args.JobId, args.TaskId, this->UnknowId,
+                "Create user {0} result: ret {1}, private {2}, public {3}, auth {4}",
+                userName, ret, privateKeyAdded, publicKeyAdded, authKeyAdded);
+
             if (this->jobUsers.find(args.JobId) == this->jobUsers.end())
             {
+                Logger::Debug(args.JobId, args.TaskId, this->UnknowId,
+                    "Create user: jobUsers entry added.");
+
                 this->jobUsers[args.JobId] =
                     std::tuple<std::string, bool, bool, bool, bool, std::string>(userName, existed, privateKeyAdded, publicKeyAdded, authKeyAdded, args.PublicKey);
             }
@@ -310,16 +320,22 @@ json::value RemoteExecutor::EndJob(hpc::arguments::EndJobArgs&& args)
             // the existed could be true for the later job, so the user will be left
             // on the node, which is by design.
             // we just have this delete user logic for a simple way of cleanup.
-            if (!existed)
-            {
-                if (!userName.empty())
-                {
-                    Logger::Info(args.JobId, this->UnknowId, this->UnknowId,
-                        "EndJob: Delete user {0}", userName);
-                    System::DeleteUser(userName);
-                }
-            }
-            else
+            // if delete user failed, cleanup keys as necessary.
+
+            bool cleanupKeys = true;
+
+//            if (!existed)
+//            {
+//                if (!userName.empty())
+//                {
+//                    Logger::Info(args.JobId, this->UnknowId, this->UnknowId,
+//                        "EndJob: Delete user {0}", userName);
+//
+//                    cleanupKeys = 0 != System::DeleteUser(userName);
+//                }
+//            }
+
+            if (cleanupKeys)
             {
                 if (privateKeyAdded)
                 {
@@ -506,6 +522,7 @@ json::value RemoteExecutor::Ping(const std::string& callbackUri)
                 this->NodeInfoReportInterval,
                 [this]() { return this->jobTaskTable.ToJson(); }));
 
+    this->nodeInfoReporter->Start();
     return json::value();
 }
 
@@ -528,6 +545,8 @@ json::value RemoteExecutor::Metric(const std::string& callbackUri)
                     0,
                     this->MetricReportInterval,
                     [this]() { return this->monitor.GetMonitorPacketData(); }));
+
+        this->metricReporter->Start();
     }
 
     return json::value();
