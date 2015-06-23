@@ -20,7 +20,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
         public WebServer()
         {
             var nonDirectNetIp = Dns.GetHostEntry(Environment.MachineName).AddressList
-                .Where(a => a.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork && !NetDirectConfiguration.IsNDEnabled(a.GetAddressBytes()))
+                .Where(a => a.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork && !NetDirectConfiguration.IsNDEnabled(a.GetAddressBytes()) && !IPAddress.IsLoopback(a))
                 .FirstOrDefault();
 
             if (nonDirectNetIp == null)
