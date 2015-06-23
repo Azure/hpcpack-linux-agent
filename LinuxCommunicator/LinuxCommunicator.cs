@@ -260,16 +260,18 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
                 startInfo.EnvironmentVariables["CCP_ISADMIN"] = "1";
             }
 
-            this.SendRequest("startjobandtask", this.GetCallbackUri(nodeName, "taskcompleted"), nodeName, (content, ex) =>
+            this.SendRequest("startjobandtask", this.GetCallbackUri(nodeName, "taskcompleted"), nodeName, async (content, ex) =>
             {
+                await Task.Yield();
                 callback(nodeName, arg, ex);
             }, Tuple.Create(arg, startInfo, userName, password));
         }
 
         public void StartJobAndTaskSoftCardCred(string nodeName, StartJobAndTaskArg arg, string userName, string password, byte[] certificate, ProcessStartInfo startInfo, NodeCommunicatorCallBack<StartJobAndTaskArg> callback)
         {
-            this.SendRequest("startjobandtask", this.GetCallbackUri(nodeName, "taskcompleted"), nodeName, (content, ex) =>
+            this.SendRequest("startjobandtask", this.GetCallbackUri(nodeName, "taskcompleted"), nodeName, async (content, ex) =>
             {
+                await Task.Yield();
                 callback(nodeName, arg, ex);
             }, Tuple.Create(arg, startInfo, userName, password, certificate));
         }
@@ -307,24 +309,27 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
                 startInfo.EnvironmentVariables["CCP_ISADMIN"] = "1";
             }
 
-            this.SendRequest("startjobandtask", this.GetCallbackUri(nodeName, "taskcompleted"), nodeName, (content, ex) =>
+            this.SendRequest("startjobandtask", this.GetCallbackUri(nodeName, "taskcompleted"), nodeName, async (content, ex) =>
             {
+                await Task.Yield();
                 callback(nodeName, arg, ex);
             }, Tuple.Create(arg, startInfo, userName, password, privateKey, publicKey));
         }
 
         public void StartTask(string nodeName, StartTaskArg arg, ProcessStartInfo startInfo, NodeCommunicatorCallBack<StartTaskArg> callback)
         {
-            this.SendRequest("starttask", this.GetCallbackUri(nodeName, "taskcompleted"), nodeName, (content, ex) =>
+            this.SendRequest("starttask", this.GetCallbackUri(nodeName, "taskcompleted"), nodeName, async (content, ex) =>
             {
+                await Task.Yield();
                 callback(nodeName, arg, ex);
             }, Tuple.Create(arg, startInfo));
         }
 
         public void Ping(string nodeName)
         {
-            this.SendRequest<NodeCommunicatorCallBackArg>("ping", this.GetCallbackUri(nodeName, "computenodereported"), nodeName, (content, ex) =>
+            this.SendRequest<NodeCommunicatorCallBackArg>("ping", this.GetCallbackUri(nodeName, "computenodereported"), nodeName, async (content, ex) =>
             {
+                await Task.Yield();
                 this.Tracer.TraceInfo("Compute node {0} pinged. Ex {1}", nodeName, ex);
             }, null);
         }
@@ -332,13 +337,14 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
         public void SetMetricGuid(string nodeName, Guid nodeGuid)
         {
             var callbackUri = this.GetMetricCallbackUri(this.headNodeFqdn.Value, this.MonitoringPort, nodeGuid);
-            this.SendRequest<NodeCommunicatorCallBackArg>("metric", callbackUri, nodeName, (content, ex) =>
+            this.SendRequest<NodeCommunicatorCallBackArg>("metric", callbackUri, nodeName, async (content, ex) =>
             {
+                await Task.Yield();
                 this.Tracer.TraceInfo("Compute node {0} metric requested, callback {1}. Ex {2}", nodeGuid, callbackUri, ex);
             }, null);
         }
 
-        private async Task SendRequestInternal<T>(string action, string callbackUri, string nodeName, Action<HttpContent, Exception> callback, T arg, int retryCount = 0)
+        private async Task SendRequestInternal<T>(string action, string callbackUri, string nodeName, Func<HttpContent, Exception, Task> callback, T arg, int retryCount = 0)
         {
             this.Tracer.TraceDetail("Sending out request, action {0}, callback {1}, nodeName {2}", action, callbackUri, nodeName);
             var request = new HttpRequestMessage(HttpMethod.Post, this.GetResoureUri(nodeName, action));
@@ -387,7 +393,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
                 {
                     try
                     {
-                        callback(content, ex);
+                        await callback(content, ex);
                     }
                     catch (Exception callbackEx)
                     {
@@ -403,7 +409,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
             }
         }
 
-        private void SendRequest<T>(string action, string callbackUri, string nodeName, Action<HttpContent, Exception> callback, T arg, int retryCount = 0)
+        private void SendRequest<T>(string action, string callbackUri, string nodeName, Func<HttpContent, Exception, Task> callback, T arg, int retryCount = 0)
         {
             this.SendRequestInternal(action, callbackUri, nodeName, callback, arg, retryCount).ContinueWith(t =>
             {
