@@ -258,7 +258,10 @@ void* Process::ReadPipeThread(void* p)
         }
     }
 
-    process->SendbackOutput(uri, std::string(), order++);
+    if (process->streamOutput)
+    {
+        process->SendbackOutput(uri, std::string(), order++);
+    }
 
     close(process->stdoutPipe[0]);
 

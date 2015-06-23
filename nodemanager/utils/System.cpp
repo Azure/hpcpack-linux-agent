@@ -190,19 +190,20 @@ int System::NetworkUsage(uint64_t &network, const std::string& netName)
     int ret = 1;
     std::ifstream fs("/proc/net/dev", std::ios::in);
     std::string name;
-    uint64_t receive, send;
+    uint64_t receive, send, tmp;
 
     fs.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     fs.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
-    std::string tmp = netName + ":";
-    while (name != tmp && fs.good())
+    while (name != netName && fs.good())
     {
-        fs >> name >> receive >> send;
+        std::getline(fs, name, ':');
+        name = String::Trim(name);
+        fs >> receive >> tmp >> tmp >> tmp >> tmp >> tmp >> tmp >> tmp >> send;
         fs.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     }
 
-    if (name == tmp)
+    if (name == netName)
     {
         network = receive + send;
         ret = 0;

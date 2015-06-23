@@ -289,6 +289,19 @@ namespace hpc
                             "Added logs for trust process",
                         }
                     },
+                    { "1.3.1.12",
+                        {
+                            "Work around a ssh command line issue",
+                            "Removed an unnecessary error message",
+                        }
+                    },
+                    { "1.3.1.13",
+                        {
+                            "Fix the network usage collection error on CentOS65",
+                            "Fix the network usage data not precise issue",
+                            "Avoid sending the EOF output back when not using stream output",
+                        }
+                    },
                 };
 
                 return versionHistory;
