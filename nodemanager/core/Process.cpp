@@ -38,6 +38,7 @@ Process::Process(
 {
     this->streamOutput = boost::algorithm::starts_with(stdOutFile, "http://") ||
         boost::algorithm::starts_with(stdOutFile, "https://");
+
     Logger::Debug(this->jobId, this->taskId, this->requeueCount, "{0}, stream ? {1}", stdOutFile, this->streamOutput);
 }
 
@@ -579,7 +580,7 @@ std::string Process::BuildScript()
 
     if (!this->userName.empty())
     {
-        fsRunUser << "sudo -E -u " << this->userName << " ";
+        fsRunUser << "sudo -E -u " << this->userName << " env \"PATH=$PATH\" ";
     }
 
     fsRunUser << "/bin/bash " << runDirInOut << std::endl;
@@ -591,6 +592,8 @@ std::string Process::BuildScript()
 
 std::unique_ptr<const char* []> Process::PrepareEnvironment()
 {
+    this->environmentsBuffer.clear();
+
     std::transform(
         this->environments.cbegin(),
         this->environments.cend(),

@@ -302,6 +302,13 @@ namespace hpc
                             "Avoid sending the EOF output back when not using stream output",
                         }
                     },
+                    { "1.3.1.14",
+                        {
+                            "Clear the environment buffer when rerun",
+                            "Inherit the path from the user specified",
+                            "Change the node manager port",
+                        }
+                    },
                 };
 
                 return versionHistory;
