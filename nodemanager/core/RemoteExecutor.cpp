@@ -204,7 +204,6 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
                             "Exception when sending back task result. {0}", ex.what());
                     }
 
-
                     Logger::Debug(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetTaskRequeueCount(),
                         "attemptId {0}, processKey {1}, erasing process", taskInfo->GetAttemptId(), taskInfo->ProcessKey);
 
@@ -217,6 +216,9 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
                 }));
 
             this->processes[taskInfo->ProcessKey] = process;
+            Logger::Debug(
+                args.JobId, args.TaskId, taskInfo->GetTaskRequeueCount(),
+                "StartTask for ProcessKey {0}, process count {1}", taskInfo->ProcessKey, this->processes.size());
 
             process->Start().then([this, taskInfo] (pid_t pid)
             {
@@ -380,6 +382,11 @@ json::value RemoteExecutor::EndTask(hpc::arguments::EndTaskArgs&& args, const st
 
     if (taskInfo)
     {
+        Logger::Debug(
+            args.JobId, args.TaskId, taskInfo->GetTaskRequeueCount(),
+            "EndTask for ProcessKey {0}, processes count {1}",
+            taskInfo->ProcessKey, this->processes.size());
+
         const auto* stat = this->TerminateTask(
             args.JobId, args.TaskId, taskInfo->GetTaskRequeueCount(),
             taskInfo->ProcessKey,
@@ -513,6 +520,7 @@ void RemoteExecutor::ReportTaskCompletion(
 
 json::value RemoteExecutor::Ping(const std::string& callbackUri)
 {
+    WriterLock writerLock(&this->lock);
     this->SaveReportUri(this->NodeInfoUriFileName, callbackUri);
     this->nodeInfoReporter =
         std::unique_ptr<Reporter<json::value>>(
@@ -528,6 +536,7 @@ json::value RemoteExecutor::Ping(const std::string& callbackUri)
 
 json::value RemoteExecutor::Metric(const std::string& callbackUri)
 {
+    WriterLock writerLock(&this->lock);
     this->SaveReportUri(this->MetricUriFileName, callbackUri);
 
     // callbackUri is like udp://server:port/api/nodeguid/metricreported
@@ -554,12 +563,25 @@ json::value RemoteExecutor::Metric(const std::string& callbackUri)
 
 const ProcessStatistics* RemoteExecutor::TerminateTask(
     int jobId, int taskId, int requeueCount,
-    int processKey, int exitCode, bool forced)
+    uint64_t processKey, int exitCode, bool forced)
 {
     auto p = this->processes.find(processKey);
+//    Logger::Debug(
+//        jobId, taskId, requeueCount,
+//        "TerminateTask for ProcessKey {0}, processes count {1}",
+//        processKey, this->processes.size());
+//
+//    for (auto pro : this->processes)
+//    {
+//        Logger::Debug(
+//            jobId, taskId, requeueCount,
+//            "TerminateTask process list {0}",
+//            pro.first);
+//    }
 
     if (p != this->processes.end())
     {
+        Logger::Debug(jobId, taskId, requeueCount, "About to Kill the task, forced {0}.", forced);
         p->second->Kill(exitCode, forced);
 
         const auto* stat = &p->second->GetStatisticsFromCGroup();
@@ -582,6 +604,7 @@ const ProcessStatistics* RemoteExecutor::TerminateTask(
     }
     else
     {
+        Logger::Warn(jobId, taskId, requeueCount, "No process object found.");
         return nullptr;
     }
 }

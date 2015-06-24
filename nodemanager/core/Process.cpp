@@ -258,7 +258,10 @@ void* Process::ReadPipeThread(void* p)
         }
     }
 
-    process->SendbackOutput(uri, std::string(), order++);
+    if (process->streamOutput)
+    {
+        process->SendbackOutput(uri, std::string(), order++);
+    }
 
     close(process->stdoutPipe[0]);
 
@@ -557,6 +560,10 @@ std::string Process::BuildScript()
     {
         fs << " <" << this->stdInFile;
     }
+
+    fs << std::endl;
+    fs << "ec=$?" << std::endl;
+    fs << "[ $ec -ne 0 ] && exit $ec" << std::endl;
 
     fs << std::endl << std::endl;
 

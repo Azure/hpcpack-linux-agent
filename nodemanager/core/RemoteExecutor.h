@@ -36,7 +36,7 @@ namespace hpc
                 void SaveReportUri(const std::string& fileName, const std::string& uri);
                 const hpc::data::ProcessStatistics* TerminateTask(
                     int jobId, int taskId, int requeueCount,
-                    int processKey, int exitCode, bool forced);
+                    uint64_t processKey, int exitCode, bool forced);
 
                 void ReportTaskCompletion(int jobId, int taskId, int taskRequeueCount, json::value jsonBody, const std::string& callbackUri);
 
