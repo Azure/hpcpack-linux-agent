@@ -16,7 +16,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 {
     public class LinuxCommunicator : IManagedResourceCommunicator, IDisposable
     {
-        private const string ResourceUriFormat = "http://{0}:50000/api/{1}/{2}";
+        private const string ResourceUriFormat = "http://{0}:40000/api/{1}/{2}";
         private const string CallbackUriHeaderName = "CallbackUri";
         private const string HpcFullKeyName = @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\HPC";
         private const string ClusterNameKeyName = "ClusterName";
