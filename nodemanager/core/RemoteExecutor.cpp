@@ -176,6 +176,8 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
                         {
                             WriterLock writerLock(&this->lock);
 
+                            taskInfo->CancelGracefulThread();
+
                             if (taskInfo->Exited)
                             {
                                 Logger::Debug(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetTaskRequeueCount(),
@@ -266,6 +268,7 @@ json::value RemoteExecutor::EndJob(hpc::arguments::EndJobArgs&& args)
                     taskInfo->Exited = stat->IsTerminated();
                     taskInfo->ExitCode = (int)ErrorCodes::EndJobExitCode;
                     taskInfo->AssignFromStat(*stat);
+                    taskInfo->CancelGracefulThread();
                 }
             }
             else
@@ -400,6 +403,8 @@ json::value RemoteExecutor::EndTask(hpc::arguments::EndTaskArgs&& args, const st
             this->jobTaskTable.RemoveTask(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetAttemptId());
 
             taskInfo->Exited = true;
+            taskInfo->CancelGracefulThread();
+
             if (stat != nullptr)
             {
                 taskInfo->AssignFromStat(*stat);

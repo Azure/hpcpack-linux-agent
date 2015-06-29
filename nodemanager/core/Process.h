@@ -60,11 +60,8 @@ namespace hpc
             private:
                 void SetExitCode(int exitCode)
                 {
-                    if (!this->exitCodeSet)
-                    {
-                        this->exitCode = exitCode;
-                        this->exitCodeSet = true;
-                    }
+                    this->exitCode = exitCode;
+                    this->exitCodeSet = true;
                 }
 
                 void OnCompleted();

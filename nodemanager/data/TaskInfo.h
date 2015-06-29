@@ -9,6 +9,8 @@
 #include "../utils/Logger.h"
 #include "../data/ProcessStatistics.h"
 
+using namespace hpc::utils;
+
 namespace hpc
 {
     namespace data
@@ -19,6 +21,22 @@ namespace hpc
                 TaskInfo(int jobId, int taskId, const std::string& nodeName) :
                     NodeName(nodeName), JobId(jobId), TaskId(taskId)
                 {
+                }
+
+                ~TaskInfo()
+                {
+                    this->CancelGracefulThread();
+                }
+
+                void CancelGracefulThread()
+                {
+                    if (this->GracefulThreadId)
+                    {
+                        pthread_cancel(this->GracefulThreadId);
+                        pthread_join(this->GracefulThreadId, nullptr);
+                        Logger::Debug("Destructed TaskInfo GracefulThread {0}", this->GracefulThreadId);
+                        this->GracefulThreadId = 0;
+                    }
                 }
 
                 TaskInfo(TaskInfo&& t) = default;
@@ -67,6 +85,8 @@ namespace hpc
 
                 std::string Message;
                 std::vector<int> ProcessIds;
+
+                pthread_t GracefulThreadId = 0;
             protected:
             private:
                 int taskRequeueCount = 0;

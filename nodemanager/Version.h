@@ -309,6 +309,12 @@ namespace hpc
                             "Change the node manager port",
                         }
                     },
+                    { "1.3.1.15",
+                        {
+                            "Change the wait time for trust",
+                            "Cancel the graceful period thread if the task completed by itself",
+                        }
+                    },
                 };
 
                 return versionHistory;

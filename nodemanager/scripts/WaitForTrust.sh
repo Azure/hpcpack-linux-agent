@@ -6,6 +6,8 @@ nodes=()
 testpids=()
 userName=$1
 taskExecutionId=$2
+totalWaitTime=60
+singleTryWaitTime=20
 
 echo "Preparing for $taskExecutionId" > /dev/stdout
 
@@ -31,7 +33,7 @@ do
 	echo >> $nodeLogFile
 	echo ">> SECONDS=$SECONDS" >> $nodeLogFile
 	sync
-	timeout -s SIGKILL 10s sudo -u $userName ssh -v -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=10 $userName@$node echo 1 >> $nodeLogFile 2>&1 &
+	timeout -s SIGKILL ${singleTryWaitTime}s sudo -u $userName ssh -v -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=${singleTryWaitTime} $userName@$node echo 1 >> $nodeLogFile 2>&1 &
 	testpids+=($!)
 	echo "    created $! for $node"
 done
@@ -40,7 +42,7 @@ start=$SECONDS
 echo "start=$start task=$taskExecutionId"
 finished=false
 loopCount=0
-while ! $finished && [ $((SECONDS-start)) -lt 60 ]
+while ! $finished && [ $((SECONDS-start)) -lt $totalWaitTime ]
 do
 	((loopCount++))
 	echo "looping $loopCount SECONDS=$SECONDS task=$taskExecutionId"
@@ -58,7 +60,7 @@ do
 			echo >> $nodeLogFile
 			echo ">> SECONDS=$SECONDS" >> $nodeLogFile
 			sync
-			timeout -s SIGKILL 10s sudo -u $userName ssh -v -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=10 $userName@${nodes[$i]} echo 1 >> $nodeLogFile 2>&1 &
+			timeout -s SIGKILL ${singleTryWaitTime}s sudo -u $userName ssh -v -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=${singleTryWaitTime} $userName@${nodes[$i]} echo 1 >> $nodeLogFile 2>&1 &
 			testpids[$i]=$!
 			echo "    line: timeout -s SIGKILL 30s ssh -v -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=30 $userName@${nodes[$i]} echo 1 &"
 			echo "    untrust ${nodes[$i]}, exitcode $exitcode, new pid $! task=$taskExecutionId"
