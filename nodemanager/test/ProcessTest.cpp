@@ -35,10 +35,12 @@ bool ProcessTest::ClusRun()
             Logger::Debug("Received: {0}", j.serialize());
 
             auto content = JsonHelper<std::string>::Read("Content", j);
-            bool eq = content == "30\n" || content == "31\n";
+
+            bool eq = content == "30\n" || content == "31\n" || content == "";
 
             result = result && eq;
             callbackCount++;
+
             request.reply(status_codes::OK, "OK");
         });
 
@@ -78,7 +80,7 @@ bool ProcessTest::ClusRun()
 
     Logger::Info("calbackCount {0}", callbackCount);
 
-    result = result && callbackCount == 2;
+    result = result && callbackCount == 3;
 
     Logger::Info("result {0}", result);
 
