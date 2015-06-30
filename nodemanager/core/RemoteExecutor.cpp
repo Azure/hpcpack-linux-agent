@@ -394,7 +394,7 @@ json::value RemoteExecutor::EndTask(hpc::arguments::EndTaskArgs&& args, const st
             args.JobId, args.TaskId, taskInfo->GetTaskRequeueCount(),
             taskInfo->ProcessKey,
             (int)ErrorCodes::EndTaskExitCode,
-            false);
+            args.TaskCancelGracePeriodSeconds == 0);
 
         taskInfo->ExitCode = (int)ErrorCodes::EndTaskExitCode;
 
@@ -416,12 +416,12 @@ json::value RemoteExecutor::EndTask(hpc::arguments::EndTaskArgs&& args, const st
             taskInfo->AssignFromStat(*stat);
 
             // start a thread to kill the task after a period of time;
-            pthread_t threadId;
             auto* taskIds = new std::tuple<int, int, int, std::string, int, RemoteExecutor*>(
                 taskInfo->JobId, taskInfo->TaskId, taskInfo->GetTaskRequeueCount(),
                 callbackUri, args.TaskCancelGracePeriodSeconds, this);
 
-            pthread_create(&threadId, nullptr, RemoteExecutor::GracePeriodElapsed, taskIds);
+            pthread_create(&taskInfo->GracefulThreadId, nullptr, RemoteExecutor::GracePeriodElapsed, taskIds);
+
         }
 
         jsonBody = taskInfo->ToJson();

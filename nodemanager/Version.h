@@ -315,6 +315,12 @@ namespace hpc
                             "Cancel the graceful period thread if the task completed by itself",
                         }
                     },
+                    { "1.4.1.1",
+                        {
+                            "Fix a bug to remember the graceful period thread Id",
+                            "Terminate the task forcefully if the graceful period is 0",
+                        }
+                    },
                 };
 
                 return versionHistory;
