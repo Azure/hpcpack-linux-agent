@@ -382,6 +382,7 @@ void Process::Monitor()
         this->message << "Process " << this->processId << ": wait4 status " << status << std::endl;
     }
 
+    this->Kill(this->exitCode, true);
     this->GetStatisticsFromCGroup();
 
     Logger::Debug(this->jobId, this->taskId, this->requeueCount, "Process {0}: Monitor ended", this->processId);

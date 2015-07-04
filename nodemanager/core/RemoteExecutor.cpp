@@ -117,6 +117,15 @@ json::value RemoteExecutor::StartJobAndTask(StartJobAndTaskArgs&& args, const st
                 this->userJobs[userName] = { args.JobId };
             }
         }
+        else
+        {
+            // run as root
+            Logger::Debug(args.JobId, args.TaskId, this->UnknowId,
+                "Run the job as root.");
+
+            this->jobUsers[args.JobId] =
+                std::tuple<std::string, bool, bool, bool, bool, std::string>("root", true, false, false, false, "");
+        }
     }
 
     return this->StartTask(StartTaskArgs(args.JobId, args.TaskId, std::move(args.StartInfo)), callbackUri);
@@ -144,8 +153,7 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
             auto jobUser = this->jobUsers.find(args.JobId);
             if (jobUser == this->jobUsers.end())
             {
-                Logger::Error(args.JobId, args.TaskId, args.StartInfo.TaskRequeueCount,
-                    "no user created, run as root");
+                throw std::runtime_error(String::Join(" ", "Job", args.JobId, "was not started on this node."));
             }
             else
             {
@@ -416,12 +424,11 @@ json::value RemoteExecutor::EndTask(hpc::arguments::EndTaskArgs&& args, const st
             taskInfo->AssignFromStat(*stat);
 
             // start a thread to kill the task after a period of time;
-            auto* taskIds = new std::tuple<int, int, int, std::string, int, RemoteExecutor*>(
-                taskInfo->JobId, taskInfo->TaskId, taskInfo->GetTaskRequeueCount(),
+            auto* taskIds = new std::tuple<int, int, int, uint64_t, std::string, int, RemoteExecutor*>(
+                taskInfo->JobId, taskInfo->TaskId, taskInfo->GetTaskRequeueCount(), taskInfo->ProcessKey,
                 callbackUri, args.TaskCancelGracePeriodSeconds, this);
 
             pthread_create(&taskInfo->GracefulThreadId, nullptr, RemoteExecutor::GracePeriodElapsed, taskIds);
-
         }
 
         jsonBody = taskInfo->ToJson();
@@ -440,12 +447,13 @@ void* RemoteExecutor::GracePeriodElapsed(void* data)
     pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, nullptr);
     pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, nullptr);
 
-    auto* ids = static_cast<std::tuple<int, int, int, std::string, int, RemoteExecutor*>*>(data);
+    auto* ids = static_cast<std::tuple<int, int, int, uint64_t, std::string, int, RemoteExecutor*>*>(data);
 
     int jobId, taskId, requeueCount, period;
+    uint64_t processKey;
     std::string callbackUri;
     RemoteExecutor* e;
-    std::tie(jobId, taskId, requeueCount, callbackUri, period, e) = *ids;
+    std::tie(jobId, taskId, requeueCount, processKey, callbackUri, period, e) = *ids;
 
     delete ids;
 
@@ -456,34 +464,33 @@ void* RemoteExecutor::GracePeriodElapsed(void* data)
     Logger::Info(jobId, taskId, e->UnknowId, "GracePeriodElapsed: starting");
 
     auto taskInfo = e->jobTaskTable.GetTask(jobId, taskId);
-    json::value jsonBody;
 
     if (taskInfo)
     {
         const auto* stat = e->TerminateTask(
             jobId, taskId, requeueCount,
-            taskInfo->ProcessKey,
+            processKey,
             (int)ErrorCodes::EndTaskExitCode,
             true);
 
-        taskInfo->Exited = true;
-        taskInfo->ExitCode = (int)ErrorCodes::EndTaskExitCode;
-        e->jobTaskTable.RemoveTask(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetAttemptId());
-
         if (stat != nullptr)
         {
-            taskInfo->AssignFromStat(*stat);
-        }
+            // stat == nullptr means the processKey is already removed from the map
+            // which means the main task has exited already.
+            taskInfo->Exited = true;
+            taskInfo->ExitCode = (int)ErrorCodes::EndTaskExitCode;
+            e->jobTaskTable.RemoveTask(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetAttemptId());
 
-        jsonBody = taskInfo->ToCompletionEventArgJson();
-        Logger::Info(jobId, taskId, e->UnknowId, "EndTask: ended {0}", jsonBody);
+            taskInfo->AssignFromStat(*stat);
+            json::value jsonBody = taskInfo->ToCompletionEventArgJson();
+            Logger::Info(jobId, taskId, e->UnknowId, "EndTask: ended {0}", jsonBody);
+            e->ReportTaskCompletion(jobId, taskId, requeueCount, jsonBody, callbackUri);
+        }
     }
     else
     {
         Logger::Warn(jobId, taskId, e->UnknowId, "EndTask: Task is already finished");
     }
-
-    e->ReportTaskCompletion(jobId, taskId, requeueCount, jsonBody, callbackUri);
 
     pthread_exit(nullptr);
 }
@@ -591,7 +598,7 @@ const ProcessStatistics* RemoteExecutor::TerminateTask(
 
         const auto* stat = &p->second->GetStatisticsFromCGroup();
 
-        int times = 5;
+        int times = 10;
         while (!stat->IsTerminated() && times-- > 0)
         {
             sleep(0.1);
@@ -601,7 +608,7 @@ const ProcessStatistics* RemoteExecutor::TerminateTask(
         if (!stat->IsTerminated())
         {
             Logger::Warn(jobId, taskId, requeueCount,
-                "The task didn't exit within 0.5s, process Ids {0}",
+                "The task didn't exit within 1s, process Ids {0}",
                 String::Join<' '>(stat->ProcessIds));
         }
 

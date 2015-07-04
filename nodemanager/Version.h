@@ -321,6 +321,18 @@ namespace hpc
                             "Terminate the task forcefully if the graceful period is 0",
                         }
                     },
+                    { "1.4.2.1",
+                        {
+                            "Change the kill wait time to 1s",
+                            "Only terminate the original process key when graceful period elapsed",
+                            "Cleanup the whole CGroup when the main process exit",
+                        }
+                    },
+                    { "1.4.3.1",
+                        {
+                            "Fix a security issue or running as root when the user has no privilege",
+                        }
+                    },
                 };
 
                 return versionHistory;
