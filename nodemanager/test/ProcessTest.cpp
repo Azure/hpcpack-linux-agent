@@ -318,14 +318,49 @@ a8lxTKnZCsRXU1HexqZs+DSc+30tz50bNqLdido/l5B4EJnQP03ciO0=\
         [&result, &callbacked]
         (int exitCode, std::string&& message, const ProcessStatistics& stat)
         {
-            if (exitCode != 0) result = false;
-            if (message.empty()) result = false;
-            if (stat.KernelTimeMs < 0) result = false;
-            if (stat.UserTimeMs < 0) result = false;
-            if (stat.ProcessIds.size() != 1) result = false;
-            if (stat.WorkingSetKb < 0) result = false;
+            Logger::Info("Callback started result {0}", result);
+            if (exitCode != 0)
+            {
+                Logger::Debug("exitCode");
+                result = false;
+            }
+            if (message.empty())
+            {
+                Logger::Debug("message");
+                result = false;
+            }
+            if (stat.KernelTimeMs < 0)
+            {
+                Logger::Debug("Kernel");
+                result = false;
+            }
 
-            Logger::Info("exitCode {0}, message {1}, result {2}", exitCode, message, result);
+            if (stat.UserTimeMs < 0)
+            {
+                Logger::Debug("User");
+                result = false;
+            }
+            if (stat.ProcessIds.size() != 0)
+            {
+                Logger::Debug("ProcessIds");
+                result = false;
+            }
+            if (stat.WorkingSetKb < 0)
+            {
+                Logger::Debug("WorkingSetKb");
+                result = false;
+            }
+
+            Logger::Info(
+                "KernelTime {0}, UserTime {1}, ProcessIds {2}, WorkingSet {3}",
+                stat.KernelTimeMs,
+                stat.UserTimeMs,
+                stat.ProcessIds.size(),
+                stat.WorkingSetKb);
+
+            Logger::Info("exitCode {0}, message {1}, result {2}",
+                exitCode, message, result);
+
             callbacked = true;
         });
 
