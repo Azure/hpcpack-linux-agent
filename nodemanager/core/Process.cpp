@@ -46,11 +46,6 @@ Process::~Process()
 {
     this->Kill();
 
-    if (this->threadId != 0)
-    {
-        pthread_join(this->threadId, nullptr);
-    }
-
     pthread_rwlock_destroy(&this->lock);
 }
 
@@ -200,12 +195,26 @@ Start:
     }
 
 Final:
+    p->ExecuteCommandNoCapture("/bin/bash", "EndTask.sh", p->taskExecutionId, p->processId, "1");
+    p->GetStatisticsFromCGroup();
+
     ret = p->ExecuteCommandNoCapture("/bin/bash", "CleanupTask.sh", p->taskExecutionId, p->processId);
 
     // Only clean up the folder when success.
     if (p->exitCode == 0)
     {
-        p->ExecuteCommand("rm -rf", p->taskFolder);
+        p->ExecuteCommandNoCapture("rm -rf", p->taskFolder);
+    }
+
+    if (p->outputThreadId != 0)
+    {
+        int joinret = pthread_join(p->outputThreadId, nullptr);
+        if (joinret != 0)
+        {
+            Logger::Error(p->jobId, p->taskId, p->requeueCount, "Join the output thread id {0}, ret = {1}", p->outputThreadId, joinret);
+        }
+
+        p->outputThreadId = 0;
     }
 
     // TODO: Add logic to precisely define 253 error.
@@ -219,16 +228,12 @@ Final:
 
     p->ended = true;
 
-    if (p->outputThreadId != 0)
-    {
-        pthread_join(p->outputThreadId, nullptr);
-        p->outputThreadId = 0;
-    }
-
     auto tmp = p->stdErr.str();
     if (!tmp.empty()) { p->message << tmp; }
 
     p->OnCompleted();
+
+    pthread_detach(pthread_self());
     pthread_exit(nullptr);
 }
 
@@ -381,9 +386,6 @@ void Process::Monitor()
 
         this->message << "Process " << this->processId << ": wait4 status " << status << std::endl;
     }
-
-    this->Kill(this->exitCode, true);
-    this->GetStatisticsFromCGroup();
 
     Logger::Debug(this->jobId, this->taskId, this->requeueCount, "Process {0}: Monitor ended", this->processId);
 }

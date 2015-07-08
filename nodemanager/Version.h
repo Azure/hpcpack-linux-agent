@@ -333,6 +333,18 @@ namespace hpc
                             "Fix a security issue or running as root when the user has no privilege",
                         }
                     },
+                    { "1.4.4.1",
+                        {
+                            "Fix the memory leak caused by deadlock",
+                            "Work around the cgroup creation failure",
+                            "Tuned the wait time of trust",
+                        }
+                    },
+                    { "1.4.5.1",
+                        {
+                            "Fix the trust script sub process id capture issue",
+                        }
+                    },
                 };
 
                 return versionHistory;

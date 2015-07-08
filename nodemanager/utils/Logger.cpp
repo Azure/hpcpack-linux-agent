@@ -12,3 +12,4 @@ Logger::Logger()
 }
 
 Logger Logger::instance;
+

@@ -1,13 +1,22 @@
 #!/bin/bash
 
+function TestTrust
+{
+	local userName=$1
+	local nodeName=$2
+	local waitSeconds=$3
+	local logFile=$4
+	timeout -s SIGKILL ${waitSeconds}s sudo -u $userName ssh -v -o GSSAPIAuthentication=no -o PasswordAuthentication=no -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=${waitSeconds} $userName@$nodeName echo 1 >> $logFile 2>&1
+}
+
 #echo $CCP_NODES
 hosts=($CCP_NODES)
 nodes=()
 testpids=()
 userName=$1
 taskExecutionId=$2
-totalWaitTime=60
-singleTryWaitTime=20
+totalWaitTime=90
+singleTryWaitTime=45
 
 echo "Preparing for $taskExecutionId" > /dev/stdout
 
@@ -33,8 +42,9 @@ do
 	echo >> $nodeLogFile
 	echo ">> SECONDS=$SECONDS" >> $nodeLogFile
 	sync
-	timeout -s SIGKILL ${singleTryWaitTime}s sudo -u $userName ssh -v -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=${singleTryWaitTime} $userName@$node echo 1 >> $nodeLogFile 2>&1 &
-	testpids+=($!)
+	$(TestTrust $userName $node ${singleTryWaitTime} $nodeLogFile) &
+	testPid=$!
+	testpids+=($testPid)
 	echo "    created $! for $node"
 done
 
@@ -60,8 +70,9 @@ do
 			echo >> $nodeLogFile
 			echo ">> SECONDS=$SECONDS" >> $nodeLogFile
 			sync
-			timeout -s SIGKILL ${singleTryWaitTime}s sudo -u $userName ssh -v -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=${singleTryWaitTime} $userName@${nodes[$i]} echo 1 >> $nodeLogFile 2>&1 &
-			testpids[$i]=$!
+			$(TestTrust $userName ${nodes[$i]} ${singleTryWaitTime} $nodeLogFile) &
+			testPid=$!
+			testpids[$i]=$testPid
 			echo "    line: timeout -s SIGKILL 30s ssh -v -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=30 $userName@${nodes[$i]} echo 1 &"
 			echo "    untrust ${nodes[$i]}, exitcode $exitcode, new pid $! task=$taskExecutionId"
 		fi
@@ -94,7 +105,7 @@ else
 	for node in ${nodes[@]}
 	do
 		echo "    Saving ${node} SECONDS=$SECONDS task=$taskExecutionId"
-		ssh -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=5 root@${node} "mkdir -p $trustKeysDir && cp -rf ${sshFolder}* $trustKeysDir"
+		ssh -o GSSAPIAuthentication=no -o PasswordAuthentication=no -o BatchMode=yes -o StrictHostKeyChecking=no -o ConnectTimeout=5 root@${node} "mkdir -p $trustKeysDir && cp -rf ${sshFolder}* $trustKeysDir"
 		ec=$?
 		if [ $ec -ne 0 ]; then
 			echo "    Failed to save for ${node}, exit code $ec"

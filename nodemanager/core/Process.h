@@ -88,7 +88,7 @@ namespace hpc
                 }
 
                 template <typename ... Args>
-                int ExecuteCommandNoCapture(const std::string& cmd,  const Args& ... args)
+                int ExecuteCommandNoCapture(const std::string& cmd, const Args& ... args)
                 {
                     std::string output;
                     std::string cmdLine = String::Join(" ", cmd, args...);
