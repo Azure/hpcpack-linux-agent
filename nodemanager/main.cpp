@@ -63,8 +63,6 @@ int main(int argc, char* argv[])
 
     if (argc > 1)
     {
-        cout << "Testing";
-
         if (string("-t") == argv[1])
         {
             TestRunner tr;

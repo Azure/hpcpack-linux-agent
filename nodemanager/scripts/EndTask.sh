@@ -16,7 +16,6 @@ if $CGInstalled; then
 	group=$CGroupSubSys:$groupName
 	tasks=$(GetCpusetTasksFile "$groupName")
 	freezerState=$(GetFreezerStateFile "$groupName")
-
 	[ ! -f "$tasks" ] && echo "$tasks doesn't exist" && exit 200
 	[ ! -f "$freezerState" ] && echo "$freezerState doesn't exist" && exit 201
 
@@ -38,7 +37,7 @@ if $CGInstalled; then
 		else
 			[ -d "/proc/$pid" ] && kill -SIGINT "$pid"
 		fi
-	done
+	done < "$tasks"
 
 	# resume tasks
 	echo THAWED > "$freezerState"

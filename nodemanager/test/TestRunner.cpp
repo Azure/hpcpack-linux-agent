@@ -19,15 +19,20 @@ TestRunner::TestRunner()
 bool TestRunner::Run()
 {
     bool finalResult = true;
+    Logger::Info("========================================================");
     Logger::Info("Start Testing, {0} cases in total.", this->tests.size());
+    Logger::Info("========================================================");
     for (auto& t : this->tests)
     {
         Logger::Info("");
-        Logger::Info("========================================================");
-        Logger::Info("  Testing {0}", t.first);
-        Logger::Info("========================================================");
+        Logger::Info("");
+        Logger::Info("Testing {0}", t.first);
+        Logger::Info("--------------------------------------------------------");
         bool result = t.second();
+        Logger::Info("--------------------------------------------------------");
         Logger::Info("Result {0}", result ? "Passed" : "Failed");
+        Logger::Info("");
+        Logger::Info("");
 
         if (!result) finalResult = false;
     }
