@@ -345,6 +345,21 @@ namespace hpc
                             "Fix the trust script sub process id capture issue",
                         }
                     },
+                    { "1.4.5.1",
+                        {
+                            "Fix the trust script sub process id capture issue",
+                        }
+                    },
+                    { "1.5.1.0",
+                        {
+                            "VM extension script fix",
+                        }
+                    },
+                    { "1.6.1.0",
+                        {
+                            "Cleanup warnings from ShellCheck tool",
+                        }
+                    },
                 };
 
                 return versionHistory;

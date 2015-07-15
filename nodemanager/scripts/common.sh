@@ -30,30 +30,30 @@ function GetGroupFile
     local groupName=$1
     local subsys=$2
     local fileName=$3
-    echo "$(GetGroupPath $groupName $subsys)/$fileName"
+    echo "$(GetGroupPath "$groupName" "$subsys")"/"$fileName"
 }
 
 function GetCpusFile
 {
 	local groupName=$1
-	echo "$(GetGroupFile $groupName cpuset cpuset.cpus)"
+	GetGroupFile "$groupName" cpuset cpuset.cpus
 }
 
 function GetMemsFile
 {
 	local groupName=$1
-	echo "$(GetGroupFile $groupName cpuset cpuset.mems)"
+	GetGroupFile "$groupName" cpuset cpuset.mems
 }
 
 function GetCpusetTasksFile
 {
 	local groupName=$1
-	echo "$(GetGroupFile $groupName cpuset tasks)"
+	GetGroupFile "$groupName" cpuset tasks
 }
 
 function GetFreezerStateFile
 {
 	local groupName=$1
-	echo "$(GetGroupFile $groupName freezer freezer.state)"
+	GetGroupFile "$groupName" freezer freezer.state
 }
 

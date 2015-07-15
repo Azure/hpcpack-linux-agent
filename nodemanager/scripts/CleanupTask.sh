@@ -9,10 +9,10 @@
 taskId=$1
 processId=$2
 
-/bin/bash ./EndTask.sh "$1" "$2" "1"
+/bin/bash ./EndTask.sh "$taskId" "$processId" "1"
 
 if $CGInstalled; then
-	groupName=$(GetCGroupName $taskId)
+	groupName=$(GetCGroupName "$taskId")
 	group=$CGroupSubSys:$groupName
-	cgdelete -g $group
+	cgdelete -g "$group"
 fi

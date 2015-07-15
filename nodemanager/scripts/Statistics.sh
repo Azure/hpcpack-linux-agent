@@ -15,30 +15,30 @@ workingSetBytes=0
 function GetCpuStatFile
 {
 	local groupName=$1
-	echo "$(GetGroupFile $groupName cpuacct cpuacct.stat)"
+	GetGroupFile "$groupName" cpuacct cpuacct.stat
 }
 
 function GetCpuacctTasksFile
 {
 	local groupName=$1
-	echo "$(GetGroupFile $groupName cpuacct tasks)"
+	echo GetGroupFile "$groupName" cpuacct tasks
 }
 
 function GetMemoryMaxusageFile
 {
 	local groupName=$1
-	echo "$(GetGroupFile $groupName memory memory.max_usage_in_bytes)"
+	echo GetGroupFile "$groupName" memory memory.max_usage_in_bytes
 }
 
 if $CGInstalled; then
-	groupName=$(GetCGroupName $taskId)
-	statFile=$(GetCpuStatFile $groupName)
-	tasksFile=$(GetCpuacctTasksFile $groupName)
-	workingSetFile=$(GetMemoryMaxusageFile $groupName)
+	groupName=$(GetCGroupName "$taskId")
+	statFile=$(GetCpuStatFile "$groupName")
+	tasksFile=$(GetCpuacctTasksFile "$groupName")
+	workingSetFile=$(GetMemoryMaxusageFile "$groupName")
 
-	cat $statFile | cut -d" " -f2
-	cat $workingSetFile
-	cat $tasksFile | tr "\\n" " "
+	cut -d" " -f2 "$statFile"
+	cat "$workingSetFile"
+	tr "\\n" " " < "$tasksFile"
 	echo
 else
     echo $userTime10Ms

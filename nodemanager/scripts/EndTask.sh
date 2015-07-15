@@ -12,48 +12,48 @@ processId=$2
 forced=$3
 
 if $CGInstalled; then
-	groupName=$(GetCGroupName $taskId)
+	groupName=$(GetCGroupName "$taskId")
 	group=$CGroupSubSys:$groupName
-	tasks=$(GetCpusetTasksFile $groupName)
-	freezerState=$(GetFreezerStateFile $groupName)
+	tasks=$(GetCpusetTasksFile "$groupName")
+	freezerState=$(GetFreezerStateFile "$groupName")
 
-	[ ! -f $tasks ] && echo "$tasks doesn't exist" && exit 200
-	[ ! -f $freezerState ] && echo "$freezerState doesn't exist" && exit 201
+	[ ! -f "$tasks" ] && echo "$tasks doesn't exist" && exit 200
+	[ ! -f "$freezerState" ] && echo "$freezerState doesn't exist" && exit 201
 
 	# freeze the task
-	echo FROZEN > $freezerState
+	echo FROZEN > "$freezerState"
 
 	maxLoop=20
-	while [ -f $freezerState ] && ! grep -Fxq FROZEN $freezerState && [ $maxLoop -gt 0 ]
+	while [ -f "$freezerState" ] && ! grep -Fxq FROZEN "$freezerState" && [ $maxLoop -gt 0 ]
 	do
 		sleep .1
 		((maxLoop--))
 	done
 
 	# kill all tasks
-	for pid in $(cat $tasks);
+	while read pid || [ -n "$pid" ]
 	do
-		if [ $forced == "1" ]; then
-			[ -d /proc/$pid ] && kill -9 $pid
+		if [ "$forced" == "1" ]; then
+			[ -d "/proc/$pid" ] && kill -9 "$pid"
 		else
-			[ -d /proc/$pid ] && kill -SIGINT $pid
+			[ -d "/proc/$pid" ] && kill -SIGINT "$pid"
 		fi
 	done
 
 	# resume tasks
-	echo THAWED > $freezerState
+	echo THAWED > "$freezerState"
 
 	maxLoop=20
-	while [ -f $freezerState ] && ! grep -Fxq THAWED $freezerState && [ $maxLoop -gt 0 ]
+	while [ -f "$freezerState" ] && ! grep -Fxq THAWED "$freezerState" && [ $maxLoop -gt 0 ]
 	do
 		sleep .1
 		((maxLoop--))
 	done
 else
-	if [ $forced == "1" ]; then
-		kill -s 9 $(pstree -l -p $processId | grep "([[:digit:]]*)" -o | tr -d '()')
+	if [ "$forced" == "1" ]; then
+		kill -s 9 "$(pstree -l -p "$processId" | grep "([[:digit:]]*)" -o | tr -d '()')"
 	else
-		kill -s SIGINT $(pstree -l -p $processId | grep "([[:digit:]]*)" -o | tr -d '()')
+		kill -s SIGINT "$(pstree -l -p "$processId" | grep "([[:digit:]]*)" -o | tr -d '()')"
 	fi
 fi
 

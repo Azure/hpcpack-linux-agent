@@ -9,10 +9,10 @@
 taskId=$1
 
 if $CGInstalled; then
-    groupName=$(GetCGroupName $taskId)
+    groupName=$(GetCGroupName "$taskId")
     group=$CGroupSubSys:$groupName
-    cgexec -g $group /bin/bash RunTask.sh $*
+    cgexec -g "$group" /bin/bash RunTask.sh "$@"
 else
-    /bin/bash RunTask.sh $*
+    /bin/bash RunTask.sh "$@"
 fi
 
