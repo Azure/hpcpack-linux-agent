@@ -11,6 +11,7 @@ using System.Net;
 using Microsoft.Hpc.Scheduler.Properties;
 using System.Xml.Linq;
 using System.Security.Principal;
+using System.Globalization;
 
 namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 {
@@ -101,7 +102,6 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
             }
 
             return false;
-
         }
 
         public bool Initialize()
@@ -453,7 +453,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
         private string GetCallbackUri(string nodeName, string action)
         {
-            return string.Format("{0}/api/{1}/{2}", this.server.ListeningUri, nodeName, action);
+            return string.Format("{0}/api/{1}/{2}", string.Format(CultureInfo.InvariantCulture, WebServer.LinuxCommunicatorUriTemplate, Environment.MachineName), nodeName, action);
         }
 
         public void OnRegisterRequested(RegisterEventArgs registerEventArgs)
