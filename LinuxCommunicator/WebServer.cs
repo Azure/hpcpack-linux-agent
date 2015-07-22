@@ -28,7 +28,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
                 throw new InvalidOperationException("The current system doesn't have a non-NDMA network");
             }
 
-            this.ListeningUri = string.Format(LinuxCommunicatorUriTemplate, nonDirectNetIp.ToString());
+            this.ListeningUri = string.Format(LinuxCommunicatorUriTemplate, "*");
         }
 
         public void Dispose()
