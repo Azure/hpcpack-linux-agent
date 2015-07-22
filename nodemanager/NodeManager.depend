@@ -427,7 +427,7 @@
 	"core/RemoteExecutor.h"
 	"Version.h"
 
-1428640120 /home/evanc/whpc-linux-communicator/nodemanager/utils/Logger.h
+1436264986 /home/evanc/whpc-linux-communicator/nodemanager/utils/Logger.h
 	<syslog.h>
 	<stdio.h>
 	<stdarg.h>
@@ -461,7 +461,7 @@
 1427353166 /home/evanc/whpc-linux-communicator/nodemanager/arguments/EndJobArgs.h
 	<cpprest/json.h>
 
-1429075323 /home/evanc/whpc-linux-communicator/nodemanager/utils/JsonHelper.h
+1437473138 /home/evanc/whpc-linux-communicator/nodemanager/utils/JsonHelper.h
 	<vector>
 	<map>
 	<cpprest/json.h>
@@ -682,7 +682,7 @@
 	"Reporter.h"
 	"../utils/Logger.h"
 
-1428574569 /home/evanc/whpc-linux-communicator/nodemanager/common/ErrorCodes.h
+1437474755 /home/evanc/whpc-linux-communicator/nodemanager/common/ErrorCodes.h
 
 1429084854 source:/home/evanc/whpc-linux-communicator/nodemanager/Version.cpp
 	"Version.h"
@@ -702,4 +702,21 @@
 	<cpprest/http_client.h>
 	<functional>
 	"Reporter.h"
+
+1437475053 source:/home/evanc/whpc-linux-communicator/nodemanager/utils/Configuration.cpp
+	<fstream>
+	"Configuration.h"
+	"../common/ErrorCodes.h"
+
+1437547368 /home/evanc/whpc-linux-communicator/nodemanager/utils/Configuration.h
+	<string>
+	<cpprest/json.h>
+	"Logger.h"
+	"JsonHelper.h"
+
+1437547414 source:/home/evanc/whpc-linux-communicator/nodemanager/core/NodeManagerConfig.cpp
+	"NodeManagerConfig.h"
+
+1437549374 /home/evanc/whpc-linux-communicator/nodemanager/core/NodeManagerConfig.h
+	"../utils/Configuration.h"
 

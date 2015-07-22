@@ -12,6 +12,7 @@
 #include "../utils/System.h"
 #include "../common/ErrorCodes.h"
 #include "../data/ProcessStatistics.h"
+#include "NodeManagerConfig.h"
 
 using namespace web::http;
 using namespace web;
@@ -27,15 +28,15 @@ RemoteExecutor::RemoteExecutor(const std::string& networkName)
     this->registerReporter =
         std::unique_ptr<Reporter<json::value>>(
             new HttpReporter(
-                this->LoadReportUri(this->RegisterUriFileName),
+                NodeManagerConfig::GetRegisterUri(),
                 3,
                 this->RegisterInterval,
                 [this]() { return this->monitor.GetRegisterInfo(); }));
 
     this->registerReporter->Start();
 
-    this->Ping(this->LoadReportUri(this->NodeInfoUriFileName));
-    this->Metric(this->LoadReportUri(this->MetricUriFileName));
+    this->Ping(NodeManagerConfig::GetHeartbeatUri());
+    this->Metric(NodeManagerConfig::GetMetricUri());
 }
 
 json::value RemoteExecutor::StartJobAndTask(StartJobAndTaskArgs&& args, const std::string& callbackUri)
@@ -533,7 +534,8 @@ void RemoteExecutor::ReportTaskCompletion(
 json::value RemoteExecutor::Ping(const std::string& callbackUri)
 {
     WriterLock writerLock(&this->lock);
-    this->SaveReportUri(this->NodeInfoUriFileName, callbackUri);
+    NodeManagerConfig::SaveHeartbeatUri(callbackUri);
+
     this->nodeInfoReporter =
         std::unique_ptr<Reporter<json::value>>(
             new HttpReporter(
@@ -549,7 +551,7 @@ json::value RemoteExecutor::Ping(const std::string& callbackUri)
 json::value RemoteExecutor::Metric(const std::string& callbackUri)
 {
     WriterLock writerLock(&this->lock);
-    this->SaveReportUri(this->MetricUriFileName, callbackUri);
+    NodeManagerConfig::SaveMetricUri(callbackUri);
 
     // callbackUri is like udp://server:port/api/nodeguid/metricreported
     if (!callbackUri.empty())
@@ -619,26 +621,4 @@ const ProcessStatistics* RemoteExecutor::TerminateTask(
         Logger::Warn(jobId, taskId, requeueCount, "No process object found.");
         return nullptr;
     }
-}
-
-std::string RemoteExecutor::LoadReportUri(const std::string& fileName)
-{
-    std::ifstream fs(fileName, std::ios::in);
-    std::string uri;
-
-    if (fs.good())
-    {
-        fs >> uri;
-    }
-
-    fs.close();
-
-    return std::move(uri);
-}
-
-void RemoteExecutor::SaveReportUri(const std::string& fileName, const std::string& uri)
-{
-    std::ofstream fs(fileName, std::ios::trunc);
-    fs << uri;
-    fs.close();
 }

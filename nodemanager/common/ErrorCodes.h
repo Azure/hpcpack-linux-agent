@@ -16,6 +16,7 @@ namespace hpc
             SetUserPermission = 175,
             TestRunFailed = 176,
             FailedToOpenPort = 177,
+            ConfigurationFileError = 178,
         };
     }
 }

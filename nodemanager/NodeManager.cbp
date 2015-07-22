@@ -69,6 +69,8 @@
 		<Unit filename="core/JobTaskTable.h" />
 		<Unit filename="core/Monitor.cpp" />
 		<Unit filename="core/Monitor.h" />
+		<Unit filename="core/NodeManagerConfig.cpp" />
+		<Unit filename="core/NodeManagerConfig.h" />
 		<Unit filename="core/Process.cpp" />
 		<Unit filename="core/Process.h" />
 		<Unit filename="core/RemoteCommunicator.cpp" />
@@ -106,6 +108,8 @@
 		<Unit filename="test/ProcessTest.h" />
 		<Unit filename="test/TestRunner.cpp" />
 		<Unit filename="test/TestRunner.h" />
+		<Unit filename="utils/Configuration.cpp" />
+		<Unit filename="utils/Configuration.h" />
 		<Unit filename="utils/JsonHelper.cpp" />
 		<Unit filename="utils/JsonHelper.h" />
 		<Unit filename="utils/Logger.cpp" />

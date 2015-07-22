@@ -32,8 +32,6 @@ namespace hpc
             private:
                 static void* GracePeriodElapsed(void* data);
 
-                std::string LoadReportUri(const std::string& fileName);
-                void SaveReportUri(const std::string& fileName, const std::string& uri);
                 const hpc::data::ProcessStatistics* TerminateTask(
                     int jobId, int taskId, int requeueCount,
                     uint64_t processKey, int exitCode, bool forced);
@@ -44,9 +42,6 @@ namespace hpc
                 const int NodeInfoReportInterval = 30;
                 const int MetricReportInterval = 2;
                 const int RegisterInterval = 300;
-                const std::string NodeInfoUriFileName = "NodeInfoReportUri";
-                const std::string MetricUriFileName = "MetricReportUri";
-                const std::string RegisterUriFileName = "RegisterUri";
 
                 JobTaskTable jobTaskTable;
                 Monitor monitor;
