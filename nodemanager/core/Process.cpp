@@ -84,6 +84,8 @@ const ProcessStatistics& Process::GetStatisticsFromCGroup()
     std::string stat;
     System::ExecuteCommandOut(stat, "/bin/bash", "Statistics.sh", this->taskExecutionId);
 
+    Logger::Debug(this->jobId, this->taskId, this->requeueCount, "Statistics: {0}", stat);
+
     std::istringstream statIn(stat);
 
     WriterLock writerLock(&this->lock);
@@ -94,6 +96,7 @@ const ProcessStatistics& Process::GetStatisticsFromCGroup()
     this->statistics.KernelTimeMs *= 10;
 
     statIn >> this->statistics.WorkingSetKb;
+    Logger::Debug(this->jobId, this->taskId, this->requeueCount, "WorkingSet {0}", this->statistics.WorkingSetKb);
     this->statistics.WorkingSetKb /= 1024;
 
     this->statistics.ProcessIds.clear();

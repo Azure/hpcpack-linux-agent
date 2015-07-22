@@ -89,6 +89,8 @@
 		<Unit filename="data/NodeInfo.h" />
 		<Unit filename="data/OutputData.cpp" />
 		<Unit filename="data/OutputData.h" />
+		<Unit filename="data/ProcessStatistics.cpp" />
+		<Unit filename="data/ProcessStatistics.h" />
 		<Unit filename="data/TaskInfo.cpp" />
 		<Unit filename="data/TaskInfo.h" />
 		<Unit filename="data/Umid.cpp" />
