@@ -21,13 +21,13 @@ function GetCpuStatFile
 function GetCpuacctTasksFile
 {
 	local groupName=$1
-	echo GetGroupFile "$groupName" cpuacct tasks
+	GetGroupFile "$groupName" cpuacct tasks
 }
 
 function GetMemoryMaxusageFile
 {
 	local groupName=$1
-	echo GetGroupFile "$groupName" memory memory.max_usage_in_bytes
+	GetGroupFile "$groupName" memory memory.max_usage_in_bytes
 }
 
 if $CGInstalled; then

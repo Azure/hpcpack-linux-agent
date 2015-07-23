@@ -6,6 +6,8 @@
 #include "../utils/System.h"
 #include "../arguments/StartJobAndTaskArgs.h"
 #include "../common/ErrorCodes.h"
+#include "NodeManagerConfig.h"
+#include "HttpHelper.h"
 
 using namespace web::http;
 using namespace web;
@@ -99,11 +101,22 @@ void RemoteCommunicator::HandlePost(http_request request)
         return;
     }
 
-    std::string callbackUri;
-    auto callbackHeader = request.headers().find(CallbackUriKey);
-    if (callbackHeader != request.headers().end())
+    std::string authenticationKey;
+    if (HttpHelper::FindHeader(request, HttpHelper::AuthenticationHeaderKey, authenticationKey))
     {
-        callbackUri = callbackHeader->second;
+        Logger::Debug("AuthenticationKey found");
+    }
+
+    if (NodeManagerConfig::GetClusterAuthenticationKey() != authenticationKey)
+    {
+        Logger::Warn("Authentication key validation failed.");
+        request.reply(status_codes::Unauthorized, "").then([this](auto t) { this->IsError(t); });
+        return;
+    }
+
+    std::string callbackUri;
+    if (HttpHelper::FindHeader(request, CallbackUriKey, callbackUri))
+    {
         Logger::Debug("CallbackUri found {0}", callbackUri.c_str());
     }
 

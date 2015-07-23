@@ -1,4 +1,5 @@
 #include "HttpReporter.h"
+#include "HttpHelper.h"
 #include "../utils/Logger.h"
 
 using namespace web::http;
@@ -19,15 +20,13 @@ void HttpReporter::Report()
 
     Logger::Info("---------> Report to {0} with {1}", uri, jsonBody);
 
-    http_client_config config;
-    config.set_validate_certificates(false);
-    utility::seconds timeout(5l);
-    config.set_timeout(timeout);
-    http_client client(uri, config);
+    http_client client = HttpHelper::GetHttpClient(uri);
 
     try
     {
-        http_response response = client.request(methods::POST, "", jsonBody, this->cts.get_token()).get();
+        http_request request = HttpHelper::GetHttpRequest(methods::POST, jsonBody);
+
+        http_response response = client.request(request, this->cts.get_token()).get();
 
         auto str = response.extract_string().get();
         std::istringstream iss(str);

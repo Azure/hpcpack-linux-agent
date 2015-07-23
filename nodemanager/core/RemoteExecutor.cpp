@@ -13,6 +13,7 @@
 #include "../common/ErrorCodes.h"
 #include "../data/ProcessStatistics.h"
 #include "NodeManagerConfig.h"
+#include "HttpHelper.h"
 
 using namespace web::http;
 using namespace web;
@@ -507,17 +508,9 @@ void RemoteExecutor::ReportTaskCompletion(
             Logger::Debug(jobId, taskId, taskRequeueCount,
                 "Callback to {0} with {1}", callbackUri, jsonBody);
 
-            client::http_client_config config;
-            config.set_validate_certificates(false);
-            utility::seconds timeout(5l);
-            config.set_timeout(timeout);
-
-            Logger::Debug(jobId, taskId, taskRequeueCount,
-                "Callback to {0}, configure: timeout {1} seconds, chuck size {2}",
-                callbackUri, config.timeout().count(), config.chunksize());
-
-            client::http_client client(callbackUri, config);
-            http_response response = client.request(methods::POST, "", jsonBody).get();
+            client::http_client client = HttpHelper::GetHttpClient(callbackUri);
+            http_request request = HttpHelper::GetHttpRequest(methods::POST, jsonBody);
+            http_response response = client.request(request).get();
 
             Logger::Info(jobId, taskId, taskRequeueCount,
                 "Callback to {0} response code {1}", callbackUri, response.status_code());

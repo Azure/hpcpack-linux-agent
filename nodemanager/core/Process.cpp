@@ -11,6 +11,7 @@
 #include "../common/ErrorCodes.h"
 #include "../utils/WriterLock.h"
 #include "../data/OutputData.h"
+#include "HttpHelper.h"
 
 using namespace hpc::core;
 using namespace hpc::utils;
@@ -291,17 +292,9 @@ void Process::SendbackOutput(const std::string& uri, const std::string& output, 
             Logger::Debug(this->jobId, this->taskId, this->requeueCount,
                 "Callback to {0} with {1}", uri, jsonBody);
 
-            client::http_client_config config;
-            config.set_validate_certificates(false);
-            utility::seconds timeout(5l);
-            config.set_timeout(timeout);
-
-            Logger::Debug(this->jobId, this->taskId, this->requeueCount,
-                "Callback to {0}, configure: timeout {1} seconds, chuck size {2}",
-                uri, config.timeout().count(), config.chunksize());
-
-            client::http_client client(uri, config);
-            http_response response = client.request(methods::POST, "", jsonBody).get();
+            client::http_client client = HttpHelper::GetHttpClient(uri);
+            http_request request = HttpHelper::GetHttpRequest(methods::POST, jsonBody);
+            http_response response = client.request(request).get();
 
             Logger::Info(this->jobId, this->taskId, this->requeueCount,
                 "Callback to {0} response code {1}", uri, response.status_code());

@@ -365,6 +365,11 @@ namespace hpc
                             "Adding a configuration file nodemanager.json",
                         }
                     },
+                    { "1.6.3.0",
+                        {
+                            "Add the authentication key support",
+                        }
+                    },
                 };
 
                 return versionHistory;
