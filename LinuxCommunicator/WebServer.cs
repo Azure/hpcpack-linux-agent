@@ -15,21 +15,17 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
     {
         private CancellationTokenSource source = new CancellationTokenSource();
 
-        public const string LinuxCommunicatorUriTemplate = "http://{0}:40001";
+        public const string HttpUriTemplate = "http://{0}:40001";
+        public const string HttpsUriTemplate = "https://{0}:40001";
+        private bool isHttps;
 
-        public WebServer()
+        public WebServer(bool isHttps = false)
         {
-            var nonDirectNetIp = Dns.GetHostEntry(Environment.MachineName).AddressList
-                .Where(a => a.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork && !NetDirectConfiguration.IsNDEnabled(a.GetAddressBytes()) && !IPAddress.IsLoopback(a))
-                .FirstOrDefault();
-
-            if (nonDirectNetIp == null)
-            {
-                throw new InvalidOperationException("The current system doesn't have a non-NDMA network");
-            }
-
-            this.ListeningUri = string.Format(LinuxCommunicatorUriTemplate, "*");
+            this.isHttps = isHttps;
+            this.ListeningUri = string.Format(this.LinuxCommunicatorUriTemplate, "*");
         }
+
+        public string LinuxCommunicatorUriTemplate { get { return this.isHttps ? HttpsUriTemplate : HttpUriTemplate; } }
 
         public void Dispose()
         {
