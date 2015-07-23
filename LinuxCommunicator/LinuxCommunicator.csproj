@@ -97,6 +97,7 @@
     <Compile Include="CredentialNativeMethods.cs" />
     <Compile Include="Credentials.cs" />
     <Compile Include="LinuxCommunicator.cs" />
+    <Compile Include="MessageAuthenticationHandler.cs" />
     <Compile Include="Monitoring\ComputeNodeMetricInformation.cs" />
     <Compile Include="Monitoring\MonitoringPacket.cs" />
     <Compile Include="Monitoring\MonitoringStoreInterface.cs" />

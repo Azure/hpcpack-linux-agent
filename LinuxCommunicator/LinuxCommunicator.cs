@@ -12,18 +12,24 @@ using Microsoft.Hpc.Scheduler.Properties;
 using System.Xml.Linq;
 using System.Security.Principal;
 using System.Globalization;
+using System.Net.Security;
 
 namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 {
     public class LinuxCommunicator : IManagedResourceCommunicator, IDisposable
     {
-        private const string ResourceUriFormat = "http://{0}:40000/api/{1}/{2}";
+        private const string HttpsResourceUriFormat = "https://{0}:40002/api/{1}/{2}";
+        private const string HttpResourceUriFormat = "http://{0}:40000/api/{1}/{2}";
         private const string CallbackUriHeaderName = "CallbackUri";
         private const string HpcFullKeyName = @"HKEY_LOCAL_MACHINE\SOFTWARE\Microsoft\HPC";
         private const string ClusterNameKeyName = "ClusterName";
+        private const string ClusterAuthenticationKeyName = "ClusterAuthenticationKey";
+        private const string LinuxHttpsKeyName = "LinuxHttps";
         private const int AutoRetrySendLimit = 3;
         private const int AutoRetryStartLimit = 3;
 
+        public readonly string ClusterAuthenticationKey = (string)Microsoft.Win32.Registry.GetValue(HpcFullKeyName, ClusterAuthenticationKeyName, null);
+        public readonly int IsHttps = (int)Microsoft.Win32.Registry.GetValue(HpcFullKeyName, LinuxHttpsKeyName, 0);
         private readonly string HeadNode = (string)Microsoft.Win32.Registry.GetValue(HpcFullKeyName, ClusterNameKeyName, null);
         private readonly int MonitoringPort = 9894;
         private readonly TimeSpan RequestTimeout = TimeSpan.FromSeconds(40);
@@ -36,6 +42,8 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
         private static LinuxCommunicator instance;
         private Lazy<string> headNodeFqdn;
+
+        private string ResourceUriFormat { get { return this.IsHttps > 0 ? HttpsResourceUriFormat : HttpResourceUriFormat; } }
 
         public LinuxCommunicator()
         {
@@ -110,15 +118,13 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
             ServicePointManager.ServerCertificateValidationCallback += (s, cert, chain, sslPolicyErrors) =>
             {
-                if (chain != null && chain.ChainStatus.Length == 1 && chain.ChainStatus[0].Status == System.Security.Cryptography.X509Certificates.X509ChainStatusFlags.UntrustedRoot)
-                {
-                    return true;
-                }
+                this.Tracer.TraceDetail("sslPolicyErrors {0}", sslPolicyErrors);
+                sslPolicyErrors &= ~SslPolicyErrors.RemoteCertificateNameMismatch;
 
                 return sslPolicyErrors == System.Net.Security.SslPolicyErrors.None;
             };
 
-            this.server = new WebServer();
+            this.server = new WebServer(this.IsHttps > 0);
 
             if (this.HeadNode == null)
             {
@@ -349,6 +355,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
             this.Tracer.TraceDetail("Sending out request, action {0}, callback {1}, nodeName {2}", action, callbackUri, nodeName);
             var request = new HttpRequestMessage(HttpMethod.Post, this.GetResoureUri(nodeName, action));
             request.Headers.Add(CallbackUriHeaderName, callbackUri);
+            request.Headers.Add(MessageAuthenticationHandler.AuthenticationHeaderKey, this.ClusterAuthenticationKey);
             var formatter = new JsonMediaTypeFormatter();
             request.Content = new ObjectContent<T>(arg, formatter);
 
@@ -443,7 +450,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
         private Uri GetResoureUri(string nodeName, string action)
         {
-            return new Uri(string.Format(ResourceUriFormat, nodeName, nodeName, action));
+            return new Uri(string.Format(this.ResourceUriFormat, nodeName, nodeName, action));
         }
 
         private string GetMetricCallbackUri(string headNodeName, int port, Guid nodeGuid)
@@ -453,7 +460,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
         private string GetCallbackUri(string nodeName, string action)
         {
-            return string.Format("{0}/api/{1}/{2}", string.Format(CultureInfo.InvariantCulture, WebServer.LinuxCommunicatorUriTemplate, Environment.MachineName), nodeName, action);
+            return string.Format("{0}/api/{1}/{2}", string.Format(CultureInfo.InvariantCulture, this.server.LinuxCommunicatorUriTemplate, Environment.MachineName), nodeName, action);
         }
 
         public void OnRegisterRequested(RegisterEventArgs registerEventArgs)
