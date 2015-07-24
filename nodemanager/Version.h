@@ -364,6 +364,7 @@ namespace hpc
                         {
                             "Adding a configuration file nodemanager.json",
                             "Add the authentication key support",
+                            "Add the https support",
                         }
                     },
                 };

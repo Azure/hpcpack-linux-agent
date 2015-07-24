@@ -62,6 +62,10 @@
 		<Unit filename="arguments/StartTaskArgs.cpp" />
 		<Unit filename="arguments/StartTaskArgs.h" />
 		<Unit filename="common/ErrorCodes.h" />
+		<Unit filename="config/nm_proxy.conf" />
+		<Unit filename="config/nodemanager.json" />
+		<Unit filename="core/HttpHelper.cpp" />
+		<Unit filename="core/HttpHelper.h" />
 		<Unit filename="core/HttpReporter.cpp" />
 		<Unit filename="core/HttpReporter.h" />
 		<Unit filename="core/IRemoteExecutor.h" />
