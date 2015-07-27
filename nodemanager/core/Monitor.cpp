@@ -38,6 +38,22 @@ void Monitor::SetNodeUuid(const uuid& id)
     this->packet.Uuid.AssignFrom(id);
 }
 
+void Monitor::ApplyMetricConfig(const MetricCounterConfig& config)
+{
+    for (auto& counter : config.MetricCounters)
+    {
+        if (!this->EnableMetricCounter(counter))
+        {
+            Logger::Debug("Unable to enable metric counter MetricId: {0}, InstanceId: {1}, Path: {2}", counter.MetricId, counter.InstanceId, counter.Path);
+        }
+    }
+}
+
+bool Monitor::EnableMetricCounter(const MetricCounter& counterConfig)
+{
+    return false;
+}
+
 std::vector<unsigned char> Monitor::GetMonitorPacketData()
 {
     const size_t MaxPacketSize = 1024;

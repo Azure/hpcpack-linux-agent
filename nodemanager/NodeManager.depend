@@ -720,3 +720,22 @@
 1437549374 /home/evanc/whpc-linux-communicator/nodemanager/core/NodeManagerConfig.h
 	"../utils/Configuration.h"
 
+1437732272 source:/home/evanc/whpc-linux-communicator/nodemanager/arguments/MonitoringConfig.cpp
+	"MonitoringConfig.h"
+
+1437983770 /home/evanc/whpc-linux-communicator/nodemanager/arguments/MonitoringConfig.h
+	"MetricCounter.h"
+	"../utils/JsonHelper.h"
+
+1437976321 /home/evanc/whpc-linux-communicator/nodemanager/arguments/MetricDefinition.h
+	<string>
+	<cpprest/json.h>
+
+1437988323 /home/evanc/whpc-linux-communicator/nodemanager/arguments/MetricCounter.h
+	<string>
+	<cpprest/json.h>
+
+1437988299 source:/home/evanc/whpc-linux-communicator/nodemanager/arguments/MetricCounter.cpp
+	"MetricCounter.h"
+	"../utils/JsonHelper.h"
+

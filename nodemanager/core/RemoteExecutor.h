@@ -9,6 +9,7 @@
 #include "Monitor.h"
 #include "Process.h"
 #include "Reporter.h"
+#include "../arguments/MetricCountersConfig.h"
 #include "../data/ProcessStatistics.h"
 
 namespace hpc
@@ -27,10 +28,14 @@ namespace hpc
                 virtual web::json::value EndTask(hpc::arguments::EndTaskArgs&& args, const std::string& callbackUri);
                 virtual web::json::value Ping(const std::string& callbackUri);
                 virtual web::json::value Metric(const std::string& callbackUri);
+                virtual web::json::value MetricConfig(hpc::arguments::MetricCountersConfig&& config, const std::string& callbackUri);
 
             protected:
             private:
                 static void* GracePeriodElapsed(void* data);
+
+                void StartHeartbeat(const std::string& callbackUri);
+                void StartMetric(const std::string& callbackUri);
 
                 const hpc::data::ProcessStatistics* TerminateTask(
                     int jobId, int taskId, int requeueCount,

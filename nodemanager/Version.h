@@ -363,6 +363,13 @@ namespace hpc
                     { "1.6.2.0",
                         {
                             "Adding a configuration file nodemanager.json",
+                            "Add the authentication key support",
+                            "Add the https support",
+                        }
+                    },
+                    { "1.6.3.0",
+                        {
+                            "Metric configuration support",
                         }
                     },
                 };

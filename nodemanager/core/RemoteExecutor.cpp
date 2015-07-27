@@ -13,6 +13,7 @@
 #include "../common/ErrorCodes.h"
 #include "../data/ProcessStatistics.h"
 #include "NodeManagerConfig.h"
+#include "HttpHelper.h"
 
 using namespace web::http;
 using namespace web;
@@ -35,8 +36,8 @@ RemoteExecutor::RemoteExecutor(const std::string& networkName)
 
     this->registerReporter->Start();
 
-    this->Ping(NodeManagerConfig::GetHeartbeatUri());
-    this->Metric(NodeManagerConfig::GetMetricUri());
+    this->StartHeartbeat(NodeManagerConfig::GetHeartbeatUri());
+    this->StartMetric(NodeManagerConfig::GetMetricUri());
 }
 
 json::value RemoteExecutor::StartJobAndTask(StartJobAndTaskArgs&& args, const std::string& callbackUri)
@@ -507,17 +508,9 @@ void RemoteExecutor::ReportTaskCompletion(
             Logger::Debug(jobId, taskId, taskRequeueCount,
                 "Callback to {0} with {1}", callbackUri, jsonBody);
 
-            client::http_client_config config;
-            config.set_validate_certificates(false);
-            utility::seconds timeout(5l);
-            config.set_timeout(timeout);
-
-            Logger::Debug(jobId, taskId, taskRequeueCount,
-                "Callback to {0}, configure: timeout {1} seconds, chuck size {2}",
-                callbackUri, config.timeout().count(), config.chunksize());
-
-            client::http_client client(callbackUri, config);
-            http_response response = client.request(methods::POST, "", jsonBody).get();
+            client::http_client client = HttpHelper::GetHttpClient(callbackUri);
+            http_request request = HttpHelper::GetHttpRequest(methods::POST, jsonBody);
+            http_response response = client.request(request).get();
 
             Logger::Info(jobId, taskId, taskRequeueCount,
                 "Callback to {0} response code {1}", callbackUri, response.status_code());
@@ -531,10 +524,9 @@ void RemoteExecutor::ReportTaskCompletion(
     }
 }
 
-json::value RemoteExecutor::Ping(const std::string& callbackUri)
+void RemoteExecutor::StartHeartbeat(const std::string& callbackUri)
 {
     WriterLock writerLock(&this->lock);
-    NodeManagerConfig::SaveHeartbeatUri(callbackUri);
 
     this->nodeInfoReporter =
         std::unique_ptr<Reporter<json::value>>(
@@ -545,15 +537,25 @@ json::value RemoteExecutor::Ping(const std::string& callbackUri)
                 [this]() { return this->jobTaskTable.ToJson(); }));
 
     this->nodeInfoReporter->Start();
+}
+
+json::value RemoteExecutor::Ping(const std::string& callbackUri)
+{
+    auto uri = NodeManagerConfig::GetHeartbeatUri();
+
+    if (uri != callbackUri)
+    {
+        NodeManagerConfig::SaveHeartbeatUri(callbackUri);
+        this->StartHeartbeat(callbackUri);
+    }
+
     return json::value();
 }
 
-json::value RemoteExecutor::Metric(const std::string& callbackUri)
+void RemoteExecutor::StartMetric(const std::string& callbackUri)
 {
     WriterLock writerLock(&this->lock);
-    NodeManagerConfig::SaveMetricUri(callbackUri);
 
-    // callbackUri is like udp://server:port/api/nodeguid/metricreported
     if (!callbackUri.empty())
     {
         auto tokens = String::Split(callbackUri, '/');
@@ -571,6 +573,29 @@ json::value RemoteExecutor::Metric(const std::string& callbackUri)
 
         this->metricReporter->Start();
     }
+}
+
+json::value RemoteExecutor::Metric(const std::string& callbackUri)
+{
+    auto uri = NodeManagerConfig::GetMetricUri();
+    if (uri != callbackUri)
+    {
+        NodeManagerConfig::SaveMetricUri(callbackUri);
+
+        // callbackUri is like udp://server:port/api/nodeguid/metricreported
+        this->StartMetric(callbackUri);
+    }
+
+    return json::value();
+}
+
+json::value RemoteExecutor::MetricConfig(
+    MetricCountersConfig&& config,
+    const std::string& callbackUri)
+{
+    this->Metric(callbackUri);
+
+    this->monitor.ApplyMetricConfig(config);
 
     return json::value();
 }

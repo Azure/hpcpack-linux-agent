@@ -60,6 +60,7 @@ namespace hpc
                 json::value EndTask(const json::value& val, const std::string&);
                 json::value Ping(const json::value& val, const std::string&);
                 json::value Metric(const json::value& val, const std::string&);
+                json::value MetricConfig(const json::value& val, const std::string&);
 
                 static const std::string ApiSpace;
                 static const std::string CallbackUriKey;

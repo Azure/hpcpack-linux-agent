@@ -6,6 +6,9 @@
 #include "../utils/System.h"
 #include "../arguments/StartJobAndTaskArgs.h"
 #include "../common/ErrorCodes.h"
+#include "NodeManagerConfig.h"
+#include "HttpHelper.h"
+#include "../arguments/MetricCountersConfig.h"
 
 using namespace web::http;
 using namespace web;
@@ -27,6 +30,7 @@ RemoteCommunicator::RemoteCommunicator(const std::string& networkName, IRemoteEx
     this->processors["endtask"] = [this] (const auto& j, const auto& c) { return this->EndTask(j, c); };
     this->processors["ping"] = [this] (const auto& j, const auto& c) { return this->Ping(j, c); };
     this->processors["metric"] = [this] (const auto& j, const auto& c) { return this->Metric(j, c); };
+    this->processors["metricconfig"] = [this] (const auto& j, const auto& c) { return this->MetricConfig(j, c); };
 }
 
 RemoteCommunicator::~RemoteCommunicator()
@@ -99,11 +103,22 @@ void RemoteCommunicator::HandlePost(http_request request)
         return;
     }
 
-    std::string callbackUri;
-    auto callbackHeader = request.headers().find(CallbackUriKey);
-    if (callbackHeader != request.headers().end())
+    std::string authenticationKey;
+    if (HttpHelper::FindHeader(request, HttpHelper::AuthenticationHeaderKey, authenticationKey))
     {
-        callbackUri = callbackHeader->second;
+        Logger::Debug("AuthenticationKey found");
+    }
+
+    if (NodeManagerConfig::GetClusterAuthenticationKey() != authenticationKey)
+    {
+        Logger::Warn("Authentication key validation failed.");
+        request.reply(status_codes::Unauthorized, "").then([this](auto t) { this->IsError(t); });
+        return;
+    }
+
+    std::string callbackUri;
+    if (HttpHelper::FindHeader(request, CallbackUriKey, callbackUri))
+    {
         Logger::Debug("CallbackUri found {0}", callbackUri.c_str());
     }
 
@@ -171,6 +186,12 @@ json::value RemoteCommunicator::Ping(const json::value& val, const std::string& 
 json::value RemoteCommunicator::Metric(const json::value& val, const std::string& callbackUri)
 {
     return this->executor.Metric(callbackUri);
+}
+
+json::value RemoteCommunicator::MetricConfig(const json::value& val, const std::string& callbackUri)
+{
+    auto args = MetricCountersConfig::FromJson(val);
+    return this->executor.MetricConfig(std::move(args), callbackUri);
 }
 
 const std::string RemoteCommunicator::ApiSpace = "api";

@@ -7,6 +7,8 @@
 
 #include "../utils/System.h"
 #include "../data/MonitoringPacket.h"
+#include "../arguments/MetricCounter.h"
+#include "../arguments/MetricCountersConfig.h"
 
 using namespace web;
 using namespace boost::uuids;
@@ -29,9 +31,11 @@ namespace hpc
                 json::value GetRegisterInfo();
 
                 void SetNodeUuid(const uuid& id);
+                void ApplyMetricConfig(const MetricCountersConfig& config);
 
             protected:
             private:
+                bool EnableMetricCounter(const MetricCounter& counterConfig);
                 void Run();
 
                 static void* MonitoringThread(void* arg);

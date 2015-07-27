@@ -29,6 +29,7 @@ namespace hpc
                 AddConfigurationItem(std::string, RegisterUri);
                 AddConfigurationItem(std::string, HeartbeatUri);
                 AddConfigurationItem(std::string, MetricUri);
+                AddConfigurationItem(std::string, ClusterAuthenticationKey);
 
             protected:
             private:

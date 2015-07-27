@@ -55,6 +55,10 @@
 		<Unit filename="arguments/EndJobArgs.h" />
 		<Unit filename="arguments/EndTaskArgs.cpp" />
 		<Unit filename="arguments/EndTaskArgs.h" />
+		<Unit filename="arguments/MetricCounter.cpp" />
+		<Unit filename="arguments/MetricCounter.h" />
+		<Unit filename="arguments/MetricCountersConfig.cpp" />
+		<Unit filename="arguments/MetricCountersConfig.h" />
 		<Unit filename="arguments/ProcessStartInfo.cpp" />
 		<Unit filename="arguments/ProcessStartInfo.h" />
 		<Unit filename="arguments/StartJobAndTaskArgs.cpp" />
@@ -62,6 +66,10 @@
 		<Unit filename="arguments/StartTaskArgs.cpp" />
 		<Unit filename="arguments/StartTaskArgs.h" />
 		<Unit filename="common/ErrorCodes.h" />
+		<Unit filename="config/nm_proxy.conf" />
+		<Unit filename="config/nodemanager.json" />
+		<Unit filename="core/HttpHelper.cpp" />
+		<Unit filename="core/HttpHelper.h" />
 		<Unit filename="core/HttpReporter.cpp" />
 		<Unit filename="core/HttpReporter.h" />
 		<Unit filename="core/IRemoteExecutor.h" />
@@ -89,6 +97,8 @@
 		<Unit filename="data/NodeInfo.h" />
 		<Unit filename="data/OutputData.cpp" />
 		<Unit filename="data/OutputData.h" />
+		<Unit filename="data/ProcessStatistics.cpp" />
+		<Unit filename="data/ProcessStatistics.h" />
 		<Unit filename="data/TaskInfo.cpp" />
 		<Unit filename="data/TaskInfo.h" />
 		<Unit filename="data/Umid.cpp" />

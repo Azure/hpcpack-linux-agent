@@ -124,6 +124,8 @@ endef
 
 define finish
 	$(indent);
+	cp config/* $(2)/
+	$(indent);
 	cp scripts/* $(2)/
 	$(indent);
 	[ -d $(2)/logs ] || mkdir $(2)/logs
