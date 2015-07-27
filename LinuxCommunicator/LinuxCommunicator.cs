@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Concurrent;
 using System.Linq;
 using System.Net.Http;
 using System.Net.Http.Formatting;
@@ -13,6 +14,7 @@ using System.Xml.Linq;
 using System.Security.Principal;
 using System.Globalization;
 using System.Net.Security;
+using Microsoft.Hpc.Communicators.LinuxCommunicator.Monitoring;
 
 namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 {
@@ -42,6 +44,9 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
         private static LinuxCommunicator instance;
         private Lazy<string> headNodeFqdn;
+        private MonitoringConfigManager monitoringConfigManager;
+
+        private ConcurrentDictionary<string, Guid> cachedNodeGuids = new ConcurrentDictionary<string, Guid>();
 
         private string ResourceUriFormat { get { return this.IsHttps > 0 ? HttpsResourceUriFormat : HttpResourceUriFormat; } }
 
@@ -54,6 +59,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
             instance = this;
             this.headNodeFqdn = new Lazy<string>(() => Dns.GetHostEntryAsync(this.HeadNode).Result.HostName, LazyThreadSafetyMode.ExecutionAndPublication);
+            this.monitoringConfigManager = new MonitoringConfigManager(this.headNodeFqdn.Value);
         }
 
         public event EventHandler<RegisterEventArgs> RegisterRequested;
@@ -61,6 +67,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
         public void Dispose()
         {
             this.server.Dispose();
+            this.monitoringConfigManager.Dispose();
             GC.SuppressFinalize(this);
         }
 
@@ -133,12 +140,21 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
                 throw exp;
             }
 
+            this.monitoringConfigManager.ConfigChanged += (s, e) =>
+            {
+                var result = Parallel.ForEach(this.cachedNodeGuids, kvp =>
+                {
+                    this.SetMetricConfig(kvp.Key, kvp.Value, e.CurrentConfig);
+                });
+            };
+
             this.Tracer.TraceInfo("Initialized LinuxCommunicator.");
             return true;
         }
 
         public bool Start()
         {
+            this.monitoringConfigManager.Start();
             return this.Start(0);
         }
 
@@ -183,6 +199,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
         {
             this.Tracer.TraceInfo("Stopping LinuxCommunicator.");
             this.server.Stop();
+            this.monitoringConfigManager.Stop();
             this.cancellationTokenSource.Cancel();
             this.cancellationTokenSource.Dispose();
             this.cancellationTokenSource = null;
@@ -342,12 +359,18 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
         public void SetMetricGuid(string nodeName, Guid nodeGuid)
         {
+            this.cachedNodeGuids.AddOrUpdate(nodeName, nodeGuid, (s, g) => nodeGuid);
+            this.SetMetricConfig(nodeName, nodeGuid, this.monitoringConfigManager.MetricCountersConfig);
+        }
+
+        public void SetMetricConfig(string nodeName, Guid nodeGuid, MetricCountersConfig config)
+        {
             var callbackUri = this.GetMetricCallbackUri(this.headNodeFqdn.Value, this.MonitoringPort, nodeGuid);
-            this.SendRequest<NodeCommunicatorCallBackArg>("metric", callbackUri, nodeName, async (content, ex) =>
+            this.SendRequest("metricconfig", callbackUri, nodeName, async (content, ex) =>
             {
                 await Task.Yield();
-                this.Tracer.TraceInfo("Compute node {0} metric requested, callback {1}. Ex {2}", nodeGuid, callbackUri, ex);
-            }, null);
+                this.Tracer.TraceInfo("Compute node {0} metricconfig requested, callback {1}. Ex {2}", nodeGuid, callbackUri, ex);
+            }, config);
         }
 
         private async Task SendRequestInternal<T>(string action, string callbackUri, string nodeName, Func<HttpContent, Exception, Task> callback, T arg, int retryCount = 0)
