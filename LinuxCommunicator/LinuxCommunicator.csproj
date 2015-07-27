@@ -41,6 +41,9 @@
     <Reference Include="Microsoft.Ccp.Win32Helpers">
       <HintPath>ref\Microsoft.Ccp.Win32Helpers.dll</HintPath>
     </Reference>
+    <Reference Include="Microsoft.Hpc.MonitoringInterface">
+      <HintPath>ref\Microsoft.Hpc.MonitoringInterface.dll</HintPath>
+    </Reference>
     <Reference Include="Microsoft.Hpc.Scheduler, Version=2.0.0.0, Culture=neutral, PublicKeyToken=31bf3856ad364e35, processorArchitecture=MSIL">
       <SpecificVersion>False</SpecificVersion>
       <HintPath>ref\Microsoft.Hpc.Scheduler.dll</HintPath>
@@ -96,12 +99,15 @@
     <Compile Include="CallbackController.cs" />
     <Compile Include="CredentialNativeMethods.cs" />
     <Compile Include="Credentials.cs" />
+    <Compile Include="GenericEqualityComparer.cs" />
     <Compile Include="LinuxCommunicator.cs" />
     <Compile Include="MessageAuthenticationHandler.cs" />
-    <Compile Include="Monitoring\ComputeNodeMetricInformation.cs" />
-    <Compile Include="Monitoring\MonitoringPacket.cs" />
-    <Compile Include="Monitoring\MonitoringStoreInterface.cs" />
-    <Compile Include="Monitoring\UDPClient.cs" />
+    <Compile Include="Monitoring\MetricCounter.cs" />
+    <Compile Include="Monitoring\MetricCountersConfig.cs" />
+    <Compile Include="Monitoring\MonitoringConfig.cs" />
+    <Compile Include="Monitoring\ConfigChangedEventArgs.cs" />
+    <Compile Include="Monitoring\MonitoringConfigManager.cs" />
+    <Compile Include="Monitoring\PerformanceCounterNames.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Startup.cs" />
     <Compile Include="TaskExtensionMethods.cs" />
