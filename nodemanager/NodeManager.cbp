@@ -55,6 +55,10 @@
 		<Unit filename="arguments/EndJobArgs.h" />
 		<Unit filename="arguments/EndTaskArgs.cpp" />
 		<Unit filename="arguments/EndTaskArgs.h" />
+		<Unit filename="arguments/MetricCounter.cpp" />
+		<Unit filename="arguments/MetricCounter.h" />
+		<Unit filename="arguments/MetricCountersConfig.cpp" />
+		<Unit filename="arguments/MetricCountersConfig.h" />
 		<Unit filename="arguments/ProcessStartInfo.cpp" />
 		<Unit filename="arguments/ProcessStartInfo.h" />
 		<Unit filename="arguments/StartJobAndTaskArgs.cpp" />

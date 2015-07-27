@@ -36,8 +36,8 @@ RemoteExecutor::RemoteExecutor(const std::string& networkName)
 
     this->registerReporter->Start();
 
-    this->Ping(NodeManagerConfig::GetHeartbeatUri());
-    this->Metric(NodeManagerConfig::GetMetricUri());
+    this->StartHeartbeat(NodeManagerConfig::GetHeartbeatUri());
+    this->StartMetric(NodeManagerConfig::GetMetricUri());
 }
 
 json::value RemoteExecutor::StartJobAndTask(StartJobAndTaskArgs&& args, const std::string& callbackUri)
@@ -524,10 +524,9 @@ void RemoteExecutor::ReportTaskCompletion(
     }
 }
 
-json::value RemoteExecutor::Ping(const std::string& callbackUri)
+void RemoteExecutor::StartHeartbeat(const std::string& callbackUri)
 {
     WriterLock writerLock(&this->lock);
-    NodeManagerConfig::SaveHeartbeatUri(callbackUri);
 
     this->nodeInfoReporter =
         std::unique_ptr<Reporter<json::value>>(
@@ -538,15 +537,25 @@ json::value RemoteExecutor::Ping(const std::string& callbackUri)
                 [this]() { return this->jobTaskTable.ToJson(); }));
 
     this->nodeInfoReporter->Start();
+}
+
+json::value RemoteExecutor::Ping(const std::string& callbackUri)
+{
+    auto uri = NodeManagerConfig::GetHeartbeatUri();
+
+    if (uri != callbackUri)
+    {
+        NodeManagerConfig::SaveHeartbeatUri(callbackUri);
+        this->StartHeartbeat(callbackUri);
+    }
+
     return json::value();
 }
 
-json::value RemoteExecutor::Metric(const std::string& callbackUri)
+void RemoteExecutor::StartMetric(const std::string& callbackUri)
 {
     WriterLock writerLock(&this->lock);
-    NodeManagerConfig::SaveMetricUri(callbackUri);
 
-    // callbackUri is like udp://server:port/api/nodeguid/metricreported
     if (!callbackUri.empty())
     {
         auto tokens = String::Split(callbackUri, '/');
@@ -564,6 +573,29 @@ json::value RemoteExecutor::Metric(const std::string& callbackUri)
 
         this->metricReporter->Start();
     }
+}
+
+json::value RemoteExecutor::Metric(const std::string& callbackUri)
+{
+    auto uri = NodeManagerConfig::GetMetricUri();
+    if (uri != callbackUri)
+    {
+        NodeManagerConfig::SaveMetricUri(callbackUri);
+
+        // callbackUri is like udp://server:port/api/nodeguid/metricreported
+        this->StartMetric(callbackUri);
+    }
+
+    return json::value();
+}
+
+json::value RemoteExecutor::MetricConfig(
+    MetricCountersConfig&& config,
+    const std::string& callbackUri)
+{
+    this->Metric(callbackUri);
+
+    this->monitor.ApplyMetricConfig(config);
 
     return json::value();
 }

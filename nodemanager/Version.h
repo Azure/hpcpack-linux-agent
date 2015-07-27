@@ -367,6 +367,11 @@ namespace hpc
                             "Add the https support",
                         }
                     },
+                    { "1.6.3.0",
+                        {
+                            "Metric configuration support",
+                        }
+                    },
                 };
 
                 return versionHistory;

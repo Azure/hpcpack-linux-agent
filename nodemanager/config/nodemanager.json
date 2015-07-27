@@ -1,1 +1,6 @@
-{"HeartbeatUri":"https://evancv1:40001/api/evanc.com/computenodereported","MetricUri":"udp://EVANCV1.fareast.corp.microsoft.com:9894/api/4aed4836-c0c8-4e92-853d-cac4698582d1/metricreported","RegisterUri":"https://evancv1:40001/api/evanc.com/registerrequested"}
+{
+    "ClusterAuthenticationKey":"abc",
+    "HeartbeatUri":"https://evancv1:40001/api/evanc.com/computenodereported",
+    "MetricUri":"udp://EVANCV1.fareast.corp.microsoft.com:9894/api/4aed4836-c0c8-4e92-853d-cac4698582d1/metricreported",
+    "RegisterUri":"https://evancv1:40001/api/evanc.com/registerrequested"
+}

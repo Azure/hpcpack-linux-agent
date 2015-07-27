@@ -8,6 +8,7 @@
 #include "../common/ErrorCodes.h"
 #include "NodeManagerConfig.h"
 #include "HttpHelper.h"
+#include "../arguments/MetricCountersConfig.h"
 
 using namespace web::http;
 using namespace web;
@@ -29,6 +30,7 @@ RemoteCommunicator::RemoteCommunicator(const std::string& networkName, IRemoteEx
     this->processors["endtask"] = [this] (const auto& j, const auto& c) { return this->EndTask(j, c); };
     this->processors["ping"] = [this] (const auto& j, const auto& c) { return this->Ping(j, c); };
     this->processors["metric"] = [this] (const auto& j, const auto& c) { return this->Metric(j, c); };
+    this->processors["metricconfig"] = [this] (const auto& j, const auto& c) { return this->MetricConfig(j, c); };
 }
 
 RemoteCommunicator::~RemoteCommunicator()
@@ -184,6 +186,12 @@ json::value RemoteCommunicator::Ping(const json::value& val, const std::string& 
 json::value RemoteCommunicator::Metric(const json::value& val, const std::string& callbackUri)
 {
     return this->executor.Metric(callbackUri);
+}
+
+json::value RemoteCommunicator::MetricConfig(const json::value& val, const std::string& callbackUri)
+{
+    auto args = MetricCountersConfig::FromJson(val);
+    return this->executor.MetricConfig(std::move(args), callbackUri);
 }
 
 const std::string RemoteCommunicator::ApiSpace = "api";
