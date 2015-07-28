@@ -28,6 +28,10 @@ namespace hpc
                 static http::client::http_client GetHttpClient(const std::string& uri)
                 {
                     http::client::http_client_config config;
+                    Logger::Debug("UseDefaultCA = {0}", NodeManagerConfig::GetUseDefaultCA());
+                    config.set_use_default_verify_paths(NodeManagerConfig::GetUseDefaultCA());
+                    config.set_verify_path_to_add(NodeManagerConfig::GetTrustedCAPath());
+                    config.set_verify_file_to_load(NodeManagerConfig::GetTrustedCAFile());
                     utility::seconds timeout(5l);
                     config.set_timeout(timeout);
                     Logger::Debug(

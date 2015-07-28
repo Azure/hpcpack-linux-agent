@@ -372,6 +372,11 @@ namespace hpc
                             "Metric configuration support (framework)",
                         }
                     },
+                    { "1.6.4.0",
+                        {
+                            "Enabled customized CA",
+                        }
+                    },
                 };
 
                 return versionHistory;

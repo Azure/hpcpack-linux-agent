@@ -28,7 +28,7 @@ namespace hpc
         FROMJSON(long long, is_number(), as_number().to_int64())
         FROMJSON(uint64_t, is_number(), as_number().to_uint64())
         FROMJSON(double, is_number(), as_number().to_double())
-        FROMJSON(bool, is_boolean(), as_bool())
+        FROMJSON_DEFAULT(bool, is_boolean(), as_bool(), false)
         FROMJSON(const json::object&, is_object(), as_object())
 
         #define TOJSON(T, JsonType) \
