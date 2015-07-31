@@ -11,6 +11,7 @@ namespace hpc
         {
             public:
                 Umid() = default;
+                Umid(const Umid& umid) = default;
 
                 Umid(uint16_t metricId, uint16_t instanceId)
                     : MetricId(metricId), InstanceId(instanceId)

@@ -33,6 +33,7 @@ namespace hpc
                 AddConfigurationItem(std::string, TrustedCAPath);
                 AddConfigurationItem(std::string, TrustedCAFile);
                 AddConfigurationItem(bool, UseDefaultCA);
+                AddConfigurationItem(bool, Debug);
 
             protected:
             private:

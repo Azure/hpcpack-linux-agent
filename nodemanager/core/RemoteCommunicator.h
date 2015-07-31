@@ -26,6 +26,7 @@ namespace hpc
             protected:
             private:
                 void HandlePost(web::http::http_request message);
+                void HandleGet(web::http::http_request message);
 
                 template <typename T>
                 static bool IsError(pplx::task<T>& t, std::string& errorMessage)

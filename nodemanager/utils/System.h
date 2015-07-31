@@ -28,6 +28,10 @@ namespace hpc
                 static void Memory(uint64_t &available, uint64_t &total);
                 static void CPU(int &cores, int &sockets);
                 static int NetworkUsage(uint64_t &network, const std::string& netName);
+                static int Vmstat(float &pagesPerSec, float &contextSwitchesPerSec);
+                static int Iostat(float &bytesPerSec);
+                static int IostatX(float &queueLength);
+                static int FreeSpace(float &freeSpaceKB);
                 static const std::string& GetNodeName();
                 static bool IsCGroupInstalled();
 

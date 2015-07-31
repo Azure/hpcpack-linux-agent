@@ -579,25 +579,28 @@
 	"String.h"
 	"Logger.h"
 
-1428485409 source:/home/evanc/whpc-linux-communicator/nodemanager/core/JobTaskTable.cpp
+1431328499 source:/home/evanc/whpc-linux-communicator/nodemanager/core/JobTaskTable.cpp
 	"JobTaskTable.h"
 	"../utils/WriterLock.h"
 	"../utils/ReaderLock.h"
 
-1428485409 /home/evanc/whpc-linux-communicator/nodemanager/core/JobTaskTable.h
+1438324701 /home/evanc/whpc-linux-communicator/nodemanager/core/JobTaskTable.h
 	<map>
 	<cpprest/json.h>
 	"../data/TaskInfo.h"
 	"../data/JobInfo.h"
 	"../data/NodeInfo.h"
+	"../utils/ReaderLock.h"
 
-1428485409 /home/evanc/whpc-linux-communicator/nodemanager/data/TaskInfo.h
+1436256679 /home/evanc/whpc-linux-communicator/nodemanager/data/TaskInfo.h
 	<cpprest/json.h>
 	<vector>
 	<string>
 	<memory>
+	"../utils/Logger.h"
+	"../data/ProcessStatistics.h"
 
-1427353166 /home/evanc/whpc-linux-communicator/nodemanager/data/JobInfo.h
+1428479152 /home/evanc/whpc-linux-communicator/nodemanager/data/JobInfo.h
 	<cpprest/json.h>
 	<map>
 	"TaskInfo.h"
@@ -731,7 +734,7 @@
 	<string>
 	<cpprest/json.h>
 
-1437988323 /home/evanc/whpc-linux-communicator/nodemanager/arguments/MetricCounter.h
+1438163596 /home/evanc/whpc-linux-communicator/nodemanager/arguments/MetricCounter.h
 	<string>
 	<cpprest/json.h>
 
@@ -745,4 +748,20 @@
 1438071624 /home/evanc/whpc-linux-communicator/nodemanager/core/HttpHelper.h
 	<cpprest/http_client.h>
 	"NodeManagerConfig.h"
+
+1438161609 source:/home/evanc/whpc-linux-communicator/nodemanager/core/MetricCollectorBase.cpp
+	"MetricCollectorBase.h"
+
+1438242875 /home/evanc/whpc-linux-communicator/nodemanager/core/MetricCollectorBase.h
+	<vector>
+	<map>
+	"../data/Umid.h"
+	"../arguments/MetricCounter.h"
+
+1438238815 /home/evanc/whpc-linux-communicator/nodemanager/data/Umid.h
+	<inttypes.h>
+
+1433133379 /home/evanc/whpc-linux-communicator/nodemanager/data/ProcessStatistics.h
+	<vector>
+	<inttypes.h>
 

@@ -185,6 +185,118 @@ void System::CPU(int &cores, int &sockets)
     fs.close();
 }
 
+int System::Vmstat(float &pagesPerSec, float &contextSwitchesPerSec)
+{
+    std::string output;
+
+    int ret = System::ExecuteCommandOut(output, "vmstat");
+
+    if (ret == 0)
+    {
+        std::istringstream iss(output);
+
+        iss.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        iss.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+        int r, b, swpd, free, buff, cache, si, so, bi, bo, in, cs, us, sy, id, wa, st;
+        iss >> r >> b >> swpd >> free >> buff >> cache >> si >> so >> bi >> bo
+            >> in >> cs >> us >> sy >> id >> wa >> st;
+
+        pagesPerSec = si + so;
+        contextSwitchesPerSec = cs;
+    }
+
+    return ret;
+}
+
+int System::Iostat(float &bytesPerSecond)
+{
+    std::string output;
+
+    int ret = System::ExecuteCommandOut(output, "iostat -dk");
+
+    if (ret == 0)
+    {
+        std::istringstream iss(output);
+
+        std::string device;
+
+        while (device != "Device:")
+        {
+            iss >> device;
+            iss.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        }
+
+        float tps, read, write;
+
+        iss >> device >> tps >> read >> write;
+
+        bytesPerSecond = (read + write) * 1024;
+    }
+
+    return ret;
+}
+
+int System::IostatX(float &queueLength)
+{
+    std::string output;
+
+    int ret = System::ExecuteCommandOut(output, "iostat -x");
+
+    if (ret == 0)
+    {
+        std::istringstream iss(output);
+
+        std::string device;
+
+        while (device != "Device:")
+        {
+            iss >> device;
+            iss.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        }
+
+        float rrqm, wrqm, r, w, rkb, wkb, avgrq, avgqu;
+
+        iss >> device >> rrqm >> wrqm >> r >> w >> rkb >> wkb >> avgrq >> avgqu;
+
+        queueLength = avgqu;
+    }
+
+    return ret;
+}
+
+int System::FreeSpace(float &freeSpacePercent)
+{
+    std::string output;
+
+    int ret = System::ExecuteCommandOut(output, "df -k");
+
+    if (ret == 0)
+    {
+        std::istringstream iss(output);
+        iss.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+        std::string mountPoint;
+
+        while (mountPoint != "/" && iss.good())
+        {
+            std::string tmp;
+            iss >> tmp >> tmp >> tmp >> tmp >> freeSpacePercent >> tmp >> mountPoint;
+        }
+
+        if (mountPoint != "/")
+        {
+            ret = 1;
+        }
+        else
+        {
+            freeSpacePercent = 100 - freeSpacePercent;
+        }
+    }
+
+    return ret;
+}
+
 int System::NetworkUsage(uint64_t &network, const std::string& netName)
 {
     int ret = 1;

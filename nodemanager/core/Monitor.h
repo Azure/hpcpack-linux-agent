@@ -9,6 +9,7 @@
 #include "../data/MonitoringPacket.h"
 #include "../arguments/MetricCounter.h"
 #include "../arguments/MetricCountersConfig.h"
+#include "MetricCollectorBase.h"
 
 using namespace web;
 using namespace boost::uuids;
@@ -31,7 +32,7 @@ namespace hpc
                 json::value GetRegisterInfo();
 
                 void SetNodeUuid(const uuid& id);
-                void ApplyMetricConfig(const hpc::arguments::MetricCountersConfig& config);
+                void ApplyMetricConfig(hpc::arguments::MetricCountersConfig&& config);
 
             protected:
             private:
@@ -52,6 +53,7 @@ namespace hpc
                 std::string ipAddress;
                 std::string distroInfo;
                 std::vector<hpc::utils::System::NetInfo> networkInfo;
+                std::map<std::string, std::shared_ptr<MetricCollectorBase>> collectors;
                 hpc::data::MonitoringPacket<MaxCountersInPacket> packet = 1;
                 pthread_rwlock_t lock;
 

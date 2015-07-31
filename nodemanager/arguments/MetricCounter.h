@@ -13,14 +13,15 @@ namespace hpc
             public:
                 MetricCounter() = default;
 
-                MetricCounter(const std::string& path, const int metricId, const int instanceId)
-                    : Path(path), MetricId(metricId), InstanceId(instanceId)
+                MetricCounter(const std::string& path, const int metricId, const int instanceId, const std::string& name)
+                    : Path(path), MetricId(metricId), InstanceId(instanceId), InstanceName(name)
                 {
                 }
 
                 std::string Path;
                 int MetricId;
                 int InstanceId;
+                std::string InstanceName;
 
                 static MetricCounter FromJson(const web::json::value& jsonValue);
         };

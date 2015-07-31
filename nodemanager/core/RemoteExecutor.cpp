@@ -140,6 +140,7 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
     bool isNewEntry;
     std::shared_ptr<TaskInfo> taskInfo = this->jobTaskTable.AddJobAndTask(args.JobId, args.TaskId, isNewEntry);
 
+    taskInfo->Affinity = args.StartInfo.Affinity;
     taskInfo->SetTaskRequeueCount(args.StartInfo.TaskRequeueCount);
 
     if (args.StartInfo.CommandLine.empty())
@@ -595,7 +596,7 @@ json::value RemoteExecutor::MetricConfig(
 {
     this->Metric(callbackUri);
 
-    this->monitor.ApplyMetricConfig(config);
+    this->monitor.ApplyMetricConfig(std::move(config));
 
     return json::value();
 }

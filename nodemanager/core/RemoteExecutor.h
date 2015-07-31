@@ -29,7 +29,6 @@ namespace hpc
                 virtual web::json::value Ping(const std::string& callbackUri);
                 virtual web::json::value Metric(const std::string& callbackUri);
                 virtual web::json::value MetricConfig(hpc::arguments::MetricCountersConfig&& config, const std::string& callbackUri);
-
             protected:
             private:
                 static void* GracePeriodElapsed(void* data);
@@ -45,7 +44,7 @@ namespace hpc
 
                 const int UnknowId = 999;
                 const int NodeInfoReportInterval = 30;
-                const int MetricReportInterval = 2;
+                const int MetricReportInterval = 1;
                 const int RegisterInterval = 300;
 
                 JobTaskTable jobTaskTable;

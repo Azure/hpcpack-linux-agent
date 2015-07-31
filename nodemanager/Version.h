@@ -377,6 +377,12 @@ namespace hpc
                             "Enabled customized CA",
                         }
                     },
+                    { "1.6.5.0",
+                        {
+                            "Added debug mode",
+                            "Added several metrics plugin",
+                        }
+                    },
                 };
 
                 return versionHistory;

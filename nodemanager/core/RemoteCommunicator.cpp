@@ -24,6 +24,13 @@ RemoteCommunicator::RemoteCommunicator(const std::string& networkName, IRemoteEx
         methods::POST,
         [this](auto request) { this->HandlePost(request); });
 
+    if (NodeManagerConfig::GetDebug())
+    {
+        this->listener.support(
+            methods::GET,
+            [this](auto request) { this->HandleGet(request); });
+    }
+
     this->processors["startjobandtask"] = [this] (const auto& j, const auto& c) { return this->StartJobAndTask(j, c); };
     this->processors["starttask"] = [this] (const auto& j, const auto& c) { return this->StartTask(j, c); };
     this->processors["endjob"] = [this] (const auto& j, const auto& c) { return this->EndJob(j, c); };
@@ -60,6 +67,7 @@ void RemoteCommunicator::Open()
 
 void RemoteCommunicator::Close()
 {
+
     if (this->isListening)
     {
         try
@@ -72,6 +80,15 @@ void RemoteCommunicator::Close()
             Logger::Error("Exception happened while close the listener {0}, {1}", this->listener.uri().to_string().c_str(), ex.what());
         }
     }
+}
+void RemoteCommunicator::HandleGet(http_request request)
+{
+    auto uri = request.relative_uri().to_string();
+    Logger::Info("Request (GET): Uri {0}", uri);
+
+    json::value body;
+    body["status"] = json::value::string("node manager working");
+    request.reply(status_codes::OK, body).then([this](auto t) { this->IsError(t); });
 }
 
 void RemoteCommunicator::HandlePost(http_request request)
