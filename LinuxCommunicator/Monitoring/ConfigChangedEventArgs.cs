@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Microsoft.Hpc.Communicators.LinuxCommunicator.Monitoring
 {
-    class ConfigChangedEventArgs : EventArgs
+    public class ConfigChangedEventArgs : EventArgs
     {
         public MetricCountersConfig CurrentConfig { get; set; }
     }

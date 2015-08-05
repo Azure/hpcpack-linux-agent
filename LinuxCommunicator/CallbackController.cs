@@ -66,5 +66,23 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
             return 5000;
         }
+
+        [HttpPost]
+        [Route("api/{nodename}/getinstanceids")]
+        public int[] GetInstanceIds(string nodeName, [FromBody] string[] instanceNames)
+        {
+            try
+            {
+                LinuxCommunicator.Instance.Tracer.TraceInfo("Linux GetInstanceIds. NodeName {0}, instanceNames {1}, {2}", nodeName, instanceNames.Length, string.Join(",", instanceNames));
+
+                return LinuxCommunicator.Instance.MonitoringConfigManager.Store.GetMetricInstanceIds(instanceNames);
+            }
+            catch (Exception ex)
+            {
+                LinuxCommunicator.Instance.Tracer.TraceException(ex);
+            }
+
+            return null;
+        }
     }
 }
