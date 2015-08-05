@@ -10,7 +10,7 @@ namespace hpc
     namespace core
     {
 #define AddConfigurationItem(T, name) \
-                static std::string Get##name() \
+                static T Get##name() \
                 { \
                     return instance.ReadValue<T>(#name); \
                 } \
@@ -30,6 +30,9 @@ namespace hpc
                 AddConfigurationItem(std::string, HeartbeatUri);
                 AddConfigurationItem(std::string, MetricUri);
                 AddConfigurationItem(std::string, ClusterAuthenticationKey);
+                AddConfigurationItem(std::string, TrustedCAPath);
+                AddConfigurationItem(std::string, TrustedCAFile);
+                AddConfigurationItem(bool, UseDefaultCA);
 
             protected:
             private:

@@ -31,11 +31,11 @@ namespace hpc
                 json::value GetRegisterInfo();
 
                 void SetNodeUuid(const uuid& id);
-                void ApplyMetricConfig(const MetricCountersConfig& config);
+                void ApplyMetricConfig(const hpc::arguments::MetricCountersConfig& config);
 
             protected:
             private:
-                bool EnableMetricCounter(const MetricCounter& counterConfig);
+                bool EnableMetricCounter(const hpc::arguments::MetricCounter& counterConfig);
                 void Run();
 
                 static void* MonitoringThread(void* arg);

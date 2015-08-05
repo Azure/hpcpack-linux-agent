@@ -611,7 +611,7 @@
 1427353166 /home/evanc/whpc-linux-communicator/nodemanager/utils/WriterLock.h
 	<pthread.h>
 
-1427351029 /home/evanc/casablanca/Release/include/cpprest/http_client.h
+1438071570 /home/evanc/casablanca/Release/include/cpprest/http_client.h
 	<wrl.h>
 	<msxml6.h>
 	<memory>
@@ -708,7 +708,7 @@
 	"Configuration.h"
 	"../common/ErrorCodes.h"
 
-1437547368 /home/evanc/whpc-linux-communicator/nodemanager/utils/Configuration.h
+1438073135 /home/evanc/whpc-linux-communicator/nodemanager/utils/Configuration.h
 	<string>
 	<cpprest/json.h>
 	"Logger.h"
@@ -717,7 +717,7 @@
 1437547414 source:/home/evanc/whpc-linux-communicator/nodemanager/core/NodeManagerConfig.cpp
 	"NodeManagerConfig.h"
 
-1437549374 /home/evanc/whpc-linux-communicator/nodemanager/core/NodeManagerConfig.h
+1438072716 /home/evanc/whpc-linux-communicator/nodemanager/core/NodeManagerConfig.h
 	"../utils/Configuration.h"
 
 1437732272 source:/home/evanc/whpc-linux-communicator/nodemanager/arguments/MonitoringConfig.cpp
@@ -738,4 +738,11 @@
 1437988299 source:/home/evanc/whpc-linux-communicator/nodemanager/arguments/MetricCounter.cpp
 	"MetricCounter.h"
 	"../utils/JsonHelper.h"
+
+1437645025 source:/home/evanc/whpc-linux-communicator/nodemanager/core/HttpHelper.cpp
+	"HttpHelper.h"
+
+1438071624 /home/evanc/whpc-linux-communicator/nodemanager/core/HttpHelper.h
+	<cpprest/http_client.h>
+	"NodeManagerConfig.h"
 

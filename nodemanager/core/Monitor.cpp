@@ -9,6 +9,7 @@
 using namespace hpc::core;
 using namespace hpc::utils;
 using namespace hpc::data;
+using namespace hpc::arguments;
 
 Monitor::Monitor(const std::string& nodeName, const std::string& netName, int interval)
     : name(nodeName), networkName(netName), lock(PTHREAD_RWLOCK_INITIALIZER), intervalSeconds(interval),
@@ -38,7 +39,7 @@ void Monitor::SetNodeUuid(const uuid& id)
     this->packet.Uuid.AssignFrom(id);
 }
 
-void Monitor::ApplyMetricConfig(const MetricCounterConfig& config)
+void Monitor::ApplyMetricConfig(const MetricCountersConfig& config)
 {
     for (auto& counter : config.MetricCounters)
     {

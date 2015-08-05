@@ -369,7 +369,12 @@ namespace hpc
                     },
                     { "1.6.3.0",
                         {
-                            "Metric configuration support",
+                            "Metric configuration support (framework)",
+                        }
+                    },
+                    { "1.6.4.0",
+                        {
+                            "Enabled customized CA",
                         }
                     },
                 };
