@@ -7,6 +7,7 @@
 #include "core/RemoteCommunicator.h"
 #include "core/RemoteExecutor.h"
 #include "Version.h"
+#include "core/NodeManagerConfig.h"
 #include "common/ErrorCodes.h"
 
 #ifdef DEBUG
@@ -75,7 +76,11 @@ int main(int argc, char* argv[])
 
     Cleanup();
 
-    const std::string networkName = "eth0";
+    Logger::Debug(
+        "Trusted CA File: {0}",
+        NodeManagerConfig::GetTrustedCAFile());
+
+    const std::string networkName = "";
     RemoteExecutor executor(networkName);
 
     RemoteCommunicator rc(networkName, executor);

@@ -10,6 +10,7 @@ namespace hpc
     namespace core
     {
         using namespace web;
+        using namespace boost::asio::ssl;
 
         class HttpHelper
         {
@@ -29,9 +30,26 @@ namespace hpc
                 {
                     http::client::http_client_config config;
                     Logger::Debug("UseDefaultCA = {0}", NodeManagerConfig::GetUseDefaultCA());
-                    config.set_use_default_verify_paths(NodeManagerConfig::GetUseDefaultCA());
-                    config.set_verify_path_to_add(NodeManagerConfig::GetTrustedCAPath());
-                    config.set_verify_file_to_load(NodeManagerConfig::GetTrustedCAFile());
+                    config.set_sslcontext_options([](context& ctx)
+                    {
+                        if (NodeManagerConfig::GetUseDefaultCA())
+                        {
+                            ctx.set_default_verify_paths();
+                        }
+
+                        auto verifyPath = NodeManagerConfig::GetTrustedCAPath();
+                        if (!verifyPath.empty())
+                        {
+                            ctx.add_verify_path(verifyPath);
+                        }
+
+                        auto verifyFile = NodeManagerConfig::GetTrustedCAFile();
+                        if (!verifyFile.empty())
+                        {
+                            ctx.load_verify_file(verifyFile);
+                        }
+                    });
+
                     utility::seconds timeout(5l);
                     config.set_timeout(timeout);
                     Logger::Debug(

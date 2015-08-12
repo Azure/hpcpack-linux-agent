@@ -383,6 +383,22 @@ namespace hpc
                             "Added several metrics plugin",
                         }
                     },
+                    { "1.6.6.0",
+                        {
+                            "Bind to any address when listening",
+                        }
+                    },
+                    { "1.6.7.0",
+                        {
+                            "Fix network usage collection issue",
+                        }
+                    },
+                    { "1.6.8.0",
+                        {
+                            "Change the Casablanca to use the construction time callback",
+                            "Fix the environment PATH issue",
+                        }
+                    },
                 };
 
                 return versionHistory;

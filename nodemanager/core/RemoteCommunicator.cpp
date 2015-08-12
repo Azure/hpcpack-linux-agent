@@ -216,6 +216,6 @@ const std::string RemoteCommunicator::CallbackUriKey = "CallbackURI";
 
 std::string RemoteCommunicator::GetListeningUri(const std::string& networkName)
 {
-    return String::Join("", "http://", System::GetIpAddress(IpAddressVersion::V4, networkName), ":40000");
+    return String::Join("", "http://", networkName.empty() ? "0.0.0.0" : System::GetIpAddress(IpAddressVersion::V4, networkName), ":40000");
 }
 

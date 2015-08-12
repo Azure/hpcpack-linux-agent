@@ -9,6 +9,7 @@
 #include "../utils/Logger.h"
 #include "../utils/System.h"
 #include "JobTaskTable.h"
+#include "NodeManagerConfig.h"
 
 using namespace hpc::core;
 using namespace hpc::utils;
@@ -318,7 +319,7 @@ void Monitor::Run()
         float totalMemoryMb = (float)total / 1024.0f;
 
         uint64_t networkCurrent = 0;
-        int ret = System::NetworkUsage(networkCurrent, "eth0");
+        int ret = System::NetworkUsage(networkCurrent, this->networkName);
 
         if (ret != 0)
         {
@@ -329,7 +330,7 @@ void Monitor::Run()
         networkLast = networkCurrent;
 
         // ip address;
-        std::string ipAddress = System::GetIpAddress(IpAddressVersion::V4, "eth0");
+        std::string ipAddress = System::GetIpAddress(IpAddressVersion::V4, this->networkName);
 
         // cpu type;
         int cores, sockets;

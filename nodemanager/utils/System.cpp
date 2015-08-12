@@ -105,7 +105,11 @@ std::string System::GetIpAddress(IpAddressVersion version, const std::string& na
                 (void*)&((sockaddr_in*)i->ifa_addr)->sin_addr :
                 (void*)&((sockaddr_in6*)i->ifa_addr)->sin6_addr;
 
-            if (std::string(i->ifa_name) != name) continue;
+            if ((name.empty() && std::string(i->ifa_name) == "lo:") ||
+                std::string(i->ifa_name) != name)
+            {
+                continue;
+            }
 
             const int BufferLength = isV4 ? INET_ADDRSTRLEN : INET6_ADDRSTRLEN;
             char buffer[BufferLength];
@@ -307,18 +311,21 @@ int System::NetworkUsage(uint64_t &network, const std::string& netName)
     fs.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     fs.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
-    while (name != netName && fs.good())
+    network = 0;
+
+    while (fs.good())
     {
         std::getline(fs, name, ':');
         name = String::Trim(name);
-        fs >> receive >> tmp >> tmp >> tmp >> tmp >> tmp >> tmp >> tmp >> send;
-        fs.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-    }
 
-    if (name == netName)
-    {
-        network = receive + send;
-        ret = 0;
+        if (netName.empty() || netName == name)
+        {
+            fs >> receive >> tmp >> tmp >> tmp >> tmp >> tmp >> tmp >> tmp >> send;
+            network += receive + send;
+            ret = 0;
+        }
+
+        fs.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     }
 
     fs.close();

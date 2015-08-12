@@ -593,6 +593,14 @@ std::unique_ptr<const char* []> Process::PrepareEnvironment()
 {
     this->environmentsBuffer.clear();
 
+    auto it = this->environments.find(std::string("PATH"));
+
+    if (it == this->environments.end())
+    {
+        char* currentPath = getenv("PATH");
+        this->environmentsBuffer.push_back(std::string("PATH=") + currentPath);
+    }
+
     std::transform(
         this->environments.cbegin(),
         this->environments.cend(),
