@@ -13,5 +13,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.Monitoring
         public int MetricId { get; set; }
 
         public int InstanceId { get; set; }
+
+        public string InstanceName { get; set; }
     }
 }

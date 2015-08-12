@@ -10,13 +10,11 @@ using Microsoft.Hpc.Monitoring;
 
 namespace Microsoft.Hpc.Communicators.LinuxCommunicator.Monitoring
 {
-    sealed class MonitoringConfigManager : IDisposable
+    public sealed class MonitoringConfigManager : IDisposable
     {
         private MonitoringConfig currentConfig = new MonitoringConfig();
 
         private System.Timers.Timer checkConfigTimer = new System.Timers.Timer();
-
-        private IHpcMonitoringStore store;
 
         private Dictionary<string, string[]> schedulerInstanceMap = new Dictionary<string, string[]>(StringComparer.CurrentCultureIgnoreCase)
         {
@@ -69,7 +67,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.Monitoring
 
         public MonitoringConfigManager(string server)
         {
-            this.store = MonitoringStoreConnection.Connect(server, "LinuxCommunicator");
+            this.Store = MonitoringStoreConnection.Connect(server, "LinuxCommunicator");
             this.checkConfigTimer.AutoReset = true;
             this.checkConfigTimer.Interval = 5 * 60 * 1000;
             this.checkConfigTimer.Elapsed += checkConfigTimer_Elapsed;
@@ -77,6 +75,8 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.Monitoring
         }
 
         public event EventHandler<ConfigChangedEventArgs> ConfigChanged;
+
+        public IHpcMonitoringStore Store { get; private set; }
 
         public MetricCountersConfig MetricCountersConfig { get { return this.metricCountersConfig; } }
 
@@ -106,7 +106,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.Monitoring
 
         private void checkConfigTimer_Elapsed(object sender, ElapsedEventArgs e)
         {
-            var metrics = this.store.GetMetrics(MetricTarget.ComputeNode);
+            var metrics = this.Store.GetMetrics(MetricTarget.ComputeNode);
             if (this.currentConfig.UpdateWhenChanged(metrics))
             {
                 Interlocked.Exchange(ref this.metricCountersConfig, new MetricCountersConfig() { MetricCounters = this.GetMetricCounters().ToList() });
@@ -121,11 +121,8 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.Monitoring
             {
                 return new string[] { def.InstanceFilter };
             }
-            else
-            {
-                PerformanceCounterCategory category = new PerformanceCounterCategory(def.Category);
-                return category.GetInstanceNames();
-            }
+
+            return null;
         }
 
         private IEnumerable<MetricCounter> GetMetricCounters()
@@ -136,21 +133,32 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.Monitoring
                 var instanceNames = this.GetInstanceNames(def);
                 if (instanceNames != null && instanceNames.Length > 0)
                 {
-                    int[] instanceIds = this.store.GetMetricInstanceIds(instanceNames);
+                    int[] instanceIds = this.Store.GetMetricInstanceIds(instanceNames);
                     if (instanceIds.Length != instanceNames.Length)
                     {
                         LinuxCommunicator.Instance.Tracer.TraceDetail("InstanceIds.Length {0} not equal to InstanceNames.Length {1}", instanceIds.Length, instanceNames.Length);
                         yield break;
                     }
 
-                    foreach (int instanceId in instanceIds)
+                    for (int i = 0; i < instanceIds.Length; i++)
                     {
-                        yield return new MetricCounter() { Path = string.Format(@"\{0}({1})\{2}", def.Category, instanceId, def.Name), InstanceId = instanceId, MetricId = def.MetricId };
+                        yield return new MetricCounter()
+                        {
+                            Path = string.Format(@"\{0}\{1}", def.Category, def.Name),
+                            InstanceId = instanceIds[i],
+                            MetricId = def.MetricId,
+                            InstanceName = instanceNames[i],
+                        };
                     }
                 }
                 else
                 {
-                    yield return new MetricCounter() { Path = string.Format(@"\{0}\{1}", def.Category, def.Name), InstanceId = 0, MetricId = def.MetricId };
+                    yield return new MetricCounter()
+                    {
+                        Path = string.Format(@"\{0}\{1}", def.Category, def.Name),
+                        InstanceId = 0,
+                        MetricId = def.MetricId,
+                    };
                 }
             }
         }

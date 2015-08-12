@@ -44,7 +44,6 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
         private static LinuxCommunicator instance;
         private Lazy<string> headNodeFqdn;
-        private MonitoringConfigManager monitoringConfigManager;
 
         private ConcurrentDictionary<string, Guid> cachedNodeGuids = new ConcurrentDictionary<string, Guid>();
 
@@ -59,15 +58,17 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
             instance = this;
             this.headNodeFqdn = new Lazy<string>(() => Dns.GetHostEntryAsync(this.HeadNode).Result.HostName, LazyThreadSafetyMode.ExecutionAndPublication);
-            this.monitoringConfigManager = new MonitoringConfigManager(this.headNodeFqdn.Value);
+            this.MonitoringConfigManager = new MonitoringConfigManager(this.headNodeFqdn.Value);
         }
 
         public event EventHandler<RegisterEventArgs> RegisterRequested;
 
+        public MonitoringConfigManager MonitoringConfigManager { get; private set; }
+
         public void Dispose()
         {
             this.server.Dispose();
-            this.monitoringConfigManager.Dispose();
+            this.MonitoringConfigManager.Dispose();
             GC.SuppressFinalize(this);
         }
 
@@ -140,7 +141,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
                 throw exp;
             }
 
-            this.monitoringConfigManager.ConfigChanged += (s, e) =>
+            this.MonitoringConfigManager.ConfigChanged += (s, e) =>
             {
                 var result = Parallel.ForEach(this.cachedNodeGuids, kvp =>
                 {
@@ -154,7 +155,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
         public bool Start()
         {
-            this.monitoringConfigManager.Start();
+            this.MonitoringConfigManager.Start();
             return this.Start(0);
         }
 
@@ -176,7 +177,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
             {
                 this.server.Start().Wait();
             }
-            catch(AggregateException aggrEx)
+            catch (AggregateException aggrEx)
             {
                 if (aggrEx.InnerExceptions.Any(e => e is HttpListenerException))
                 {
@@ -191,7 +192,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
                 this.Tracer.TraceWarning("Failed to start http listener {0}", ex);
                 return this.Start(retryCount + 1);
             }
-            
+
             return true;
         }
 
@@ -199,7 +200,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
         {
             this.Tracer.TraceInfo("Stopping LinuxCommunicator.");
             this.server.Stop();
-            this.monitoringConfigManager.Stop();
+            this.MonitoringConfigManager.Stop();
             this.cancellationTokenSource.Cancel();
             this.cancellationTokenSource.Dispose();
             this.cancellationTokenSource = null;
@@ -360,7 +361,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
         public void SetMetricGuid(string nodeName, Guid nodeGuid)
         {
             this.cachedNodeGuids.AddOrUpdate(nodeName, nodeGuid, (s, g) => nodeGuid);
-            this.SetMetricConfig(nodeName, nodeGuid, this.monitoringConfigManager.MetricCountersConfig);
+            this.SetMetricConfig(nodeName, nodeGuid, this.MonitoringConfigManager.MetricCountersConfig);
         }
 
         public void SetMetricConfig(string nodeName, Guid nodeGuid, MetricCountersConfig config)
