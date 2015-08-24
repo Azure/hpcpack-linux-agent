@@ -399,6 +399,11 @@ namespace hpc
                             "Fix the environment PATH issue",
                         }
                     },
+                    { "1.6.9.0",
+                        {
+                            "Remove the nginx dependency, support https natively",
+                        }
+                    },
                 };
 
                 return versionHistory;
