@@ -2,6 +2,7 @@
 #define HTTPHELPER_H
 
 #include <cpprest/http_client.h>
+#include <boost/asio/ssl.hpp>
 
 #include "NodeManagerConfig.h"
 
@@ -26,11 +27,30 @@ namespace hpc
                     return msg;
                 }
 
+                static void ConfigListenerSslContext(context& ctx)
+                {
+                    ctx.set_options(boost::asio::ssl::context::default_workarounds);
+
+                    auto certChain = NodeManagerConfig::GetCertificateChainFile();
+
+                    if (!certChain.empty())
+                    {
+                        ctx.use_certificate_chain_file(certChain);
+                    }
+
+                    auto privateKey = NodeManagerConfig::GetPrivateKeyFile();
+
+                    if (!privateKey.empty())
+                    {
+                        ctx.use_private_key_file(privateKey, context::pem);
+                    }
+                }
+
                 static http::client::http_client GetHttpClient(const std::string& uri)
                 {
                     http::client::http_client_config config;
                     Logger::Debug("UseDefaultCA = {0}", NodeManagerConfig::GetUseDefaultCA());
-                    config.set_sslcontext_options([](context& ctx)
+                    config.set_ssl_context_options_callback([](context& ctx)
                     {
                         if (NodeManagerConfig::GetUseDefaultCA())
                         {

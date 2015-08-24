@@ -16,9 +16,11 @@ using namespace hpc::utils;
 using namespace hpc::arguments;
 using namespace hpc::core;
 using namespace hpc::common;
+using namespace web::http::experimental::listener;
 
-RemoteCommunicator::RemoteCommunicator(const std::string& networkName, IRemoteExecutor& exec) :
-    listeningUri(this->GetListeningUri(networkName)), isListening(false), executor(exec), listener(listeningUri)
+RemoteCommunicator::RemoteCommunicator(IRemoteExecutor& exec, const http_listener_config& config) :
+    listeningUri(NodeManagerConfig::GetListeningUri()), isListening(false), executor(exec),
+    listener(listeningUri, config)
 {
     this->listener.support(
         methods::POST,
@@ -67,7 +69,6 @@ void RemoteCommunicator::Open()
 
 void RemoteCommunicator::Close()
 {
-
     if (this->isListening)
     {
         try
@@ -81,6 +82,7 @@ void RemoteCommunicator::Close()
         }
     }
 }
+
 void RemoteCommunicator::HandleGet(http_request request)
 {
     auto uri = request.relative_uri().to_string();
@@ -213,9 +215,4 @@ json::value RemoteCommunicator::MetricConfig(const json::value& val, const std::
 
 const std::string RemoteCommunicator::ApiSpace = "api";
 const std::string RemoteCommunicator::CallbackUriKey = "CallbackURI";
-
-std::string RemoteCommunicator::GetListeningUri(const std::string& networkName)
-{
-    return String::Join("", "http://", networkName.empty() ? "0.0.0.0" : System::GetIpAddress(IpAddressVersion::V4, networkName), ":40000");
-}
 

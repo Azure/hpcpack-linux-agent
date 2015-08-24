@@ -32,6 +32,9 @@ namespace hpc
                 AddConfigurationItem(std::string, ClusterAuthenticationKey);
                 AddConfigurationItem(std::string, TrustedCAPath);
                 AddConfigurationItem(std::string, TrustedCAFile);
+                AddConfigurationItem(std::string, CertificateChainFile);
+                AddConfigurationItem(std::string, PrivateKeyFile);
+                AddConfigurationItem(std::string, ListeningUri);
                 AddConfigurationItem(bool, UseDefaultCA);
                 AddConfigurationItem(bool, Debug);
 

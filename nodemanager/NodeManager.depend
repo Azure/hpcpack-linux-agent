@@ -720,7 +720,7 @@
 1437547414 source:/home/evanc/whpc-linux-communicator/nodemanager/core/NodeManagerConfig.cpp
 	"NodeManagerConfig.h"
 
-1438150804 /home/evanc/whpc-linux-communicator/nodemanager/core/NodeManagerConfig.h
+1440058578 /home/evanc/whpc-linux-communicator/nodemanager/core/NodeManagerConfig.h
 	"../utils/Configuration.h"
 
 1437732272 source:/home/evanc/whpc-linux-communicator/nodemanager/arguments/MonitoringConfig.cpp
@@ -745,8 +745,9 @@
 1437645025 source:/home/evanc/whpc-linux-communicator/nodemanager/core/HttpHelper.cpp
 	"HttpHelper.h"
 
-1439185027 /home/evanc/whpc-linux-communicator/nodemanager/core/HttpHelper.h
+1440058706 /home/evanc/whpc-linux-communicator/nodemanager/core/HttpHelper.h
 	<cpprest/http_client.h>
+	<boost/asio/ssl.hpp>
 	"NodeManagerConfig.h"
 
 1438161609 source:/home/evanc/whpc-linux-communicator/nodemanager/core/MetricCollectorBase.cpp
@@ -765,7 +766,7 @@
 	<vector>
 	<inttypes.h>
 
-1439177681 /home/evanc/hpccasa/Release/include/cpprest/http_client.h
+1439459758 /home/evanc/hpccasa/Release/include/cpprest/http_client.h
 	<wrl.h>
 	<msxml6.h>
 	<memory>
@@ -806,7 +807,7 @@
 	"pplx/pplxcancellation_token.h"
 	<functional>
 
-1438577914 /home/evanc/hpccasa/Release/include/cpprest/details/cpprest_compat.h
+1439459758 /home/evanc/hpccasa/Release/include/cpprest/details/cpprest_compat.h
 	<sal.h>
 	<assert.h>
 	"cpprest/details/nosal.h"
@@ -818,7 +819,7 @@
 	"cpprest/details/cpprest_compat.h"
 	"pplx/pplxinterface.h"
 
-1438577914 /home/evanc/hpccasa/Release/include/pplx/pplxinterface.h
+1439459758 /home/evanc/hpccasa/Release/include/pplx/pplxinterface.h
 	<memory>
 	<atomic>
 
@@ -833,7 +834,7 @@
 	<condition_variable>
 	"pplx/pplxinterface.h"
 
-1438577914 /home/evanc/hpccasa/Release/include/pplx/pplxcancellation_token.h
+1439459758 /home/evanc/hpccasa/Release/include/pplx/pplxcancellation_token.h
 	<string>
 	<pplx/pplxinterface.h>
 
@@ -865,7 +866,7 @@
 	"cpprest/details/basic_types.h"
 	"cpprest/asyncrt_utils.h"
 
-1438577914 /home/evanc/hpccasa/Release/include/cpprest/details/basic_types.h
+1439459758 /home/evanc/hpccasa/Release/include/cpprest/details/basic_types.h
 	<string>
 	<fstream>
 	<iostream>
@@ -884,7 +885,7 @@
 	<assert.h>
 	<stdlib.h>
 
-1438577914 /home/evanc/hpccasa/Release/include/cpprest/asyncrt_utils.h
+1440051665 /home/evanc/hpccasa/Release/include/cpprest/asyncrt_utils.h
 	<string>
 	<vector>
 	<cstdint>
@@ -901,7 +902,7 @@
 	"cpprest/base_uri.h"
 	"cpprest/uri_builder.h"
 
-1438577914 /home/evanc/hpccasa/Release/include/cpprest/base_uri.h
+1439459758 /home/evanc/hpccasa/Release/include/cpprest/base_uri.h
 	<map>
 	<memory>
 	<string>
@@ -910,7 +911,7 @@
 	"cpprest/asyncrt_utils.h"
 	"cpprest/details/basic_types.h"
 
-1438577914 /home/evanc/hpccasa/Release/include/cpprest/uri_builder.h
+1439459758 /home/evanc/hpccasa/Release/include/cpprest/uri_builder.h
 	<sstream>
 	<string>
 	<vector>
@@ -948,10 +949,10 @@
 
 1438577914 /home/evanc/hpccasa/Release/include/cpprest/details/http_constants.dat
 
-1438577914 /home/evanc/hpccasa/Release/include/cpprest/details/web_utilities.h
+1439459758 /home/evanc/hpccasa/Release/include/cpprest/details/web_utilities.h
 	"cpprest/asyncrt_utils.h"
 
-1438577914 /home/evanc/hpccasa/Release/include/cpprest/oauth1.h
+1439459758 /home/evanc/hpccasa/Release/include/cpprest/oauth1.h
 	"cpprest/http_msg.h"
 	"cpprest/details/http_constants.dat"
 	"cpprest/details/http_constants.dat"
