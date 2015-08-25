@@ -404,6 +404,11 @@ namespace hpc
                             "Remove the nginx dependency, support https natively",
                         }
                     },
+                    { "1.6.10.0",
+                        {
+                            "Fix a reporting thread crash issue",
+                        }
+                    },
                 };
 
                 return versionHistory;

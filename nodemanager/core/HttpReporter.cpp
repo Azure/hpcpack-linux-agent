@@ -9,21 +9,21 @@ using namespace hpc::utils;
 
 void HttpReporter::Report()
 {
-    const std::string& uri = this->reportUri;
-
-    auto jsonBody = this->valueFetcher();
-    if (jsonBody.is_null())
-    {
-        Logger::Info("Skipped reporting to {0} because json is null", uri);
-        return;
-    }
-
-    Logger::Info("---------> Report to {0} with {1}", uri, jsonBody);
-
-    http_client client = HttpHelper::GetHttpClient(uri);
-
     try
     {
+        const std::string& uri = this->reportUri;
+
+        auto jsonBody = this->valueFetcher();
+        if (jsonBody.is_null())
+        {
+            Logger::Info("Skipped reporting to {0} because json is null", uri);
+            return;
+        }
+
+        Logger::Info("---------> Report to {0} with {1}", uri, jsonBody);
+
+        http_client client = HttpHelper::GetHttpClient(uri);
+
         http_request request = HttpHelper::GetHttpRequest(methods::POST, jsonBody);
 
         http_response response = client.request(request, this->cts.get_token()).get();
