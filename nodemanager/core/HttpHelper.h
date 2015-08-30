@@ -49,7 +49,7 @@ namespace hpc
                 static http::client::http_client GetHttpClient(const std::string& uri)
                 {
                     http::client::http_client_config config;
-                    Logger::Debug("UseDefaultCA = {0}", NodeManagerConfig::GetUseDefaultCA());
+
                     config.set_ssl_context_options_callback([](context& ctx)
                     {
                         if (NodeManagerConfig::GetUseDefaultCA())
@@ -76,7 +76,7 @@ namespace hpc
                         "Create client to {0}, configure: timeout {1} seconds, chuck size {2}",
                         uri, config.timeout().count(), config.chunksize());
 
-                    return http::client::http_client(uri, config);
+                    return std::move(http::client::http_client(uri, config));
                 }
 
                 static bool FindHeader(const http::http_request& request, const std::string& headerKey, std::string& header)

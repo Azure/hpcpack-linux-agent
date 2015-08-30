@@ -16,11 +16,11 @@ void HttpReporter::Report()
         auto jsonBody = this->valueFetcher();
         if (jsonBody.is_null())
         {
-            Logger::Info("Skipped reporting to {0} because json is null", uri);
+            Logger::Error("Skipped reporting to {0} because json is null", uri);
             return;
         }
 
-        Logger::Info("---------> Report to {0} with {1}", uri, jsonBody);
+        Logger::Debug("---------> Report to {0} with {1}", uri, jsonBody);
 
         http_client client = HttpHelper::GetHttpClient(uri);
 
@@ -32,12 +32,13 @@ void HttpReporter::Report()
         std::istringstream iss(str);
         int milliseconds = 30000;
         iss >> milliseconds;
+
         if (milliseconds > 0)
         {
             this->intervalSeconds = milliseconds / 1000;
         }
 
-        Logger::Debug("---------> Reported to {0} response code {1}, value {2}", uri, response.status_code(), milliseconds);
+        Logger::Debug("---------> Reported to {0} response code {1}, value {2}, interval {3}", uri, response.status_code(), milliseconds, this->intervalSeconds);
     }
     catch (const http_exception& httpEx)
     {

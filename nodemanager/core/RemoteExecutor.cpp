@@ -184,10 +184,10 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
                     {
                         json::value jsonBody;
 
+                        taskInfo->CancelGracefulThread();
+
                         {
                             WriterLock writerLock(&this->lock);
-
-                            taskInfo->CancelGracefulThread();
 
                             if (taskInfo->Exited)
                             {

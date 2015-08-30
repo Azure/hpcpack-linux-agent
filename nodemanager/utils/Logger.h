@@ -114,6 +114,11 @@ namespace hpc
                             default:
                                 logger->trace(fmt, args...);
                         }
+
+                        if (level <= LogLevel::Warning)
+                        {
+                            logger->flush();
+                        }
                     }
                 }
 
