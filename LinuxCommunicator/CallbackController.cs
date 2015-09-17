@@ -1,12 +1,9 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Net;
+using System.Net.Http;
 using System.Web.Http;
 using Microsoft.Hpc.Activation;
 using Microsoft.Hpc.Scheduler.Communicator;
-using Microsoft.Hpc.Communicators.LinuxCommunicator.Monitoring;
 
 namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 {
@@ -83,6 +80,26 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
             }
 
             return null;
+        }
+
+        [HttpGet]
+        [Route("api/hostfile/{updateid}")]
+        public HttpResponseMessage GetHosts(string updateid)
+        {
+            Guid curUpdateId = LinuxCommunicator.Instance.HostsManager.UpdateId;
+            Guid guid;
+            HttpResponseMessage response = null;
+            if (Guid.TryParse(updateid, out guid) && guid == curUpdateId)
+            {
+                response = Request.CreateResponse(HttpStatusCode.NoContent);
+            }
+            else
+            {
+                response = Request.CreateResponse(HttpStatusCode.OK, LinuxCommunicator.Instance.HostsManager.ManagedEntries);
+                response.Headers.Add("UpdateId", curUpdateId.ToString());
+            }
+
+            return response;
         }
     }
 }
