@@ -169,7 +169,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.HostsFile
 
                 if (manageFile)
                 {
-                    if (newEntries.Except(this.managedEntries).Any() || this.managedEntries.Except(newEntries).Any())
+                    if (newEntries.Count != this.managedEntries.Count || newEntries.Except(this.managedEntries).Any() || this.managedEntries.Except(newEntries).Any())
                     {
                         this.managedEntries = newEntries;
                         this.UpdateId = Guid.NewGuid();
