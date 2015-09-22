@@ -27,17 +27,20 @@ RemoteExecutor::RemoteExecutor(const std::string& networkName)
     : monitor(System::GetNodeName(), networkName, MetricReportInterval), lock(PTHREAD_RWLOCK_INITIALIZER)
 {
     this->registerReporter =
-        std::unique_ptr<Reporter<json::value>>(
-            new HttpReporter(
+        std::unique_ptr<HttpPeriodicSender>(
+            new HttpPeriodicSender(
                 NodeManagerConfig::GetRegisterUri(),
                 3,
                 this->RegisterInterval,
-                [this]() { return this->monitor.GetRegisterInfo(); }));
+                methods::POST,
+                [this](http_request& request){request.setbody(this->monitor.GetRegisterInfo()); return true;},
+                nullptr));
 
     this->registerReporter->Start();
 
     this->StartHeartbeat(NodeManagerConfig::GetHeartbeatUri());
     this->StartMetric(NodeManagerConfig::GetMetricUri());
+    this->StartHostsManager(NodeManagerConfig::GetHostsFileUri());
 }
 
 json::value RemoteExecutor::StartJobAndTask(StartJobAndTaskArgs&& args, const std::string& callbackUri)
@@ -530,14 +533,24 @@ void RemoteExecutor::StartHeartbeat(const std::string& callbackUri)
     WriterLock writerLock(&this->lock);
 
     this->nodeInfoReporter =
-        std::unique_ptr<Reporter<json::value>>(
-            new HttpReporter(
+        std::unique_ptr<HttpPeriodicSender>(
+            new HttpPeriodicSender(
                 callbackUri,
                 0,
                 this->NodeInfoReportInterval,
-                [this]() { return this->jobTaskTable.ToJson(); }));
+                methods::Post,
+                [this](http_request& request) {request.set_body(return this->jobTaskTable.ToJson()); return true;},
+                nullptr));
 
     this->nodeInfoReporter->Start();
+}
+
+void RemoteExecutor::StartHostsManager(const std::string& callbackUri)
+{
+    WriterLock writerLock(&this->lock);
+
+    this->hostsManager = std::unique_ptr<HostsManager>(callbackUri);
+    this->hostsManager->Start();
 }
 
 json::value RemoteExecutor::Ping(const std::string& callbackUri)
@@ -565,7 +578,7 @@ void RemoteExecutor::StartMetric(const std::string& callbackUri)
         this->monitor.SetNodeUuid(id);
 
         this->metricReporter =
-            std::unique_ptr<Reporter<std::vector<unsigned char>>>(
+            std::unique_ptr<UdpReporter>(
                 new UdpReporter(
                     callbackUri,
                     0,
