@@ -29,7 +29,6 @@ namespace hpc
                 AddConfigurationItem(std::string, RegisterUri);
                 AddConfigurationItem(std::string, HeartbeatUri);
                 AddConfigurationItem(std::string, MetricUri);
-                AddConfigurationItem(std::string, HostsFileUri);
                 AddConfigurationItem(std::string, ClusterAuthenticationKey);
                 AddConfigurationItem(std::string, TrustedCAPath);
                 AddConfigurationItem(std::string, TrustedCAFile);

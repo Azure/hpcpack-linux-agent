@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Net;
 using System.Net.Http;
 using System.Web.Http;
@@ -84,22 +83,12 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
         }
 
         [HttpGet]
-        [Route("api/hostfile")]
-        public HttpResponseMessage GetHosts()
+        [Route("api/hostfile/{updateid}")]
+        public HttpResponseMessage GetHosts(string updateid)
         {
             Guid curUpdateId = LinuxCommunicator.Instance.HostsManager.UpdateId;
-            string updateid = string.Empty;
-            IEnumerable<string> updateids;
-            if (Request.Headers.TryGetValues("UpdateId", out updateids))
-            {
-                foreach (var id in updateids)
-                {
-                    updateid = id;
-                }
-            }
-
-            HttpResponseMessage response = null;
             Guid guid;
+            HttpResponseMessage response = null;
             if (Guid.TryParse(updateid, out guid) && guid == curUpdateId)
             {
                 response = Request.CreateResponse(HttpStatusCode.NoContent);
@@ -107,9 +96,9 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
             else
             {
                 response = Request.CreateResponse(HttpStatusCode.OK, LinuxCommunicator.Instance.HostsManager.ManagedEntries);
+                response.Headers.Add("UpdateId", curUpdateId.ToString());
             }
 
-            response.Headers.Add("UpdateId", curUpdateId.ToString());
             return response;
         }
     }

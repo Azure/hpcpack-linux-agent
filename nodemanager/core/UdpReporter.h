@@ -4,13 +4,13 @@
 #include <vector>
 #include <netdb.h>
 
-#include "PeriodicSender.h"
+#include "Reporter.h"
 
 namespace hpc
 {
     namespace core
     {
-        class UdpReporter : public PeriodicSender
+        class UdpReporter : public Reporter<std::vector<unsigned char>>
         {
             public:
                 UdpReporter(
@@ -21,11 +21,9 @@ namespace hpc
 
                 virtual ~UdpReporter();
 
-                virtual void Send();
+                virtual void Report();
 
             protected:
-                std::function<std::vector<unsigned char>()> valueFetcher;
-
             private:
                 int s;
                 bool initialized = false;

@@ -13,7 +13,7 @@ UdpReporter::UdpReporter(
     int hold,
     int interval,
     std::function<std::vector<unsigned char>()> fetcher)
-    : PeriodicSender(uri, hold, interval), valueFetcher(fetcher)
+    : Reporter<std::vector<unsigned char>>(uri, hold, interval, fetcher)
 {
     auto tokens = String::Split(uri, '/');
     auto endpoint = String::Split(tokens[2], ':');
@@ -73,11 +73,11 @@ UdpReporter::~UdpReporter()
     this->Stop();
 }
 
-void UdpReporter::Send()
+void UdpReporter::Report()
 {
     if (!this->initialized) { return; }
 
-    const std::string& uri = this->targetUri;
+    const std::string& uri = this->reportUri;
 
     auto tokens = String::Split(String::Split(uri, '/')[2], ':');
     auto serverName = tokens[0];

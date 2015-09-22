@@ -17,15 +17,6 @@ namespace hpc
         {
             public:
                 static http::http_request GetHttpRequest(
-                    const http::method& mtd)
-                {
-                    http::http_request msg(mtd);
-                    msg.set_request_uri("");
-                    msg.headers().add(AuthenticationHeaderKey, NodeManagerConfig::GetClusterAuthenticationKey());
-                    return msg;
-                }
-                
-                static http::http_request GetHttpRequest(
                     const http::method& mtd,
                     const json::value &body)
                 {
@@ -92,18 +83,6 @@ namespace hpc
                 {
                     auto h = request.headers().find(headerKey);
                     if (h != request.headers().end())
-                    {
-                        header = h->second;
-                        return true;
-                    }
-
-                    return false;
-                }
-
-                static bool FindHeader(const http::http_response& response, const std::string& headerKey, std::string& header)
-                {
-                    auto h = response.headers().find(headerKey);
-                    if (h != response.headers().end())
                     {
                         header = h->second;
                         return true;
