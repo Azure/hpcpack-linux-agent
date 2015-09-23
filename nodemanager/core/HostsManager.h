@@ -8,7 +8,7 @@
 
 namespace hpc
 {
-    namespace data
+    namespace core
     {
         using namespace web::http;
         class HostsManager

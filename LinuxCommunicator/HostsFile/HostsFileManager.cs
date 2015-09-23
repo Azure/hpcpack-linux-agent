@@ -104,7 +104,6 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.HostsFile
         /// <param name="path"></param>
         public void ReloadTimerEvent(object param)
         {
-
             try
             {
                 FileInfo fileInfo = new FileInfo(this.filepath);
@@ -122,48 +121,41 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.HostsFile
 
                 bool manageFile = false;
                 List<HostEntry> newEntries = new List<HostEntry>();
-                using (StreamReader file = File.OpenText(this.filepath))
+                foreach (var line in File.ReadAllLines(this.filepath))
                 {
-                    string line = file.ReadLine();
-                    while (line != null)
+                    Match commentMatch = HostsFileManager.Comment.Match(line);
+                    if (commentMatch.Success)
                     {
-                        Match commentMatch = HostsFileManager.Comment.Match(line);
-                        if (commentMatch.Success)
-                        {
-                            // throw away comments for the moment.
-                        }
+                        // throw away comments for the moment.
+                    }
 
-                        Match manageFileMatch = HostsFileManager.CommentParameter.Match(line);
-                        if (manageFileMatch.Success)
+                    Match commentParameterMatch = HostsFileManager.CommentParameter.Match(line);
+                    if (commentParameterMatch.Success && string.Equals(commentParameterMatch.Groups["parameter"].ToString(), "ManageFile", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (string.Equals(commentParameterMatch.Groups["value"].ToString(), "true", StringComparison.OrdinalIgnoreCase))
                         {
-                            if (string.Compare(manageFileMatch.Groups["parameter"].ToString(), "ManageFile", StringComparison.OrdinalIgnoreCase) == 0
-                                && string.Compare(manageFileMatch.Groups["value"].ToString(), "true", StringComparison.OrdinalIgnoreCase) == 0)
+                            manageFile = true;
+                        }
+                    }
+
+                    Match ipEntryMatch = HostsFileManager.IpEntry.Match(line);
+                    if (ipEntryMatch.Success && manageFile)
+                    {
+                        string ip = ipEntryMatch.Groups["ip"].ToString();
+                        string name = ipEntryMatch.Groups["dnsName"].ToString();
+                        string comment = ipEntryMatch.Groups["comment"].ToString();
+
+                        if (comment.Equals(HostsFileManager.ManagedEntryKey, StringComparison.OrdinalIgnoreCase))
+                        {
+                            try
                             {
-                                manageFile = true;
+                                newEntries.Add(new HostEntry(name, ip));
+                            }
+                            catch (ArgumentException ex)
+                            {
+                                LinuxCommunicator.Instance.Tracer.TraceInfo("[HostsFileManager] Skip invalid host entry name={0}, ip={1}: {2}", name, ip, ex.Message);
                             }
                         }
-
-                        Match ipEntryMatch = HostsFileManager.IpEntry.Match(line);
-                        if (ipEntryMatch.Success && manageFile)
-                        {
-                            string ip = ipEntryMatch.Groups["ip"].ToString();
-                            string name = ipEntryMatch.Groups["dnsName"].ToString();
-                            string comment = ipEntryMatch.Groups["comment"].ToString();
-
-                            if (comment.Equals(HostsFileManager.ManagedEntryKey, StringComparison.OrdinalIgnoreCase))
-                            {
-                                try
-                                {
-                                    newEntries.Add(new HostEntry(name, ip));
-                                }
-                                catch (ArgumentException ex)
-                                {
-                                    LinuxCommunicator.Instance.Tracer.TraceInfo("[HostsFileManager] Skip invalid host entry name={0}, ip={1}: {2}", name, ip, ex.Message);
-                                }
-                            }
-                        }
-
-                        line = file.ReadLine();
                     }
                 }
 
