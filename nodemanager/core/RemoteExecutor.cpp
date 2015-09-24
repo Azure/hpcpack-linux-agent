@@ -38,6 +38,7 @@ RemoteExecutor::RemoteExecutor(const std::string& networkName)
 
     this->StartHeartbeat(NodeManagerConfig::GetHeartbeatUri());
     this->StartMetric(NodeManagerConfig::GetMetricUri());
+    this->StartHostsManager(NodeManagerConfig::GetHostsFileUri());
 }
 
 json::value RemoteExecutor::StartJobAndTask(StartJobAndTaskArgs&& args, const std::string& callbackUri)
@@ -140,6 +141,7 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
     bool isNewEntry;
     std::shared_ptr<TaskInfo> taskInfo = this->jobTaskTable.AddJobAndTask(args.JobId, args.TaskId, isNewEntry);
 
+    taskInfo->Affinity = args.StartInfo.Affinity;
     taskInfo->SetTaskRequeueCount(args.StartInfo.TaskRequeueCount);
 
     if (args.StartInfo.CommandLine.empty())
@@ -539,6 +541,17 @@ void RemoteExecutor::StartHeartbeat(const std::string& callbackUri)
     this->nodeInfoReporter->Start();
 }
 
+void RemoteExecutor::StartHostsManager(const std::string& callbackUri)
+{
+    if(!callbackUri.empty())
+    {
+        WriterLock writerLock(&this->lock);
+
+        this->hostsManager = std::unique_ptr<HostsManager>(new HostsManager(callbackUri));
+        this->hostsManager->Start();
+    }
+}
+
 json::value RemoteExecutor::Ping(const std::string& callbackUri)
 {
     auto uri = NodeManagerConfig::GetHeartbeatUri();
@@ -595,7 +608,7 @@ json::value RemoteExecutor::MetricConfig(
 {
     this->Metric(callbackUri);
 
-    this->monitor.ApplyMetricConfig(config);
+    this->monitor.ApplyMetricConfig(std::move(config));
 
     return json::value();
 }

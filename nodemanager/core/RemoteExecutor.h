@@ -9,6 +9,7 @@
 #include "Monitor.h"
 #include "Process.h"
 #include "Reporter.h"
+#include "HostsManager.h"
 #include "../arguments/MetricCountersConfig.h"
 #include "../data/ProcessStatistics.h"
 
@@ -29,13 +30,13 @@ namespace hpc
                 virtual web::json::value Ping(const std::string& callbackUri);
                 virtual web::json::value Metric(const std::string& callbackUri);
                 virtual web::json::value MetricConfig(hpc::arguments::MetricCountersConfig&& config, const std::string& callbackUri);
-
             protected:
             private:
                 static void* GracePeriodElapsed(void* data);
 
                 void StartHeartbeat(const std::string& callbackUri);
                 void StartMetric(const std::string& callbackUri);
+                void StartHostsManager(const std::string& callbackUri);
 
                 const hpc::data::ProcessStatistics* TerminateTask(
                     int jobId, int taskId, int requeueCount,
@@ -45,7 +46,7 @@ namespace hpc
 
                 const int UnknowId = 999;
                 const int NodeInfoReportInterval = 30;
-                const int MetricReportInterval = 2;
+                const int MetricReportInterval = 1;
                 const int RegisterInterval = 300;
 
                 JobTaskTable jobTaskTable;
@@ -54,6 +55,7 @@ namespace hpc
                 std::unique_ptr<Reporter<json::value>> nodeInfoReporter;
                 std::unique_ptr<Reporter<json::value>> registerReporter;
                 std::unique_ptr<Reporter<std::vector<unsigned char>>> metricReporter;
+                std::unique_ptr<HostsManager> hostsManager;
 
                 std::map<uint64_t, std::shared_ptr<Process>> processes;
                 std::map<int, std::tuple<std::string, bool, bool, bool, bool, std::string>> jobUsers;

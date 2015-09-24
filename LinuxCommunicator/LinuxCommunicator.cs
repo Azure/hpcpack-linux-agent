@@ -1,20 +1,21 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.Concurrent;
+using System.Globalization;
+using System.IO;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
 using System.Net.Http.Formatting;
+using System.Net.Security;
+using System.Security.Principal;
 using System.Threading;
 using System.Threading.Tasks;
-using Microsoft.Hpc.Activation;
-using Microsoft.Hpc.Scheduler.Communicator;
-using System.Net;
-using Microsoft.Hpc.Scheduler.Properties;
 using System.Xml.Linq;
-using System.Security.Principal;
-using System.Globalization;
-using System.Net.Security;
+using Microsoft.Hpc.Activation;
+using Microsoft.Hpc.Communicators.LinuxCommunicator.HostsFile;
 using Microsoft.Hpc.Communicators.LinuxCommunicator.Monitoring;
+using Microsoft.Hpc.Scheduler.Communicator;
+using Microsoft.Hpc.Scheduler.Properties;
 
 namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 {
@@ -59,16 +60,20 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
             instance = this;
             this.headNodeFqdn = new Lazy<string>(() => Dns.GetHostEntryAsync(this.HeadNode).Result.HostName, LazyThreadSafetyMode.ExecutionAndPublication);
             this.MonitoringConfigManager = new MonitoringConfigManager(this.headNodeFqdn.Value);
+            this.HostsManager = new HostsFileManager(Path.Combine(Environment.SystemDirectory, @"drivers\etc\hosts"));
         }
 
         public event EventHandler<RegisterEventArgs> RegisterRequested;
 
         public MonitoringConfigManager MonitoringConfigManager { get; private set; }
 
+        public HostsFileManager HostsManager { get; private set; }
+
         public void Dispose()
         {
             this.server.Dispose();
             this.MonitoringConfigManager.Dispose();
+            this.HostsManager.Dispose();
             GC.SuppressFinalize(this);
         }
 

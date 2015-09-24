@@ -7,7 +7,9 @@
 #include "core/RemoteCommunicator.h"
 #include "core/RemoteExecutor.h"
 #include "Version.h"
+#include "core/NodeManagerConfig.h"
 #include "common/ErrorCodes.h"
+#include "core/HttpHelper.h"
 
 #ifdef DEBUG
     #include "test/TestRunner.h"
@@ -20,6 +22,7 @@ using namespace hpc::core;
 using namespace hpc::utils;
 using namespace hpc;
 using namespace hpc::common;
+using namespace web::http::experimental::listener;
 
 void Cleanup()
 {
@@ -75,10 +78,20 @@ int main(int argc, char* argv[])
 
     Cleanup();
 
-    const std::string networkName = "eth0";
+    Logger::Debug(
+        "Trusted CA File: {0}",
+        NodeManagerConfig::GetTrustedCAFile());
+
+    const std::string networkName = "";
     RemoteExecutor executor(networkName);
 
-    RemoteCommunicator rc(networkName, executor);
+    http_listener_config config;
+    config.set_ssl_context_configurer([] (auto& ctx)
+    {
+        HttpHelper::ConfigListenerSslContext(ctx);
+    });
+
+    RemoteCommunicator rc(executor, config);
     rc.Open();
 
     while (true)

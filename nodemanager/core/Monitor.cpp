@@ -1,15 +1,21 @@
 #include <pthread.h>
+#include <boost/range/algorithm.hpp>
+#include <boost/range/adaptors.hpp>
+#include <boost/phoenix.hpp>
 
 #include "Monitor.h"
 #include "../utils/ReaderLock.h"
 #include "../utils/WriterLock.h"
 #include "../utils/Logger.h"
 #include "../utils/System.h"
+#include "JobTaskTable.h"
+#include "NodeManagerConfig.h"
 
 using namespace hpc::core;
 using namespace hpc::utils;
 using namespace hpc::data;
 using namespace hpc::arguments;
+using namespace boost::phoenix::arg_names;
 
 Monitor::Monitor(const std::string& nodeName, const std::string& netName, int interval)
     : name(nodeName), networkName(netName), lock(PTHREAD_RWLOCK_INITIALIZER), intervalSeconds(interval),
@@ -18,6 +24,142 @@ Monitor::Monitor(const std::string& nodeName, const std::string& netName, int in
     std::get<0>(this->metricData[1]) = 1;
     std::get<0>(this->metricData[3]) = 0;
     std::get<0>(this->metricData[12]) = 1;
+
+    this->collectors["\\Processor\\% Processor Time"] = std::make_shared<MetricCollectorBase>([this] (const std::string& instanceName)
+    {
+        if (instanceName == "_Total")
+        {
+            return std::get<1>(this->metricData[1]);
+        }
+        else
+        {
+            Logger::Warn("Unable to collect {0} for \\Processor\\% Processor Time", instanceName);
+            return 0.0f;
+        }
+    });
+
+    this->collectors["\\Memory\\Pages/sec"] = std::make_shared<MetricCollectorBase>([this] (const std::string& instanceName)
+    {
+        float pagesPerSec = 0, contextSwitchesPerSec = 0;
+        System::Vmstat(pagesPerSec, contextSwitchesPerSec);
+        return (float)pagesPerSec;
+    });
+
+    this->collectors["\\Memory\\Available MBytes"] = std::make_shared<MetricCollectorBase>([this] (const std::string& instanceName)
+    {
+        return std::get<1>(this->metricData[3]);
+    });
+
+    this->collectors["\\System\\Context switches/sec"] = std::make_shared<MetricCollectorBase>([this] (const std::string& instanceName)
+    {
+        float pagesPerSec = 0, contextSwitchesPerSec = 0;
+        System::Vmstat(pagesPerSec, contextSwitchesPerSec);
+        return (float)contextSwitchesPerSec;
+    });
+
+    this->collectors["\\System\\System Calls/sec"] = std::make_shared<MetricCollectorBase>([this] (const std::string& instanceName)
+    {
+        if (NodeManagerConfig::GetDebug())
+        {
+            Logger::Warn("Unable to collect {0} for \\System\\System Calls/sec", instanceName);
+        }
+
+        return 0.0f;
+    });
+
+    this->collectors["\\PhysicalDisk\\Disk Bytes/sec"] = std::make_shared<MetricCollectorBase>([this] (const std::string& instanceName)
+    {
+        float bytesPerSecond = 0.0f;
+        if (instanceName == "_Total")
+        {
+            System::Iostat(bytesPerSecond);
+        }
+        else
+        {
+            Logger::Warn("Unable to collect {0} for \\PhysicalDisk\\Disk Bytes/sec", instanceName);
+        }
+
+        return bytesPerSecond;
+    });
+
+    this->collectors["\\LogicalDisk\\Avg. Disk Queue Length"] = std::make_shared<MetricCollectorBase>([this] (const std::string& instanceName)
+    {
+        float queueLength = 0.0f;
+        if (instanceName == "_Total")
+        {
+            System::IostatX(queueLength);
+        }
+        else
+        {
+            Logger::Warn("Unable to collect {0} for \\LogicalDisk\\Avg. Disk Queue Length", instanceName);
+        }
+
+        return queueLength;
+    });
+
+    this->collectors["\\Node Manager\\Number of Cores in use"] = std::make_shared<MetricCollectorBase>([this] (const std::string& instanceName)
+    {
+        float coresInUse = 0.0f;
+        auto* table = JobTaskTable::GetInstance();
+        if (table != nullptr)
+        {
+            coresInUse = table->GetCoresInUse();
+        }
+
+        return coresInUse;
+    });
+
+    this->collectors["\\Node Manager\\Number of Running Jobs"] = std::make_shared<MetricCollectorBase>([this] (const std::string& instanceName)
+    {
+        float runningJobs = 0.0f;
+        auto* table = JobTaskTable::GetInstance();
+        if (table != nullptr)
+        {
+            runningJobs = table->GetJobCount();
+        }
+
+        return runningJobs;
+    });
+
+    this->collectors["\\Node Manager\\Number of Running Tasks"] = std::make_shared<MetricCollectorBase>([this] (const std::string& instanceName)
+    {
+        float runningTasks = 0.0f;
+        auto* table = JobTaskTable::GetInstance();
+        if (table != nullptr)
+        {
+            runningTasks = table->GetTaskCount();
+        }
+
+        return runningTasks;
+    });
+
+    this->collectors["\\LogicalDisk\\% Free Space"] = std::make_shared<MetricCollectorBase>([this] (const std::string& instanceName)
+    {
+        if (instanceName == "_Total" || instanceName.empty())
+        {
+            float freeSpacePercent = 0.0f;
+            System::FreeSpace(freeSpacePercent);
+            return freeSpacePercent;
+        }
+        else
+        {
+            Logger::Warn("Unable to collect {0} for \\LogicalDisk\\% Free Space", instanceName);
+            return 0.0f;
+        }
+    });
+
+    this->collectors["\\Network Interface\\Bytes Total/sec"] = std::make_shared<MetricCollectorBase>([this] (const std::string& instanceName)
+    {
+        if (instanceName == "eth0" || instanceName.empty())
+        {
+            return std::get<1>(this->metricData[12]);
+        }
+        else
+        {
+            return 0.0f;
+            Logger::Warn("Unable to collect {0} for \\Network Interface\\Bytes Total/sec", instanceName);
+        }
+    });
 
     int result = pthread_create(&this->threadId, nullptr, MonitoringThread, this);
     if (result != 0) Logger::Error("Create monitoring thread result {0}, errno {1}", result, errno);
@@ -39,19 +181,34 @@ void Monitor::SetNodeUuid(const uuid& id)
     this->packet.Uuid.AssignFrom(id);
 }
 
-void Monitor::ApplyMetricConfig(const MetricCountersConfig& config)
+void Monitor::ApplyMetricConfig(MetricCountersConfig&& config)
 {
+    WriterLock writerLock(&this->lock);
+
+    for_each(this->collectors.begin(), this->collectors.end(), [] (auto& kvp) { kvp.second->Reset(); });
+
     for (auto& counter : config.MetricCounters)
     {
         if (!this->EnableMetricCounter(counter))
         {
-            Logger::Debug("Unable to enable metric counter MetricId: {0}, InstanceId: {1}, Path: {2}", counter.MetricId, counter.InstanceId, counter.Path);
+            Logger::Debug("Disabled counter MetricId {0}, InstanceId {1}, InstanceName {2} Path {3}", counter.MetricId, counter.InstanceId, counter.InstanceName, counter.Path);
+        }
+        else
+        {
+            Logger::Debug("Enabled counter MetricId {0}, InstanceId {1}, InstanceName {2} Path {3}", counter.MetricId, counter.InstanceId, counter.InstanceName, counter.Path);
         }
     }
 }
 
 bool Monitor::EnableMetricCounter(const MetricCounter& counterConfig)
 {
+    auto collector = this->collectors.find(counterConfig.Path);
+    if (collector != this->collectors.end())
+    {
+        collector->second->ApplyConfig(counterConfig);
+        return true;
+    }
+
     return false;
 }
 
@@ -64,27 +221,35 @@ std::vector<unsigned char> Monitor::GetMonitorPacketData()
 
     if (this->isCollected)
     {
-        // TODO: make the monitoring data configurable.
-        this->packet.Count = 3;
+        this->packet.Count = std::count_if(this->collectors.begin(), this->collectors.end(), [] (auto& kvp) { return kvp.second->IsEnabled(); });
         this->packet.TickCount = this->intervalSeconds;
-
         for (int i = 0; i < MaxCountersInPacket; i++)
         {
             this->packet.Umids[i] = Umid(0, 0);
             this->packet.Values[i] = 0.0f;
         }
 
-        std::transform(this->metricData.cbegin(), this->metricData.cend(), this->packet.Umids, [] (auto i)
-        {
-            return Umid(i.first, std::get<0>(i.second));
-        });
+        int p = 0;
 
-        std::transform(this->metricData.cbegin(), this->metricData.cend(), this->packet.Values, [] (auto i)
+        for (auto& c : this->collectors)
         {
-            return std::get<1>(i.second);
-        });
+            if (c.second->IsEnabled())
+            {
+                auto values = c.second->CollectValues();
 
-  //      Logger::Debug("GetMonitorPacketData, count {0}, TickCount {1}", this->packet.Count, this->packet.TickCount);
+                for (auto& v : values)
+                {
+                    if (NodeManagerConfig::GetDebug())
+                    {
+                        Logger::Debug("Report {0} {1} {2}", v.first, v.second.MetricId, v.second.InstanceId);
+                    }
+
+                    this->packet.Umids[p] = v.second;
+                    this->packet.Values[p] = v.first;
+                    p ++;
+                }
+            }
+        }
 
         memcpy(&packetData[0], &this->packet, std::min(sizeof(this->packet), MaxPacketSize));
     }
@@ -154,7 +319,7 @@ void Monitor::Run()
         float totalMemoryMb = (float)total / 1024.0f;
 
         uint64_t networkCurrent = 0;
-        int ret = System::NetworkUsage(networkCurrent, "eth0");
+        int ret = System::NetworkUsage(networkCurrent, this->networkName);
 
         if (ret != 0)
         {
@@ -165,7 +330,7 @@ void Monitor::Run()
         networkLast = networkCurrent;
 
         // ip address;
-        std::string ipAddress = System::GetIpAddress(IpAddressVersion::V4, "eth0");
+        std::string ipAddress = System::GetIpAddress(IpAddressVersion::V4, this->networkName);
 
         // cpu type;
         int cores, sockets;

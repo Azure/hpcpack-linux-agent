@@ -1,16 +1,68 @@
 #include "JobTaskTable.h"
 #include "../utils/WriterLock.h"
 #include "../utils/ReaderLock.h"
+#include "../utils/System.h"
 
 using namespace hpc::core;
 using namespace web;
 using namespace hpc::data;
+using namespace hpc::utils;
+
+JobTaskTable* JobTaskTable::instance = nullptr;
 
 json::value JobTaskTable::ToJson()
 {
     ReaderLock readerLock(&this->lock);
     auto j = this->nodeInfo.ToJson();
     return std::move(j);
+}
+
+int JobTaskTable::GetTaskCount()
+{
+    ReaderLock readerLock(&this->lock);
+    int taskCount = 0;
+
+    for_each(this->nodeInfo.Jobs.begin(), this->nodeInfo.Jobs.end(),
+        [&taskCount] (auto& i) { taskCount += i.second->Tasks.size(); });
+
+    return taskCount;
+}
+
+int JobTaskTable::GetCoresInUse()
+{
+    ReaderLock readerLock(&this->lock);
+
+    const uint64_t AllCores = 0xFFFFFFFFFFFFFFFF;
+    int cores, sockets;
+    System::CPU(cores, sockets);
+
+    uint64_t coresMask = 0;
+    for_each(this->nodeInfo.Jobs.begin(), this->nodeInfo.Jobs.end(), [&coresMask, cores, AllCores] (auto& i)
+    {
+        for_each(i.second->Tasks.begin(), i.second->Tasks.end(), [&coresMask, cores, AllCores] (auto& t)
+        {
+            if (t.second->Affinity.empty())
+            {
+                coresMask |= AllCores;
+            }
+            else
+            {
+                coresMask |= t.second->Affinity[0];
+            }
+        });
+    });
+
+    int used = 0;
+    int bit = 1;
+    for (int i = 0; i < cores; i++)
+    {
+        if (coresMask & (bit << i))
+        {
+            used++;
+        }
+    }
+
+    return used;
 }
 
 std::shared_ptr<TaskInfo> JobTaskTable::AddJobAndTask(int jobId, int taskId, bool& isNewEntry)

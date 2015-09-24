@@ -377,6 +377,38 @@ namespace hpc
                             "Enabled customized CA",
                         }
                     },
+                    { "1.6.5.0",
+                        {
+                            "Added debug mode",
+                            "Added several metrics plugin",
+                        }
+                    },
+                    { "1.6.6.0",
+                        {
+                            "Bind to any address when listening",
+                        }
+                    },
+                    { "1.6.7.0",
+                        {
+                            "Fix network usage collection issue",
+                        }
+                    },
+                    { "1.6.8.0",
+                        {
+                            "Change the Casablanca to use the construction time callback",
+                            "Fix the environment PATH issue",
+                        }
+                    },
+                    { "1.6.9.0",
+                        {
+                            "Remove the nginx dependency, support https natively",
+                        }
+                    },
+                    { "1.6.10.0",
+                        {
+                            "Fix a reporting thread crash issue",
+                        }
+                    },
                 };
 
                 return versionHistory;

@@ -105,7 +105,11 @@ std::string System::GetIpAddress(IpAddressVersion version, const std::string& na
                 (void*)&((sockaddr_in*)i->ifa_addr)->sin_addr :
                 (void*)&((sockaddr_in6*)i->ifa_addr)->sin6_addr;
 
-            if (std::string(i->ifa_name) != name) continue;
+            if ((name.empty() && std::string(i->ifa_name) == "lo:") ||
+                std::string(i->ifa_name) != name)
+            {
+                continue;
+            }
 
             const int BufferLength = isV4 ? INET_ADDRSTRLEN : INET6_ADDRSTRLEN;
             char buffer[BufferLength];
@@ -179,10 +183,123 @@ void System::CPU(int &cores, int &sockets)
 
     cores = coreIds.size();
     sockets = physicalIds.size();
+    sockets = (sockets > 0)? sockets : 1;
 
    // Logger::Debug("Detected core count {0}, socket count {1}", cores, sockets);
 
     fs.close();
+}
+
+int System::Vmstat(float &pagesPerSec, float &contextSwitchesPerSec)
+{
+    std::string output;
+
+    int ret = System::ExecuteCommandOut(output, "vmstat");
+
+    if (ret == 0)
+    {
+        std::istringstream iss(output);
+
+        iss.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        iss.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+        int r, b, swpd, free, buff, cache, si, so, bi, bo, in, cs, us, sy, id, wa, st;
+        iss >> r >> b >> swpd >> free >> buff >> cache >> si >> so >> bi >> bo
+            >> in >> cs >> us >> sy >> id >> wa >> st;
+
+        pagesPerSec = si + so;
+        contextSwitchesPerSec = cs;
+    }
+
+    return ret;
+}
+
+int System::Iostat(float &bytesPerSecond)
+{
+    std::string output;
+
+    int ret = System::ExecuteCommandOut(output, "iostat -dk");
+
+    if (ret == 0)
+    {
+        std::istringstream iss(output);
+
+        std::string device;
+
+        while (device != "Device:")
+        {
+            iss >> device;
+            iss.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        }
+
+        float tps, read, write;
+
+        iss >> device >> tps >> read >> write;
+
+        bytesPerSecond = (read + write) * 1024;
+    }
+
+    return ret;
+}
+
+int System::IostatX(float &queueLength)
+{
+    std::string output;
+
+    int ret = System::ExecuteCommandOut(output, "iostat -x");
+
+    if (ret == 0)
+    {
+        std::istringstream iss(output);
+
+        std::string device;
+
+        while (device != "Device:")
+        {
+            iss >> device;
+            iss.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+        }
+
+        float rrqm, wrqm, r, w, rkb, wkb, avgrq, avgqu;
+
+        iss >> device >> rrqm >> wrqm >> r >> w >> rkb >> wkb >> avgrq >> avgqu;
+
+        queueLength = avgqu;
+    }
+
+    return ret;
+}
+
+int System::FreeSpace(float &freeSpacePercent)
+{
+    std::string output;
+
+    int ret = System::ExecuteCommandOut(output, "df -k");
+
+    if (ret == 0)
+    {
+        std::istringstream iss(output);
+        iss.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+
+        std::string mountPoint;
+
+        while (mountPoint != "/" && iss.good())
+        {
+            std::string tmp;
+            iss >> tmp >> tmp >> tmp >> tmp >> freeSpacePercent >> tmp >> mountPoint;
+        }
+
+        if (mountPoint != "/")
+        {
+            ret = 1;
+        }
+        else
+        {
+            freeSpacePercent = 100 - freeSpacePercent;
+        }
+    }
+
+    return ret;
 }
 
 int System::NetworkUsage(uint64_t &network, const std::string& netName)
@@ -195,18 +312,21 @@ int System::NetworkUsage(uint64_t &network, const std::string& netName)
     fs.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     fs.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
-    while (name != netName && fs.good())
+    network = 0;
+
+    while (fs.good())
     {
         std::getline(fs, name, ':');
         name = String::Trim(name);
-        fs >> receive >> tmp >> tmp >> tmp >> tmp >> tmp >> tmp >> tmp >> send;
-        fs.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
-    }
 
-    if (name == netName)
-    {
-        network = receive + send;
-        ret = 0;
+        if (netName.empty() || netName == name)
+        {
+            fs >> receive >> tmp >> tmp >> tmp >> tmp >> tmp >> tmp >> tmp >> send;
+            network += receive + send;
+            ret = 0;
+        }
+
+        fs.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     }
 
     fs.close();

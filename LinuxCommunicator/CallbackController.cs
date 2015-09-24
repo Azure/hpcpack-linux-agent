@@ -1,17 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Net;
+using System.Net.Http;
 using System.Web.Http;
 using Microsoft.Hpc.Activation;
 using Microsoft.Hpc.Scheduler.Communicator;
-using Microsoft.Hpc.Communicators.LinuxCommunicator.Monitoring;
 
 namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 {
     public class CallbackController : ApiController
     {
+        /// <summary>
+        /// The Http header UpdateId
+        /// </summary>
+        public const string UpdateIdHeaderName = "UpdateId";
+
         [HttpPost]
         [Route("api/{nodename}/computenodereported")]
         public int ComputeNodeReported(string nodeName, [FromBody] ComputeClusterNodeInformation nodeInfo)
@@ -83,6 +87,28 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
             }
 
             return null;
+        }
+
+        [HttpGet]
+        [Route("api/hostfile")]
+        public HttpResponseMessage GetHosts()
+        {
+            Guid curUpdateId = LinuxCommunicator.Instance.HostsManager.UpdateId;
+            IEnumerable<string> updateIds;
+            bool hasUpdateId = Request.Headers.TryGetValues(UpdateIdHeaderName, out updateIds);
+            HttpResponseMessage response = null;
+            Guid guid;
+            if (hasUpdateId && Guid.TryParse(updateIds.FirstOrDefault(), out guid) && guid == curUpdateId)
+            {
+                response = Request.CreateResponse(HttpStatusCode.NoContent);
+            }
+            else
+            {
+                response = Request.CreateResponse(HttpStatusCode.OK, LinuxCommunicator.Instance.HostsManager.ManagedEntries);
+            }
+
+            response.Headers.Add(UpdateIdHeaderName, curUpdateId.ToString());
+            return response;
         }
     }
 }

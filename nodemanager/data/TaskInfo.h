@@ -85,6 +85,7 @@ namespace hpc
 
                 std::string Message;
                 std::vector<int> ProcessIds;
+                std::vector<uint64_t> Affinity;
 
                 pthread_t GracefulThreadId = 0;
             protected:

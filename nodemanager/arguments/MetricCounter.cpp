@@ -10,7 +10,8 @@ MetricCounter MetricCounter::FromJson(const web::json::value& jsonValue)
     return MetricCounter(
         JsonHelper<std::string>::Read("Path", jsonValue),
         JsonHelper<int>::Read("MetricId", jsonValue),
-        JsonHelper<int>::Read("InstanceId", jsonValue));
+        JsonHelper<int>::Read("InstanceId", jsonValue),
+        JsonHelper<std::string>::Read("InstanceName", jsonValue));
 }
 
 namespace hpc
