@@ -38,6 +38,7 @@ RemoteExecutor::RemoteExecutor(const std::string& networkName)
 
     this->StartHeartbeat(NodeManagerConfig::GetHeartbeatUri());
     this->StartMetric(NodeManagerConfig::GetMetricUri());
+    this->StartHostsManager(NodeManagerConfig::GetHostsFileUri());
 }
 
 json::value RemoteExecutor::StartJobAndTask(StartJobAndTaskArgs&& args, const std::string& callbackUri)
@@ -538,6 +539,17 @@ void RemoteExecutor::StartHeartbeat(const std::string& callbackUri)
                 [this]() { return this->jobTaskTable.ToJson(); }));
 
     this->nodeInfoReporter->Start();
+}
+
+void RemoteExecutor::StartHostsManager(const std::string& callbackUri)
+{
+    if(!callbackUri.empty())
+    {
+        WriterLock writerLock(&this->lock);
+
+        this->hostsManager = std::unique_ptr<HostsManager>(new HostsManager(callbackUri));
+        this->hostsManager->Start();
+    }
 }
 
 json::value RemoteExecutor::Ping(const std::string& callbackUri)

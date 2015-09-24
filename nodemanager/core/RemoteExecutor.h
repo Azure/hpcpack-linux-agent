@@ -9,6 +9,7 @@
 #include "Monitor.h"
 #include "Process.h"
 #include "Reporter.h"
+#include "HostsManager.h"
 #include "../arguments/MetricCountersConfig.h"
 #include "../data/ProcessStatistics.h"
 
@@ -35,6 +36,7 @@ namespace hpc
 
                 void StartHeartbeat(const std::string& callbackUri);
                 void StartMetric(const std::string& callbackUri);
+                void StartHostsManager(const std::string& callbackUri);
 
                 const hpc::data::ProcessStatistics* TerminateTask(
                     int jobId, int taskId, int requeueCount,
@@ -53,6 +55,7 @@ namespace hpc
                 std::unique_ptr<Reporter<json::value>> nodeInfoReporter;
                 std::unique_ptr<Reporter<json::value>> registerReporter;
                 std::unique_ptr<Reporter<std::vector<unsigned char>>> metricReporter;
+                std::unique_ptr<HostsManager> hostsManager;
 
                 std::map<uint64_t, std::shared_ptr<Process>> processes;
                 std::map<int, std::tuple<std::string, bool, bool, bool, bool, std::string>> jobUsers;
