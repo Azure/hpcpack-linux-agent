@@ -183,6 +183,7 @@ void System::CPU(int &cores, int &sockets)
 
     cores = coreIds.size();
     sockets = physicalIds.size();
+    sockets = (sockets > 0)? sockets : 1;
 
    // Logger::Debug("Detected core count {0}, socket count {1}", cores, sockets);
 

@@ -17,13 +17,21 @@ namespace hpc
         {
             public:
                 static http::http_request GetHttpRequest(
-                    const http::method& mtd,
-                    const json::value &body)
+                    const http::method& mtd)
                 {
                     http::http_request msg(mtd);
                     msg.set_request_uri("");
-                    msg.set_body(body);
                     msg.headers().add(AuthenticationHeaderKey, NodeManagerConfig::GetClusterAuthenticationKey());
+                    return msg;
+                }
+
+                template <typename T>
+                static http::http_request GetHttpRequest(
+                    const http::method& mtd,
+                    const T &body)
+                {
+                    http::http_request msg = GetHttpRequest(mtd);
+                    msg.set_body(body);
                     return msg;
                 }
 
@@ -79,10 +87,11 @@ namespace hpc
                     return std::move(http::client::http_client(uri, config));
                 }
 
-                static bool FindHeader(const http::http_request& request, const std::string& headerKey, std::string& header)
+                template <typename T>
+                static bool FindHeader(const T& message, const std::string& headerKey, std::string& header)
                 {
-                    auto h = request.headers().find(headerKey);
-                    if (h != request.headers().end())
+                    auto h = message.headers().find(headerKey);
+                    if (h != message.headers().end())
                     {
                         header = h->second;
                         return true;
