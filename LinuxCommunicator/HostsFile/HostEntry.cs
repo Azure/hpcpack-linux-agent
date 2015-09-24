@@ -20,21 +20,24 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.HostsFile
         /// </summary>
         /// <param name="name">The host name</param>
         /// <param name="ipAddress">The IP address</param>
-        public HostEntry(string name, string ipAddress)
+        private HostEntry(string name, string ipAddress)
         {
-            IPAddress testAddress;
-            if (!IPAddress.TryParse(ipAddress, out testAddress))
-            {
-                throw new ArgumentException("ipAddress must be a valid IP address");
-            }
-
-            if (string.IsNullOrEmpty(name))
-            {
-                throw new ArgumentException("name cannot be null");
-            }
-
+ 
             this.Address = ipAddress;
             this.Name = name;
+        }
+
+        public static bool TryCreate(string name, string ipAddress, out HostEntry entry)
+        {
+            IPAddress testAddress;
+            if (!IPAddress.TryParse(ipAddress, out testAddress) || string.IsNullOrEmpty(name))
+            {
+                entry = null;
+                return false;
+            }
+
+            entry = new HostEntry(name, ipAddress);
+            return true;
         }
 
         public override bool Equals(object obj)
