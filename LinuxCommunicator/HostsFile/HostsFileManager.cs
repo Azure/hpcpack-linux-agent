@@ -22,9 +22,14 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.HostsFile
         public const string ManagedEntryKey = "HPC";
 
         /// <summary>
+        /// The parameter name used to indicate whether the hosts file is HPC managed.
+        /// </summary>
+        public const string ManageFileParameter = "ManageFile";
+
+        /// <summary>
         /// The interval to reload hosts file
         /// </summary>
-        private const int ReloadTInterval = 1000 * 60;
+        private const int ReloadInterval = 1000 * 60;
 
         /// <summary>
         /// Regular expression for a comment line in the text file
@@ -40,11 +45,6 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.HostsFile
         /// Regular expression for a ip entry in the text file.
         /// </summary>
         private static readonly Regex IpEntry = new Regex(@"^(?<ip>[0-9\.]+)\s+(?<dnsName>[^\s#]+)(\s+#(?<comment>.*))?");
-
-        /// <summary>
-        /// The ip address entries in the host file.
-        /// </summary>
-        private List<HostEntry> managedEntries = new List<HostEntry>();
 
         /// <summary>
         /// The path to the hosts file
@@ -77,7 +77,8 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.HostsFile
         public HostsFileManager(string filepath)
         {
             this.filepath = filepath;
-            this.reloadTimer = new Timer(new TimerCallback(ReloadTimerEvent), null, 0, Timeout.Infinite);
+            this.ManagedEntries = new List<HostEntry>();
+            this.reloadTimer = new Timer(ReloadTimerEvent, null, 0, Timeout.Infinite);
         }
 
         /// <summary>
@@ -85,13 +86,14 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.HostsFile
         /// </summary>
         public List<HostEntry> ManagedEntries
         {
-            get { return this.managedEntries; }
+            get;
+            private set;
         }
 
         /// <summary>
         /// Gets or sets a flag indicating whether the file is HPC managed
         /// </summary>
-        public Boolean ManageFile
+        public bool ManagedByHPC
         {
             get;
             private set;
@@ -107,43 +109,43 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.HostsFile
             try
             {
                 FileInfo fileInfo = new FileInfo(this.filepath);
-                if(!fileInfo.Exists)
+                if (!fileInfo.Exists)
                 {
                     LinuxCommunicator.Instance.Tracer.TraceInfo("[HostsFileManager] The hosts file doesn't exists: {0}", this.filepath);
                     return;
                 }
 
-                if(fileInfo.LastWriteTimeUtc <= this.lastModified)
+                if (fileInfo.LastWriteTimeUtc <= this.lastModified)
                 {
                     LinuxCommunicator.Instance.Tracer.TraceInfo("[HostsFileManager] The hosts file isn't changed since last load");
                     return;
                 }
 
-                bool manageFile = false;
+                bool manageByHPC = false;
                 List<HostEntry> newEntries = new List<HostEntry>();
                 foreach (var line in File.ReadAllLines(this.filepath))
                 {
                     Match commentMatch = HostsFileManager.Comment.Match(line);
                     if (commentMatch.Success)
                     {
-                        // throw away comments for the moment.
-                    }
-
-                    Match commentParameterMatch = HostsFileManager.CommentParameter.Match(line);
-                    if (commentParameterMatch.Success && string.Equals(commentParameterMatch.Groups["parameter"].ToString(), "ManageFile", StringComparison.OrdinalIgnoreCase))
-                    {
-                        if (string.Equals(commentParameterMatch.Groups["value"].ToString(), "true", StringComparison.OrdinalIgnoreCase))
+                        Match commentParameterMatch = HostsFileManager.CommentParameter.Match(line);
+                        if (commentParameterMatch.Success && string.Equals(commentParameterMatch.Groups["parameter"].ToString(), ManageFileParameter, StringComparison.OrdinalIgnoreCase))
                         {
-                            manageFile = true;
+                            if (string.Equals(commentParameterMatch.Groups["value"].Value, "true", StringComparison.OrdinalIgnoreCase))
+                            {
+                                manageByHPC = true;
+                            }
                         }
+
+                        continue;
                     }
 
                     Match ipEntryMatch = HostsFileManager.IpEntry.Match(line);
-                    if (ipEntryMatch.Success && manageFile)
+                    if (ipEntryMatch.Success && manageByHPC)
                     {
-                        string ip = ipEntryMatch.Groups["ip"].ToString();
-                        string name = ipEntryMatch.Groups["dnsName"].ToString();
-                        string comment = ipEntryMatch.Groups["comment"].ToString();
+                        string ip = ipEntryMatch.Groups["ip"].Value;
+                        string name = ipEntryMatch.Groups["dnsName"].Value;
+                        string comment = ipEntryMatch.Groups["comment"].Value;
 
                         if (comment.Equals(HostsFileManager.ManagedEntryKey, StringComparison.OrdinalIgnoreCase))
                         {
@@ -159,22 +161,26 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.HostsFile
                     }
                 }
 
-                if (manageFile)
+                if (manageByHPC)
                 {
-                    if (newEntries.Count != this.managedEntries.Count || newEntries.Except(this.managedEntries).Any() || this.managedEntries.Except(newEntries).Any())
+                    if (newEntries.Count != this.ManagedEntries.Count || !(new HashSet<HostEntry>(this.ManagedEntries)).SetEquals(new HashSet<HostEntry>(newEntries)))
                     {
-                        this.managedEntries = newEntries;
+                        this.ManagedEntries = newEntries;
                         this.UpdateId = Guid.NewGuid();
                         LinuxCommunicator.Instance.Tracer.TraceInfo("[HostsFileManager] The managed host entries updated, current update Id is {0}", this.UpdateId);
+                    }
+                    else
+                    {
+                        LinuxCommunicator.Instance.Tracer.TraceInfo("[HostsFileManager] No update to HPC managed host entries, current update Id is {0}", this.UpdateId);
                     }
                 }
                 else
                 {
                     LinuxCommunicator.Instance.Tracer.TraceWarning("[HostsFileManager] Hosts file was not managed by HPC");
-                    this.managedEntries.Clear();
+                    this.ManagedEntries.Clear();
                 }
 
-                this.ManageFile = manageFile;
+                this.ManagedByHPC = manageByHPC;
                 this.lastModified = fileInfo.LastWriteTimeUtc;
             }
             catch (Exception e)
@@ -183,7 +189,14 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.HostsFile
             }
             finally
             {
-                this.reloadTimer.Change(ReloadTInterval, Timeout.Infinite);
+                try
+                {
+                    this.reloadTimer.Change(ReloadInterval, Timeout.Infinite);
+                }
+                catch (Exception te)
+                {
+                    LinuxCommunicator.Instance.Tracer.TraceWarning("[HostsFileManager] Failed to restart reload timer: {0}", te);
+                }
             }
         }
 

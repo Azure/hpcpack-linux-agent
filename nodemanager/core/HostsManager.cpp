@@ -52,7 +52,7 @@ bool HostsManager::HostsResponseHandler(const http_response& response)
     }
 
     std::string respUpdateId;
-    if(HttpHelper::FindHeader(response, UpdateIdHeaderName, respUpdateId))
+    if (HttpHelper::FindHeader(response, UpdateIdHeaderName, respUpdateId))
     {
         this.updateId = respUpdateId;
         std::vector<HostEntry> hostEntries = JsonHelper<std::vector<HostEntry>>::FromJson(response.extract_json().get());
@@ -63,7 +63,7 @@ bool HostsManager::HostsResponseHandler(const http_response& response)
 void HostsManager::UpdateHostsFile(const std::vector<HostEntry>& hostEntries)
 {
     std::list<std::string> unmanagedLines;
-    std::ifstream ifs("/etc/hosts", std::ios::in);
+    std::ifstream ifs(HostsFilePath, std::ios::in);
     std::string line;
     while (getline(ifs, line))
     {
@@ -75,20 +75,22 @@ void HostsManager::UpdateHostsFile(const std::vector<HostEntry>& hostEntries)
             unmanagedLines.push_back(line);
         }
     }
+    
     ifs.close();
 
-    std::ofstream ofs("/etc/hosts");
+    std::ofstream ofs(HostsFilePath);
     auto it = unmanagedLines.cbegin();
     while(it != unmanagedLines.cend())
     {
-        ofs << *it << endl;
+        ofs << *it << std::endl;
     }
     
     // Append the HPC entries at the end
-    for(size_t i=0; i<hostEntries.size(); i++)
+    for(std::size_t i=0; i<hostEntries.size(); i++)
     {
-        ofs << left << setw(24) << hostEntries[i].IPAddress << setw(30) << hostEntries[i].HostName << "#HPC" << endl;
+        ofs << std::left << std::setw(24) << hostEntries[i].IPAddress << std::setw(30) << hostEntries[i].HostName << "#HPC" << std::endl;
     }
+    
     ofs.close();
 }
 

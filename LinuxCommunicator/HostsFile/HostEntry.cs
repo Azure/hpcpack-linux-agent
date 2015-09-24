@@ -39,11 +39,6 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.HostsFile
 
         public override bool Equals(object obj)
         {
-            if (obj == null)
-            {
-                return false;
-            }
-
             HostEntry entry = obj as HostEntry;
             if (entry == null)
             {
@@ -55,16 +50,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.HostsFile
 
         public override int GetHashCode()
         {
-            int hashCode = 0;
-            if ((this.Address != null))
-            {
-                hashCode = hashCode ^ this.Address.GetHashCode();
-            }
-            if ((this.Name != null))
-            {
-                hashCode = hashCode ^ this.Name.GetHashCode();
-            }
-            return hashCode;
+            return (this.Address ?? string.Empty).GetHashCode() ^ (this.Name ?? string.Empty).GetHashCode();
         }
     }
 }

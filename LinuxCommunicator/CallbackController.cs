@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Web.Http;
@@ -10,6 +11,11 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 {
     public class CallbackController : ApiController
     {
+        /// <summary>
+        /// The Http header UpdateId
+        /// </summary>
+        public const string UpdateIdHeaderName = "UpdateId";
+
         [HttpPost]
         [Route("api/{nodename}/computenodereported")]
         public int ComputeNodeReported(string nodeName, [FromBody] ComputeClusterNodeInformation nodeInfo)
@@ -88,19 +94,11 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
         public HttpResponseMessage GetHosts()
         {
             Guid curUpdateId = LinuxCommunicator.Instance.HostsManager.UpdateId;
-            string updateid = string.Empty;
-            IEnumerable<string> updateids;
-            if (Request.Headers.TryGetValues("UpdateId", out updateids))
-            {
-                foreach (var id in updateids)
-                {
-                    updateid = id;
-                }
-            }
-
+            IEnumerable<string> updateIds;
+            bool hasUpdateId = Request.Headers.TryGetValues(UpdateIdHeaderName, out updateIds);
             HttpResponseMessage response = null;
             Guid guid;
-            if (Guid.TryParse(updateid, out guid) && guid == curUpdateId)
+            if (hasUpdateId && Guid.TryParse(updateIds.FirstOrDefault(), out guid) && guid == curUpdateId)
             {
                 response = Request.CreateResponse(HttpStatusCode.NoContent);
             }
@@ -109,7 +107,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
                 response = Request.CreateResponse(HttpStatusCode.OK, LinuxCommunicator.Instance.HostsManager.ManagedEntries);
             }
 
-            response.Headers.Add("UpdateId", curUpdateId.ToString());
+            response.Headers.Add(UpdateIdHeaderName, curUpdateId.ToString());
             return response;
         }
     }
