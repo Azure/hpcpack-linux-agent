@@ -12,16 +12,18 @@ namespace hpc
     {
         using namespace web;
 
-        class HttpFetcher : public Reporter<int>
+        class HttpFetcher : public Reporter<void>
         {
             public:
                 HttpFetcher(
                     const std::string& uri,
                     int hold,
                     int interval,
-                    std::function<void(http::http_request&)> requestHandler,
-                    std::function<void(http::http_response&)> responseHandler)
-                : Reporter<json::value>(uri, hold, interval, nullptr),requestHandler(requestHandler),responseHandler(responseHandler)
+                    std::function<bool(http::http_request&)> requestHandler,
+                    std::function<bool(http::http_response&)> responseHandler)
+                : Reporter<void>(uri, hold, interval, nullptr),
+                requestHandler(requestHandler),
+                responseHandler(responseHandler)
                 {
                 }
 
@@ -30,7 +32,7 @@ namespace hpc
                     this->cts.cancel();
                     this->Stop();
                 }
-                
+
                 virtual void Report();
 
             private:
