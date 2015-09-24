@@ -73,10 +73,9 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.HostsFile
         /// <summary>
         /// This constructor initializes the parser on a specific hosts file
         /// </summary>
-        /// <param name="filepath"></param>
-        public HostsFileManager(string filepath)
+        public HostsFileManager()
         {
-            this.filepath = filepath;
+            this.filepath = Path.Combine(Environment.SystemDirectory, @"drivers\etc\hosts");
             this.ManagedEntries = new List<HostEntry>();
             this.reloadTimer = new Timer(ReloadTimerEvent, null, 0, Timeout.Infinite);
         }
@@ -141,23 +140,14 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.HostsFile
                     }
 
                     Match ipEntryMatch = HostsFileManager.IpEntry.Match(line);
-                    if (ipEntryMatch.Success && manageByHPC)
-                    {
-                        string ip = ipEntryMatch.Groups["ip"].Value;
-                        string name = ipEntryMatch.Groups["dnsName"].Value;
-                        string comment = ipEntryMatch.Groups["comment"].Value;
+                    HostEntry entry;
 
-                        if (comment.Equals(HostsFileManager.ManagedEntryKey, StringComparison.OrdinalIgnoreCase))
-                        {
-                            try
-                            {
-                                newEntries.Add(new HostEntry(name, ip));
-                            }
-                            catch (ArgumentException ex)
-                            {
-                                LinuxCommunicator.Instance.Tracer.TraceInfo("[HostsFileManager] Skip invalid host entry name={0}, ip={1}: {2}", name, ip, ex.Message);
-                            }
-                        }
+                    if (ipEntryMatch.Success &&
+                        manageByHPC &&
+                        ipEntryMatch.Groups["comment"].Value.Equals(HostsFileManager.ManagedEntryKey, StringComparison.OrdinalIgnoreCase) &&
+                        HostEntry.TryCreate(ipEntryMatch.Groups["dnsName"].Value, ipEntryMatch.Groups["ip"].Value, out entry))
+                    {
+                        newEntries.Add(entry);
                     }
                 }
 
