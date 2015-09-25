@@ -22,7 +22,7 @@ WINDRES = windres
 LIBOUTDIR = lib
 INSTALLDIR = /opt/hpcnodemanager
 INC = -I$(CASA_INC) -I$(SPDLOG_INC)
-CFLAGS = -Wall -std=c++1y -Wno-unused-local-typedefs
+CFLAGS = -Wall -std=c++14 -Wno-unused-local-typedefs
 LIB = -lcpprest -lpthread -lboost_system -lssl -lcrypto
 LDFLAGS = -Wl,-rpath,\$$ORIGIN/$(LIBOUTDIR),-I$(INSTALLDIR)/$(LIBOUTDIR)/ld-linux-x86-64.so.2
 BINARY = nodemanager
@@ -200,7 +200,7 @@ deps: $(CPPSWITHDIR)
 	@echo "Rebuilding dependencies ... "
 	@tput sgr0
 	$(indent)
-	$(CXX) -MM *.cpp */*.cpp > rawdeps
+	$(CXX) $(CFLAGS) -MM *.cpp */*.cpp > rawdeps
 	$(indent)
 	cat rawdeps | sed -e "s/\(.*\)\.o/$(OBJDIRSED_DEBUG)\/\1\.o/" > deps
 	$(indent)

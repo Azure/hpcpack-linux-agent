@@ -18,15 +18,17 @@ namespace hpc
                 const int FetchInterval = 300000;
                 const std::string HPCHostEntryPattern = R"delimiter(^([0-9\.]+)\s+([^\s#]+)\s+#HPC\s*)delimiter";
                 const std::string UpdateIdHeaderName = "UpdateId";
+
                 HostsManager(const std::string& hostsUri);
-                ~HostsManager();
-                void Start();
-                void Stop();
-                
+                ~HostsManager() { this->Stop(); }
+
+                void Start() { this->hostsFetcher->Start(); }
+                void Stop() { this->hostsFetcher->Stop(); }
+
             protected:
             private:
                 bool HostsResponseHandler(const http_response& response);
-                void UpdateHostsFile(const std::vector<HostEntry>& hostEntries);
+                void UpdateHostsFile(const std::vector<hpc::data::HostEntry>& hostEntries);
                 std::string updateId;
                 std::unique_ptr<HttpFetcher> hostsFetcher;
         };

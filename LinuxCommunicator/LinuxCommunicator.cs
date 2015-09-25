@@ -60,7 +60,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
             instance = this;
             this.headNodeFqdn = new Lazy<string>(() => Dns.GetHostEntryAsync(this.HeadNode).Result.HostName, LazyThreadSafetyMode.ExecutionAndPublication);
             this.MonitoringConfigManager = new MonitoringConfigManager(this.headNodeFqdn.Value);
-            this.HostsManager = new HostsFileManager(Path.Combine(Environment.SystemDirectory, @"drivers\etc\hosts"));
+            this.HostsManager = new HostsFileManager();
         }
 
         public event EventHandler<RegisterEventArgs> RegisterRequested;
@@ -489,7 +489,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
         private string GetCallbackUri(string nodeName, string action)
         {
-            return string.Format("{0}/api/{1}/{2}", string.Format(CultureInfo.InvariantCulture, this.server.LinuxCommunicatorUriTemplate, Environment.MachineName), nodeName, action);
+            return string.Format("{0}/api/{1}/{2}", string.Format(CultureInfo.InvariantCulture, this.server.LinuxCommunicatorUriTemplate, this.headNodeFqdn.Value), nodeName, action);
         }
 
         public void OnRegisterRequested(RegisterEventArgs registerEventArgs)

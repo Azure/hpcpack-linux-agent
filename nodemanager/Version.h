@@ -409,6 +409,12 @@ namespace hpc
                             "Fix a reporting thread crash issue",
                         }
                     },
+                    { "1.6.11.0",
+                        {
+                            "Fix a node error issue caused by rare case deadlock",
+                            "Upgrade to latest spdlog library",
+                        }
+                    },
                 };
 
                 return versionHistory;

@@ -5,6 +5,7 @@
 #include <fstream>
 #include <iomanip>
 #include "HostsManager.h"
+#include "HttpHelper.h"
 
 using namespace hpc::utils;
 using namespace hpc::data;
@@ -19,45 +20,38 @@ HostsManager::HostsManager(const std::string& hostsUri)
                 hostsUri,
                 0,
                 FetchInterval,
-                [this](http_request& request) {
-                    if(!this->updateId.empty())
-                       request.headers().add(UpdateIdHeaderName, this->updateId);
+                [this](http_request& request)
+                {
+                    if (!this->updateId.empty())
+                    {
+                        request.headers().add(UpdateIdHeaderName, this->updateId);
+                    }
+
                     return true;
                 },
-                [this](http_response& response) {
+                [this](http_response& response)
+                {
                     return this->HostsResponseHandler(response);
-                }));    
-}
-
-HostsManager::~HostsManager()
-{
-    this->hostsFetcher->Stop();    
-}
-
-void HostsManager::Start()
-{
-    this->hostsFetcher->Start();
-}
-
-void HostsManager::Stop()
-{
-    this->hostsFetcher->Stop();
+                }));
 }
 
 bool HostsManager::HostsResponseHandler(const http_response& response)
 {
-    if(response.status_code != 200)
+    if (response.status_code() != status_codes::OK)
     {
-        return;
+        return false;
     }
 
     std::string respUpdateId;
     if (HttpHelper::FindHeader(response, UpdateIdHeaderName, respUpdateId))
     {
-        this.updateId = respUpdateId;
+        this->updateId = respUpdateId;
         std::vector<HostEntry> hostEntries = JsonHelper<std::vector<HostEntry>>::FromJson(response.extract_json().get());
-        this.UpdateHostsFile(hostEntries);
+        this->UpdateHostsFile(hostEntries);
+        return true;
     }
+
+    return false;
 }
 
 void HostsManager::UpdateHostsFile(const std::vector<HostEntry>& hostEntries)
@@ -75,7 +69,7 @@ void HostsManager::UpdateHostsFile(const std::vector<HostEntry>& hostEntries)
             unmanagedLines.push_back(line);
         }
     }
-    
+
     ifs.close();
 
     std::ofstream ofs(HostsFilePath);
@@ -84,13 +78,13 @@ void HostsManager::UpdateHostsFile(const std::vector<HostEntry>& hostEntries)
     {
         ofs << *it << std::endl;
     }
-    
+
     // Append the HPC entries at the end
     for(std::size_t i=0; i<hostEntries.size(); i++)
     {
         ofs << std::left << std::setw(24) << hostEntries[i].IPAddress << std::setw(30) << hostEntries[i].HostName << "#HPC" << std::endl;
     }
-    
+
     ofs.close();
 }
 
