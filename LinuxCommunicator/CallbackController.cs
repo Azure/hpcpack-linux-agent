@@ -90,7 +90,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
         }
 
         [HttpGet]
-        [Route("api/hostfile")]
+        [Route("api/hostsfile")]
         public HttpResponseMessage GetHosts()
         {
             Guid curUpdateId = LinuxCommunicator.Instance.HostsManager.UpdateId;

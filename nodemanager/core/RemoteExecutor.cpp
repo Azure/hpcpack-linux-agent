@@ -38,7 +38,7 @@ RemoteExecutor::RemoteExecutor(const std::string& networkName)
 
     this->StartHeartbeat(NodeManagerConfig::GetHeartbeatUri());
     this->StartMetric(NodeManagerConfig::GetMetricUri());
-    this->StartHostsManager(NodeManagerConfig::GetHostsFileUri());
+    this->StartHostsManager();
 }
 
 json::value RemoteExecutor::StartJobAndTask(StartJobAndTaskArgs&& args, const std::string& callbackUri)
@@ -541,13 +541,26 @@ void RemoteExecutor::StartHeartbeat(const std::string& callbackUri)
     this->nodeInfoReporter->Start();
 }
 
-void RemoteExecutor::StartHostsManager(const std::string& callbackUri)
+void RemoteExecutor::StartHostsManager()
 {
-    if(!callbackUri.empty())
+    std::string hostsUri = NodeManagerConfig::GetHostsFileUri();
+    if(!hostsUri.empty())
     {
+        int interval = this->DefaultHostsFetchInterval;
+        try
+        {
+            interval = NodeManagerConfig::GetHostsFetchInterval();
+        }
+        catch
+        {
+            // The Hosts Fetch interval may be not specified, just use the default interval in this case.
+        }
+
+        interval = (interval < MinHostsFetchInterval)? MinHostsFetchInterval : interval;
+
         WriterLock writerLock(&this->lock);
 
-        this->hostsManager = std::unique_ptr<HostsManager>(new HostsManager(callbackUri));
+        this->hostsManager = std::unique_ptr<HostsManager>(new HostsManager(hostsUri, interval));
         this->hostsManager->Start();
     }
 }
