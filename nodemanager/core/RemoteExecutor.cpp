@@ -544,9 +544,10 @@ void RemoteExecutor::StartHeartbeat(const std::string& callbackUri)
 void RemoteExecutor::StartHostsManager()
 {
     std::string hostsUri = NodeManagerConfig::GetHostsFileUri();
-    if(!hostsUri.empty())
+    if (!hostsUri.empty())
     {
         int interval = this->DefaultHostsFetchInterval;
+        
         try
         {
             interval = NodeManagerConfig::GetHostsFetchInterval();
@@ -554,14 +555,23 @@ void RemoteExecutor::StartHostsManager()
         catch
         {
             // The Hosts Fetch interval may be not specified, just use the default interval in this case.
+            Logger::Info("HostsFetchInterval not specified or invalid, use the default interval {0} seconds.", interval);
         }
-
-        interval = (interval < MinHostsFetchInterval)? MinHostsFetchInterval : interval;
+        
+        if (interval < MinHostsFetchInterval)
+        {
+            Logger::Info("HostsFetchInterval {0} is less than minimum interval {1}, use the minimum interval.", interval, MinHostsFetchInterval);
+            interval = MinHostsFetchInterval;
+        }
 
         WriterLock writerLock(&this->lock);
 
         this->hostsManager = std::unique_ptr<HostsManager>(new HostsManager(hostsUri, interval));
         this->hostsManager->Start();
+    }
+    else
+    {
+        Logger::Warn("HostsFileUri not specified, hosts manager will not be started.");
     }
 }
 
