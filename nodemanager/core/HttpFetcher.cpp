@@ -19,31 +19,31 @@ void HttpFetcher::Report()
         {
             if (!this->requestHandler(request))
             {
-                Logger::Info("Skipped sending to {0} because of failure in request handler", uri);
+                Logger::Warn("Skipped fetching from {0} because of failure in request handler", uri);
                 return;
             }
         }
 
         http_response response = client.request(request, this->cts.get_token()).get();
-        Logger::Debug("---------> Reported to {0} response code {1}", uri, response.status_code());
+        Logger::Debug("---------> Fetched from {0} response code {1}", uri, response.status_code());
         if(this->responseHandler)
         {
             if (!this->responseHandler(response))
             {
-                Logger::Info("Error in response handler for the request sent to {0}", uri);
+                Logger::Warn("Error in response handler for the fetch request to {0}", uri);
             }
         }
     }
     catch (const http_exception& httpEx)
     {
-        Logger::Warn("HttpException occurred when report to {0}, ex {1}", this->reportUri, httpEx.what());
+        Logger::Warn("HttpException occurred when fetching from {0}, ex {1}", this->reportUri, httpEx.what());
     }
     catch (const std::exception& ex)
     {
-        Logger::Error("Exception occurred when report to {0}, ex {1}", this->reportUri, ex.what());
+        Logger::Error("Exception occurred when fetching from {0}, ex {1}", this->reportUri, ex.what());
     }
     catch (...)
     {
-        Logger::Error("Unknown error occurred when report to {0}", this->reportUri);
+        Logger::Error("Unknown error occurred when fetching from {0}", this->reportUri);
     }
 }

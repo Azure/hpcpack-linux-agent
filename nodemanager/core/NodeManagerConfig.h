@@ -38,6 +38,7 @@ namespace hpc
                 AddConfigurationItem(std::string, ListeningUri);
                 AddConfigurationItem(bool, UseDefaultCA);
                 AddConfigurationItem(bool, Debug);
+                AddConfigurationItem(int, HostsFetchInterval);
 
             protected:
             private:

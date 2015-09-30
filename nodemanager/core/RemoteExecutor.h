@@ -36,7 +36,7 @@ namespace hpc
 
                 void StartHeartbeat(const std::string& callbackUri);
                 void StartMetric(const std::string& callbackUri);
-                void StartHostsManager(const std::string& callbackUri);
+                void StartHostsManager();
 
                 const hpc::data::ProcessStatistics* TerminateTask(
                     int jobId, int taskId, int requeueCount,
@@ -48,6 +48,8 @@ namespace hpc
                 const int NodeInfoReportInterval = 30;
                 const int MetricReportInterval = 1;
                 const int RegisterInterval = 300;
+                const int DefaultHostsFetchInterval = 300;
+                const int MinHostsFetchInterval = 30;
 
                 JobTaskTable jobTaskTable;
                 Monitor monitor;
