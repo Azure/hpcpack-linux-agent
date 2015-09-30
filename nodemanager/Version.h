@@ -415,6 +415,11 @@ namespace hpc
                             "Upgrade to latest spdlog library",
                         }
                     },
+                    { "1.6.12.0",
+                        {
+                            "Added hosts file support",
+                        }
+                    },
                 };
 
                 return versionHistory;
