@@ -377,6 +377,12 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
                 await Task.Yield();
                 this.Tracer.TraceInfo("Compute node {0} metricconfig requested, callback {1}. Ex {2}", nodeGuid, callbackUri, ex);
             }, config);
+            
+            this.SendRequest("metric", callbackUri, nodeName, async (content, ex) =>
+            {
+                await Task.Yield();
+                this.Tracer.TraceInfo("Compute node {0} metric requested, callback {1}. Ex {2}", nodeGuid, callbackUri, ex);
+            }, config);
         }
 
         private async Task SendRequestInternal<T>(string action, string callbackUri, string nodeName, Func<HttpContent, Exception, Task> callback, T arg, int retryCount = 0)
