@@ -226,7 +226,7 @@ int System::Iostat(float &bytesPerSecond)
 
         std::string device;
 
-        while (device != "Device:")
+        while (device != "Device:" && iss.good())
         {
             iss >> device;
             iss.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
@@ -254,7 +254,7 @@ int System::IostatX(float &queueLength)
 
         std::string device;
 
-        while (device != "Device:")
+        while (device != "Device:" && iss.good())
         {
             iss >> device;
             iss.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
