@@ -121,7 +121,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.HostsFile
                 }
 
                 bool manageByHPC = false;
-                List<HostEntry> newEntries = new List<HostEntry>();
+                Dictionary<string, HostEntry> newEntries = new Dictionary<string, HostEntry>();
                 foreach (var line in File.ReadAllLines(this.filepath))
                 {
                     Match commentMatch = HostsFileManager.Comment.Match(line);
@@ -147,15 +147,15 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.HostsFile
                         ipEntryMatch.Groups["comment"].Value.Equals(HostsFileManager.ManagedEntryKey, StringComparison.OrdinalIgnoreCase) &&
                         HostEntry.TryCreate(ipEntryMatch.Groups["dnsName"].Value, ipEntryMatch.Groups["ip"].Value, out entry))
                     {
-                        newEntries.Add(entry);
+                        newEntries[entry.Name] = entry;
                     }
                 }
 
                 if (manageByHPC)
                 {
-                    if (newEntries.Count != this.ManagedEntries.Count || !(new HashSet<HostEntry>(this.ManagedEntries)).SetEquals(new HashSet<HostEntry>(newEntries)))
+                    if (newEntries.Count != this.ManagedEntries.Count || !(new HashSet<HostEntry>(this.ManagedEntries)).SetEquals(new HashSet<HostEntry>(newEntries.Values)))
                     {
-                        this.ManagedEntries = newEntries;
+                        this.ManagedEntries = newEntries.Values.ToList();
                         this.UpdateId = Guid.NewGuid();
                         LinuxCommunicator.Instance.Tracer.TraceInfo("[HostsFileManager] The managed host entries updated, current update Id is {0}", this.UpdateId);
                     }
