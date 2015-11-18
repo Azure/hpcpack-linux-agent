@@ -10,9 +10,9 @@ namespace hpc
     {
         struct ProcessStatistics
         {
-            uint64_t UserTimeMs;
-            uint64_t KernelTimeMs;
-            uint64_t WorkingSetKb;
+            uint64_t UserTimeMs = 0;
+            uint64_t KernelTimeMs = 0;
+            uint64_t WorkingSetKb = 0;
             std::vector<int> ProcessIds;
 
             int GetProcessCount() const { return this->ProcessIds.size(); }

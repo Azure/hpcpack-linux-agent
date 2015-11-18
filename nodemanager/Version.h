@@ -425,6 +425,11 @@ namespace hpc
                             "Fix a deadlock caused by the input string stream reading",
                         }
                     },
+                    { "1.6.14.0",
+                        {
+                            "Give the statistics an initial value to avoid overflow in scheduler database",
+                        }
+                    },
                 };
 
                 return versionHistory;
