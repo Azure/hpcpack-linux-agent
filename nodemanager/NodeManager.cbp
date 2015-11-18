@@ -18,7 +18,7 @@
 				</Compiler>
 				<Linker>
 					<Add option="-lpthread" />
-					<Add library="../../casablanca/Release/build.debug/Binaries/libcpprest.so" />
+					<Add library="../../hpccasa/Release/build.debug/Binaries/libcpprest.so" />
 				</Linker>
 				<ExtraCommands>
 					<Add after="cp scripts/* bin/Debug/" />
@@ -34,7 +34,7 @@
 				</Compiler>
 				<Linker>
 					<Add option="-lpthread" />
-					<Add library="../../casablanca/Release/build.release/Binaries/libcpprest.so" />
+					<Add library="../../hpccasa/Release/build.release/Binaries/libcpprest.so" />
 				</Linker>
 				<ExtraCommands>
 					<Add after="cp scripts/* bin/Release/" />
@@ -45,7 +45,7 @@
 			<Add option="-fexceptions" />
 			<Add option="-Wno-unused-local-typedefs" />
 			<Add option="-std=c++1y" />
-			<Add directory="../../casablanca/Release/include" />
+			<Add directory="../../hpccasa/Release/include" />
 			<Add directory="../../spdlog/include" />
 		</Compiler>
 		<Unit filename="Readme.txt" />
@@ -68,6 +68,10 @@
 		<Unit filename="common/ErrorCodes.h" />
 		<Unit filename="config/nm_proxy.conf" />
 		<Unit filename="config/nodemanager.json" />
+		<Unit filename="core/HostsManager.cpp" />
+		<Unit filename="core/HostsManager.h" />
+		<Unit filename="core/HttpFetcher.cpp" />
+		<Unit filename="core/HttpFetcher.h" />
 		<Unit filename="core/HttpHelper.cpp" />
 		<Unit filename="core/HttpHelper.h" />
 		<Unit filename="core/HttpReporter.cpp" />
@@ -75,6 +79,8 @@
 		<Unit filename="core/IRemoteExecutor.h" />
 		<Unit filename="core/JobTaskTable.cpp" />
 		<Unit filename="core/JobTaskTable.h" />
+		<Unit filename="core/MetricCollectorBase.cpp" />
+		<Unit filename="core/MetricCollectorBase.h" />
 		<Unit filename="core/Monitor.cpp" />
 		<Unit filename="core/Monitor.h" />
 		<Unit filename="core/NodeManagerConfig.cpp" />
@@ -89,6 +95,8 @@
 		<Unit filename="core/Reporter.h" />
 		<Unit filename="core/UdpReporter.cpp" />
 		<Unit filename="core/UdpReporter.h" />
+		<Unit filename="data/HostEntry.cpp" />
+		<Unit filename="data/HostEntry.h" />
 		<Unit filename="data/JobInfo.cpp" />
 		<Unit filename="data/JobInfo.h" />
 		<Unit filename="data/MonitoringPacket.cpp" />

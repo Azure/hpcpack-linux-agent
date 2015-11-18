@@ -547,17 +547,17 @@ void RemoteExecutor::StartHostsManager()
     if (!hostsUri.empty())
     {
         int interval = this->DefaultHostsFetchInterval;
-        
+
         try
         {
             interval = NodeManagerConfig::GetHostsFetchInterval();
         }
-        catch
+        catch (...)
         {
             // The Hosts Fetch interval may be not specified, just use the default interval in this case.
             Logger::Info("HostsFetchInterval not specified or invalid, use the default interval {0} seconds.", interval);
         }
-        
+
         if (interval < MinHostsFetchInterval)
         {
             Logger::Info("HostsFetchInterval {0} is less than minimum interval {1}, use the minimum interval.", interval, MinHostsFetchInterval);
