@@ -15,7 +15,7 @@ namespace hpc
         {
             public:
                 const std::string HostsFilePath = "/etc/hosts";
-                const std::string HPCHostEntryPattern = R"delimiter(^([0-9\.]+)\s+([^\s#]+)\s+#HPC\s*)delimiter";
+                const std::string HPCHostEntryPattern = R"delimiter(^([0-9\.]+)\s+([^\s#]+)\s+#HPC\s*$)delimiter";
                 const std::string UpdateIdHeaderName = "UpdateId";
 
                 HostsManager(const std::string& hostsUri, int fetchInterval);
