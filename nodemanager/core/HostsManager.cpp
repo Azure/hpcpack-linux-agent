@@ -92,12 +92,23 @@ void HostsManager::UpdateHostsFile(const std::vector<HostEntry>& hostEntries)
     }
 
     // Append the HPC entries at the end
+    // Make the <NetworkType>.<NodeName> entries at the end
     for(std::size_t i=0; i<hostEntries.size(); i++)
     {
-        Logger::Debug("Add HPC host entry: ({0}, {1})", hostEntries[i].HostName, hostEntries[i].IPAddress);
-        ofs << std::left << std::setw(24) << hostEntries[i].IPAddress << std::setw(30) << hostEntries[i].HostName << "#HPC" << std::endl;
+        if (hostEntries[i].HostName.find('.') == std::string::npos)
+        {
+            Logger::Debug("Add HPC host entry: ({0}, {1})", hostEntries[i].HostName, hostEntries[i].IPAddress);
+            ofs << std::left << std::setw(24) << hostEntries[i].IPAddress << std::setw(30) << hostEntries[i].HostName << "#HPC" << std::endl;
+        }
     }
-
+    for(std::size_t i=0; i<hostEntries.size(); i++)
+    {
+        if (hostEntries[i].HostName.find('.') != std::string::npos)
+        {
+            Logger::Debug("Add HPC host entry: ({0}, {1})", hostEntries[i].HostName, hostEntries[i].IPAddress);
+            ofs << std::left << std::setw(24) << hostEntries[i].IPAddress << std::setw(30) << hostEntries[i].HostName << "#HPC" << std::endl;
+        }
+    }
     ofs.close();
 }
 
