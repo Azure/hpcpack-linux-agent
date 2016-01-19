@@ -58,8 +58,16 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
         {
             try
             {
-                LinuxCommunicator.Instance.Tracer.TraceInfo("Linux RegisterRequested. NodeName {0}, Distro {1} ", registerInfo.NodeName, registerInfo.DistroInfo);
-                LinuxCommunicator.Instance.OnRegisterRequested(registerInfo);
+                if (!nodeName.Equals(registerInfo.NodeName, StringComparison.OrdinalIgnoreCase))
+                {
+                    LinuxCommunicator.Instance.Tracer.TraceError("Linux RegisterRequested: the node name '{0}' in register info mismatches the expected node name {1}.", nodeName, registerInfo.NodeName);
+                    LinuxCommunicator.Instance.Tracer.TraceInfo("The IP address(es) of the node {0}: {1}.", registerInfo.NodeName, string.Join(",", registerInfo.NetworksInfo.Select(ni => ni.IpV4)));
+                }
+                else
+                {
+                    LinuxCommunicator.Instance.Tracer.TraceInfo("Linux RegisterRequested. NodeName {0}, Distro {1} ", registerInfo.NodeName, registerInfo.DistroInfo);
+                    LinuxCommunicator.Instance.OnRegisterRequested(registerInfo);
+                }
 
                 return -1;
             }

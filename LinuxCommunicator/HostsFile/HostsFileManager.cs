@@ -155,7 +155,10 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.HostsFile
                 {
                     if (newEntries.Count != this.ManagedEntries.Count || !(new HashSet<HostEntry>(this.ManagedEntries)).SetEquals(new HashSet<HostEntry>(newEntries.Values)))
                     {
-                        this.ManagedEntries = newEntries.Values.ToList();
+                        // Put the <NetworkType>.<NodeName> entries at the end of the list
+                        var newHostList = newEntries.Values.Where(entry => !entry.Name.Contains('.')).ToList();
+                        newHostList.AddRange(newEntries.Values.Where(entry => entry.Name.Contains('.')));
+                        this.ManagedEntries = newHostList;
                         this.UpdateId = Guid.NewGuid();
                         LinuxCommunicator.Instance.Tracer.TraceInfo("[HostsFileManager] The managed host entries updated, current update Id is {0}", this.UpdateId);
                     }
