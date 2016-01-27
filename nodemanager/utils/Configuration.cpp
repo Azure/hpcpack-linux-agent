@@ -36,13 +36,21 @@ void Configuration::Save()
 {
     WriterLock writerLock(&this->lock);
 
-    std::ofstream ofs(confFile, std::ios::trunc);
+    std::string tmpConfFile = confFile + ".tmp";
+    std::ofstream ofs(tmpConfFile, std::ios::trunc);
 
     if (ofs.good())
     {
         this->data.serialize(ofs);
 
         ofs.close();
+
+        if (-1 == rename(tmpConfFile.c_str(), this->confFile.c_str()))
+        {
+            int err = errno;
+            Logger::Error("Failed to save {0} to {1}, errno {2}", tmpConfFile, confFile, err);
+            exit((int)ErrorCodes::ConfigurationFileError);
+        }
     }
     else
     {

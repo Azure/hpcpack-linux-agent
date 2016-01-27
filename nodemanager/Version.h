@@ -430,6 +430,26 @@ namespace hpc
                             "Give the statistics an initial value to avoid overflow in scheduler database",
                         }
                     },
+                    { "1.6.15.0",
+                        {
+                            "Fix a security issue which will disclose secrets",
+                        }
+                    },
+                    { "1.6.16.0",
+                        {
+                            "Atomically change the configuration file",
+                        }
+                    },
+                    { "1.6.17.0",
+                        {
+                            "Fix the host file manager bug",
+                        }
+                    },
+                    { "1.6.18.0",
+                        {
+                            "Fix the cgroup root path issue",
+                        }
+                    },
                 };
 
                 return versionHistory;

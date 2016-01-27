@@ -148,7 +148,7 @@ void RemoteCommunicator::HandlePost(http_request request)
         request.extract_json().then([processor, callback = std::move(callbackUri)](pplx::task<json::value> t)
         {
             auto j = t.get();
-            Logger::Debug("Json: {0}", j.serialize());
+         //   Logger::Debug("Json: {0}", j.serialize());
 
             return processor->second(j, callback);
         })
