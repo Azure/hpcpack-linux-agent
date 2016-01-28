@@ -19,8 +19,7 @@ function GetGroupPath
 {
 	local groupName=$1
 	local subsys=$2
-	local groupPath=$(mount | grep cgroup | grep $subsys | cut -d' ' -f3)
-	[ -z $groupPath ] && groupPath=$(mount | grep cgroup | cut -d' ' -f3)
+	local groupPath=$(lssubsys -am | grep $subsys | cut -d' ' -f2)
 	echo $groupPath/$groupName
 }
 
