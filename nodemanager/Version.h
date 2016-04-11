@@ -450,6 +450,12 @@ namespace hpc
                             "Fix the cgroup root path issue",
                         }
                     },
+                    { "1.6.19.0",
+                        {
+                            "Upgrade to use the latest cpprestsdk",
+                            "Fix a memory leak issue in the cpprestsdk",
+                        }
+                    },
                 };
 
                 return versionHistory;

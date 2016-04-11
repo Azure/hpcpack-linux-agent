@@ -1,7 +1,7 @@
 # node manager makefile.
 
 # casablanca
-CASABLANCA = ../../hpccasa
+CASABLANCA = ../../evancasa/cpprestsdk
 CASA_RELEASE = $(CASABLANCA)/Release
 CASA_INC = $(CASA_RELEASE)/include
 CASA_LIB_DEBUG = $(CASA_RELEASE)/build.debug/Binaries
