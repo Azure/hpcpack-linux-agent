@@ -60,7 +60,7 @@ namespace hpc
                 std::unique_ptr<HostsManager> hostsManager;
 
                 std::map<uint64_t, std::shared_ptr<Process>> processes;
-                std::map<int, std::tuple<std::string, bool, bool, bool, bool, std::string>> jobUsers;
+                std::map<int, std::tuple<std::string, bool, bool, bool, bool, std::string, std::string>> jobUsers;
                 std::map<std::string, std::set<int>> userJobs;
                 pthread_rwlock_t lock;
         };

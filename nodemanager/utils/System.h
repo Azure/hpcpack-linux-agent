@@ -43,22 +43,29 @@ namespace hpc
 
                 static int AddSshKey(
                     const std::string& userName,
+                    const std::string& userHomeDir,
                     const std::string& key,
                     const std::string& fileName);
 
                 static int RemoveSshKey(
-                    const std::string& userName,
+                    const std::string& userHomeDir,
                     const std::string& fileName);
 
                 static int AddAuthorizedKey(
-                    const std::string& userName,
+                    const std::string& userHomeDir,
                     const std::string& key);
 
                 static int RemoveAuthorizedKey(
-                    const std::string& userName,
+                    const std::string& userHomeDir,
                     const std::string& key);
 
                 static int DeleteUser(const std::string& userName);
+
+                static int ResolveUserName(const std::string& domainUserName, std::string& output);
+
+                static int TouchHomeDir(const std::string& userName, const std::string& umask);
+
+                static int GetHomeDir(const std::string& userName, std::string& output);
 
                 template <typename ... Args>
                 static int ExecuteCommandIn(const std::string& input, const std::string& cmd, const Args& ... args)
