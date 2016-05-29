@@ -8,6 +8,7 @@
 #include <fstream>
 #include <unistd.h>
 #include <set>
+#include <pwd.h>
 
 #include "System.h"
 #include "String.h"
@@ -405,10 +406,11 @@ int System::CreateUser(
 
 int System::AddSshKey(
     const std::string& userName,
+    const std::string& userHomeDir,
     const std::string& key,
     const std::string& fileName)
 {
-    std::string sshFolder = String::Join("", "/home/", userName, "/.ssh/");
+    std::string sshFolder = String::Join("", userHomeDir, "/.ssh/");
 
     std::string output;
     int ret = System::ExecuteCommandOut(
@@ -446,10 +448,10 @@ int System::AddSshKey(
 }
 
 int System::RemoveSshKey(
-    const std::string& userName,
+    const std::string& userHomeDir,
     const std::string& fileName)
 {
-    std::string sshFolder = String::Join("", "/home/", userName, "/.ssh/");
+    std::string sshFolder = String::Join("", userHomeDir, "/.ssh/");
 
     auto keyFileName = String::Join("", sshFolder, fileName);
     std::ifstream test(keyFileName);
@@ -466,10 +468,10 @@ int System::RemoveSshKey(
 }
 
 int System::AddAuthorizedKey(
-    const std::string& userName,
+    const std::string& userHomeDir,
     const std::string& key)
 {
-    std::string sshFolder = String::Join("", "/home/", userName, "/.ssh/");
+    std::string sshFolder = String::Join("", userHomeDir, "/.ssh/");
 
     std::ofstream authFile(String::Join("", sshFolder, "authorized_keys"), std::ios::app);
 
@@ -487,10 +489,10 @@ int System::AddAuthorizedKey(
 }
 
 int System::RemoveAuthorizedKey(
-    const std::string& userName,
+    const std::string& userHomeDir,
     const std::string& key)
 {
-    std::string sshFolder = String::Join("", "/home/", userName, "/.ssh/");
+    std::string sshFolder = String::Join("", userHomeDir, "/.ssh/");
 
     std::ifstream authFile(String::Join("", sshFolder, "authorized_keys"), std::ios::in);
     std::vector<std::string> lines;
@@ -542,3 +544,69 @@ int System::DeleteUser(const std::string& userName)
 
     return ret;
 }
+
+int System::ResolveUserName(const std::string& domainUserName, std::string& output)
+{
+    int ret = 0;
+    std::string composedUserName = domainUserName;
+	
+    auto userNameTokens = String::Split(composedUserName, '\\');
+    if (userNameTokens.size() > 1)
+    {
+        std::string domainName = userNameTokens[0];
+        std::string userName = userNameTokens[userNameTokens.size() - 1];
+
+        if (userName == "root") 
+        { 
+            composedUserName = "hpc_faked_root"; 
+        }
+        else
+        {
+	        ret = System::ExecuteCommandOut(composedUserName, "/bin/bash", "ResolveUserName.sh", domainName, userName);
+
+            if (ret != 0)
+	        {
+	            Logger::Error("/bin/bash ResolveUserName.sh {0} {1} error code {2} {3}", domainName, userName, ret, composedUserName);
+	        }
+        }
+    }
+
+    output = composedUserName;
+
+    return ret;
+}
+
+int System::TouchHomeDir(const std::string& userName, const std::string& umask)
+{
+    std::string output;
+	
+    int ret = System::ExecuteCommandOut(output, "mkhomedir_helper", userName, umask);
+
+    if (ret != 0)
+    {
+        Logger::Error("mkhomedir_helper {0} {1} error code {2} {3}", userName, umask, ret, output);
+    }
+
+    return ret;
+}
+
+int System::GetHomeDir(const std::string& userName, std::string& output)
+{
+    int ret = 0;
+	
+    struct passwd *result = getpwnam(userName.c_str());
+
+    if (result == NULL || result->pw_dir == NULL)
+    {
+        ret = -1;
+    }
+    else
+    {
+        std::string homeDir(result->pw_dir);
+        output = homeDir;
+    }
+
+    return ret;
+}
+
+

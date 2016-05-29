@@ -124,14 +124,18 @@ a8lxTKnZCsRXU1HexqZs+DSc+30tz50bNqLdido/l5B4EJnQP03ciO0=\
 -----END RSA PRIVATE KEY-----";
 
     std::string publicKey = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDEkoEAGGc6wT16d4Ye+yN2hcqigdTGlMcjUlW6cAmRWYXLwkKoW3WlX3xAK0oQdMLqRDu2PVRPY3qfHURj0EEellpydeaSekp1fg27Rw2VKmEumu6Wxwo9HddXORPAQXTQ4yI0lWSerypckXVPeVjHetbkSci2foLedCbeBA9c/RyRgIUl227/pJKDNX2Rpqly0sY82nVWN/0p4NAyslexA0fGdBx+IgKnbU2JQKJeiwOomtEB/N492XRfCw2eCi7Ly3R8+U1KeBm+zH6Q8aH8ApqQohhLRw71bcWZ1g1bxd6HORxXOu0mFTzHbWFcZ9ILtXRl4Pt0x5Mve1AJXEKb hpclabsa@longhaulLN5-033\n";
-
+	
     int ret = System::CreateUser(userName, password);
     if (ret != 0) return false;
-    ret = System::AddSshKey(userName, privateKey, "id_rsa");
+    
+    std::string userHomeDir; 
+    ret = System::GetHomeDir(userName, userHomeDir);
     if (ret != 0) return false;
-    ret = System::AddSshKey(userName, publicKey, "id_rsa.pub");
+    ret = System::AddSshKey(userName, userHomeDir, privateKey, "id_rsa");
     if (ret != 0) return false;
-    ret = System::AddAuthorizedKey(userName, publicKey);
+    ret = System::AddSshKey(userName, userHomeDir, publicKey, "id_rsa.pub");
+    if (ret != 0) return false;
+    ret = System::AddAuthorizedKey(userHomeDir, publicKey);
     if (ret != 0) return false;
 
     Process p(
@@ -216,11 +220,15 @@ a8lxTKnZCsRXU1HexqZs+DSc+30tz50bNqLdido/l5B4EJnQP03ciO0=\
 
     int ret = System::CreateUser(userName, password);
     if (ret != 0) return false;
-    ret = System::AddSshKey(userName, privateKey, "id_rsa");
+    
+    std::string userHomeDir; 
+    ret = System::GetHomeDir(userName, userHomeDir);
     if (ret != 0) return false;
-    ret = System::AddSshKey(userName, publicKey, "id_rsa.pub");
+    ret = System::AddSshKey(userName, userHomeDir, privateKey, "id_rsa");
     if (ret != 0) return false;
-    ret = System::AddAuthorizedKey(userName, publicKey);
+    ret = System::AddSshKey(userName, userHomeDir, publicKey, "id_rsa.pub");
+    if (ret != 0) return false;
+    ret = System::AddAuthorizedKey(userHomeDir, publicKey);
     if (ret != 0) return false;
 
     Process p(
@@ -305,11 +313,14 @@ a8lxTKnZCsRXU1HexqZs+DSc+30tz50bNqLdido/l5B4EJnQP03ciO0=\
 
     int ret = System::CreateUser(userName, password);
     if (ret != 0) return false;
-    ret = System::AddSshKey(userName, privateKey, "id_rsa");
+    std::string userHomeDir; 
+    ret = System::GetHomeDir(userName, userHomeDir);
     if (ret != 0) return false;
-    ret = System::AddSshKey(userName, publicKey, "id_rsa.pub");
+    ret = System::AddSshKey(userName, userHomeDir, privateKey, "id_rsa");
     if (ret != 0) return false;
-    ret = System::AddAuthorizedKey(userName, publicKey);
+    ret = System::AddSshKey(userName, userHomeDir, publicKey, "id_rsa.pub");
+    if (ret != 0) return false;
+    ret = System::AddAuthorizedKey(userHomeDir, publicKey);
     if (ret != 0) return false;
 
     Process p(
