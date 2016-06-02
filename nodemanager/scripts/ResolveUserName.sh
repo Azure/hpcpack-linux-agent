@@ -61,7 +61,7 @@ fi
 #End of verify, which could be comment out for performance consideration.
 
 #Echo back the composedUserName
-echo "$composedUserName"
+echo -n "$composedUserName"
 
 exit 0
 
