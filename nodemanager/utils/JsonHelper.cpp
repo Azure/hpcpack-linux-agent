@@ -37,6 +37,7 @@ namespace hpc
 
         TOJSON(int, number)
         TOJSON(double, number)
+        TOJSON(uint64_t, number)
         TOJSON(bool, boolean)
         TOJSON(std::string, string)
     }

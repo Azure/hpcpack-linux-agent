@@ -57,13 +57,13 @@ void Process::Cleanup()
     Logger::Info("Cleanup zombie result: {0}", output);
 }
 
-pplx::task<pid_t> Process::Start()
+pplx::task<std::pair<pid_t, pthread_t>> Process::Start()
 {
     pthread_create(&this->threadId, nullptr, ForkThread, this);
 
     Logger::Debug(this->jobId, this->taskId, this->requeueCount, "Created thread {0}", this->threadId);
 
-    return pplx::task<pid_t>(this->started);
+    return pplx::task<std::pair<pid_t, pthread_t>>(this->started);
 }
 
 void Process::Kill(int forcedExitCode, bool forced)
@@ -183,6 +183,7 @@ Start:
         Logger::Error(p->jobId, p->taskId, p->requeueCount, "Failed to fork(), pid = {0}, errno = {1}, msg = {2}", p->processId, errno, errorMessage);
 
         p->SetExitCode(errno);
+        p->started.set(std::pair<pid_t, pthread_t>(p->processId, p->threadId));
         goto Final;
     }
 
@@ -193,8 +194,7 @@ Start:
     else
     {
         assert(p->processId > 0);
-        p->started.set(p->processId);
-        assert(p->processId > 0);
+        p->started.set(std::pair<pid_t, pthread_t>(p->processId, p->threadId));
         p->Monitor();
     }
 
@@ -483,26 +483,16 @@ int Process::CreateTaskFolder()
 
     sprintf(folder, "/tmp/nodemanager_task_%d_%d.XXXXXX", this->taskId, this->requeueCount);
 
-    char* p = mkdtemp(folder);
+    int ret = System::CreateTempFolder(folder, this->userName);
 
-    if (p)
+    if (ret != 0)
     {
-        this->taskFolder = p;
-
-        int ret;
-        ret = this->ExecuteCommand("chown -R", this->userName, this->taskFolder);
-
-        if (ret == 0)
-        {
-            ret = this->ExecuteCommand("chmod -R u+rwX", this->taskFolder);
-        }
-
-        return ret;
+        Logger::Debug(this->jobId, this->taskId, this->requeueCount, "CreateTaskFolder failed exitCode {0}.", ret);
     }
-    else
-    {
-        return errno;
-    }
+
+    this->taskFolder = folder;
+
+    return ret;
 }
 
 std::string Process::BuildScript()
@@ -519,6 +509,8 @@ std::string Process::BuildScript()
     fs << "#!/bin/bash" << std::endl << std::endl;
 
     fs << "cd ";
+
+    Logger::Debug("{0}, {1}", this->taskFolder, this->workDirectory);
     if (this->workDirectory.empty())
     {
         fs << this->taskFolder;

@@ -65,16 +65,17 @@ bool ProcessTest::ClusRun()
             callbacked = true;
         });
 
-    p.Start().then([&result, &started] (pid_t pid)
+    pthread_t threadId;
+
+    p.Start().then([&result, &started, &threadId] (std::pair<pid_t, pthread_t> ids)
     {
-        if (pid <= 0) result = false;
-
-        Logger::Info("pid {0}, result {1}", pid, result);
-
+        if (ids.first <= 0) result = false;
+        Logger::Info("pid {0}, result {1}", ids.first, result);
+        threadId = ids.second;
         started = true;
-    });
+    }).wait();
 
-    sleep(2);
+    pthread_join(threadId, nullptr);
 
     if (!(callbacked && started)) result = false;
 
@@ -123,6 +124,7 @@ eesGSKS5l22ZMXJNShgzPKmv3HpH22CSVpO0sNZ6R+iG8a3oq4QkU61MT1CfGoMI\
 a8lxTKnZCsRXU1HexqZs+DSc+30tz50bNqLdido/l5B4EJnQP03ciO0=\
 -----END RSA PRIVATE KEY-----";
 
+    System::DeleteUser(userName);
     std::string publicKey = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDEkoEAGGc6wT16d4Ye+yN2hcqigdTGlMcjUlW6cAmRWYXLwkKoW3WlX3xAK0oQdMLqRDu2PVRPY3qfHURj0EEellpydeaSekp1fg27Rw2VKmEumu6Wxwo9HddXORPAQXTQ4yI0lWSerypckXVPeVjHetbkSci2foLedCbeBA9c/RyRgIUl227/pJKDNX2Rpqly0sY82nVWN/0p4NAyslexA0fGdBx+IgKnbU2JQKJeiwOomtEB/N492XRfCw2eCi7Ly3R8+U1KeBm+zH6Q8aH8ApqQohhLRw71bcWZ1g1bxd6HORxXOu0mFTzHbWFcZ9ILtXRl4Pt0x5Mve1AJXEKb hpclabsa@longhaulLN5-033\n";
 
     int ret = System::CreateUser(userName, password);
@@ -151,16 +153,17 @@ a8lxTKnZCsRXU1HexqZs+DSc+30tz50bNqLdido/l5B4EJnQP03ciO0=\
             callbacked = true;
         });
 
-    p.Start().then([&result, &started] (pid_t pid)
+    pthread_t threadId;
+
+    p.Start().then([&result, &started, &threadId] (std::pair<pid_t, pthread_t> ids)
     {
-        if (pid <= 0) result = false;
-
-        Logger::Info("pid {0}, result {1}", pid, result);
-
+        if (ids.first <= 0) result = false;
+        Logger::Info("pid {0}, result {1}", ids.first, result);
+        threadId = ids.second;
         started = true;
-    });
+    }).wait();
 
-    sleep(1);
+    pthread_join(threadId, nullptr);
 
     if (!(callbacked && started)) result = false;
 
@@ -213,6 +216,7 @@ a8lxTKnZCsRXU1HexqZs+DSc+30tz50bNqLdido/l5B4EJnQP03ciO0=\
 -----END RSA PRIVATE KEY-----";
 
     std::string publicKey = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDEkoEAGGc6wT16d4Ye+yN2hcqigdTGlMcjUlW6cAmRWYXLwkKoW3WlX3xAK0oQdMLqRDu2PVRPY3qfHURj0EEellpydeaSekp1fg27Rw2VKmEumu6Wxwo9HddXORPAQXTQ4yI0lWSerypckXVPeVjHetbkSci2foLedCbeBA9c/RyRgIUl227/pJKDNX2Rpqly0sY82nVWN/0p4NAyslexA0fGdBx+IgKnbU2JQKJeiwOomtEB/N492XRfCw2eCi7Ly3R8+U1KeBm+zH6Q8aH8ApqQohhLRw71bcWZ1g1bxd6HORxXOu0mFTzHbWFcZ9ILtXRl4Pt0x5Mve1AJXEKb hpclabsa@longhaulLN5-033\n";
+    System::DeleteUser(userName);
 
     int ret = System::CreateUser(userName, password);
     if (ret != 0) return false;
@@ -240,16 +244,17 @@ a8lxTKnZCsRXU1HexqZs+DSc+30tz50bNqLdido/l5B4EJnQP03ciO0=\
             callbacked = true;
         });
 
-    p.Start().then([&result, &started] (pid_t pid)
+    pthread_t threadId;
+
+    p.Start().then([&result, &started, &threadId] (std::pair<pid_t, pthread_t> ids)
     {
-        if (pid <= 0) result = false;
-
-        Logger::Info("pid {0}, result {1}", pid, result);
-
+        if (ids.first <= 0) result = false;
+        Logger::Info("pid {0}, result {1}", ids.first, result);
+        threadId = ids.second;
         started = true;
-    });
+    }).wait();
 
-    sleep(1);
+    pthread_join(threadId, nullptr);
 
     if (!(callbacked && started)) result = false;
 
@@ -302,6 +307,7 @@ a8lxTKnZCsRXU1HexqZs+DSc+30tz50bNqLdido/l5B4EJnQP03ciO0=\
 -----END RSA PRIVATE KEY-----";
 
     std::string publicKey = "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQDEkoEAGGc6wT16d4Ye+yN2hcqigdTGlMcjUlW6cAmRWYXLwkKoW3WlX3xAK0oQdMLqRDu2PVRPY3qfHURj0EEellpydeaSekp1fg27Rw2VKmEumu6Wxwo9HddXORPAQXTQ4yI0lWSerypckXVPeVjHetbkSci2foLedCbeBA9c/RyRgIUl227/pJKDNX2Rpqly0sY82nVWN/0p4NAyslexA0fGdBx+IgKnbU2JQKJeiwOomtEB/N492XRfCw2eCi7Ly3R8+U1KeBm+zH6Q8aH8ApqQohhLRw71bcWZ1g1bxd6HORxXOu0mFTzHbWFcZ9ILtXRl4Pt0x5Mve1AJXEKb hpclabsa@longhaulLN5-033\n";
+    System::DeleteUser(userName);
 
     int ret = System::CreateUser(userName, password);
     if (ret != 0) return false;
@@ -364,16 +370,17 @@ a8lxTKnZCsRXU1HexqZs+DSc+30tz50bNqLdido/l5B4EJnQP03ciO0=\
             callbacked = true;
         });
 
-    p.Start().then([&result, &started] (pid_t pid)
+    pthread_t threadId;
+
+    p.Start().then([&result, &started, &threadId] (std::pair<pid_t, pthread_t> ids)
     {
-        if (pid <= 0) result = false;
-
-        Logger::Info("pid {0}, result {1}", pid, result);
-
+        if (ids.first <= 0) result = false;
+        Logger::Info("pid {0}, result {1}", ids.first, result);
+        threadId = ids.second;
         started = true;
-    });
+    }).wait();
 
-    sleep(1);
+    pthread_join(threadId, nullptr);
 
     if (!(callbacked && started)) result = false;
 

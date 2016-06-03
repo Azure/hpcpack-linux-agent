@@ -234,12 +234,12 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
                 args.JobId, args.TaskId, taskInfo->GetTaskRequeueCount(),
                 "StartTask for ProcessKey {0}, process count {1}", taskInfo->ProcessKey, this->processes.size());
 
-            process->Start().then([this, taskInfo] (pid_t pid)
+            process->Start().then([this, taskInfo] (std::pair<pid_t, pthread_t> ids)
             {
-                if (pid > 0)
+                if (ids.first > 0)
                 {
                     Logger::Debug(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetTaskRequeueCount(),
-                        "Process started {0}", pid);
+                        "Process started pid {0}, tid {1}", ids.first, ids.second);
                 }
             });
         }

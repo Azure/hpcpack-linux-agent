@@ -24,6 +24,20 @@ ProcessStartInfo::ProcessStartInfo(
 {
 }
 
+json::value ProcessStartInfo::ToJson() const
+{
+    json::value v;
+    v["commandLine"] = json::value::string(this->CommandLine);
+    v["stdin"] = json::value::string(this->StdInFile);
+    v["stdout"] = json::value::string(this->StdOutFile);
+    v["stderr"] = json::value::string(this->StdErrFile);
+    v["workingDirectory"] = json::value::string(this->WorkDirectory);
+    v["taskRequeueCount"] = this->TaskRequeueCount;
+    v["affinity"] = JsonHelper<std::vector<uint64_t>>::ToJson(this->Affinity);
+    v["environmentVariables"] = JsonHelper<std::map<std::string, std::string>>::ToJson(this->EnvironmentVariables);
+    return v;
+}
+
 /// TODO: Consider using attribute feature when compiler ready.
 ProcessStartInfo ProcessStartInfo::FromJson(const web::json::value& jsonValue)
 {

@@ -456,6 +456,14 @@ namespace hpc
                             "Fix a memory leak issue in the cpprestsdk",
                         }
                     },
+                    { "1.7.1.0",
+                        {
+                            "Added the execution filter support",
+                            "Added unit test for execution filter",
+                            "Improved the unit test framework",
+                            "Fixed some problems in json format processing",
+                        }
+                    },
                 };
 
                 return versionHistory;

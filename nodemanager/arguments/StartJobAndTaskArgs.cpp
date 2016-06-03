@@ -4,6 +4,7 @@
 
 using namespace hpc::arguments;
 using namespace hpc::utils;
+using namespace web;
 
 StartJobAndTaskArgs::StartJobAndTaskArgs(int jobId, int taskId, ProcessStartInfo&& startInfo,
     std::string&& userName, std::string&& password) :
@@ -12,6 +13,25 @@ StartJobAndTaskArgs::StartJobAndTaskArgs(int jobId, int taskId, ProcessStartInfo
 {
     //ctor
 }
+
+json::value StartJobAndTaskArgs::ToJson() const
+{
+    json::value v;
+
+    json::value jobTaskId;
+    jobTaskId["JobId"] = this->JobId;
+    jobTaskId["TaskId"] = this->TaskId;
+
+    v["m_Item1"] = jobTaskId;
+    v["m_Item2"] = this->StartInfo.ToJson();
+    v["m_Item3"] = json::value::string(this->UserName);
+    v["m_Item4"] = json::value::string(this->Password);
+    v["m_Item5"] = json::value::string(this->PrivateKey);
+    v["m_Item6"] = json::value::string(this->PublicKey);
+
+    return v;
+}
+
 
 StartJobAndTaskArgs StartJobAndTaskArgs::FromJson(const json::value& j)
 {

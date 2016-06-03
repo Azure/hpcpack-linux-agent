@@ -542,3 +542,38 @@ int System::DeleteUser(const std::string& userName)
 
     return ret;
 }
+
+int System::CreateTempFolder(char* folderTemplate, const std::string& userName)
+{
+    char* p = mkdtemp(folderTemplate);
+
+    if (p)
+    {
+        std::string output;
+        int ret = System::ExecuteCommandOut(output, "chown -R", userName, p);
+        if (ret == 0)
+        {
+            ret = System::ExecuteCommandOut(output, "chmod -R u+rwX", p);
+        }
+
+        return ret;
+    }
+    else
+    {
+        return errno;
+    }
+}
+
+int System::WriteStringToFile(const std::string& fileName, const std::string& contents)
+{
+    std::ofstream os(fileName, std::ios::trunc);
+    if (!os)
+    {
+        return (int)ErrorCodes::WriteFileError;
+    }
+
+    os << contents;
+    os.close();
+
+    return 0;
+}

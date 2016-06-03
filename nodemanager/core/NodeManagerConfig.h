@@ -36,6 +36,9 @@ namespace hpc
                 AddConfigurationItem(std::string, CertificateChainFile);
                 AddConfigurationItem(std::string, PrivateKeyFile);
                 AddConfigurationItem(std::string, ListeningUri);
+                AddConfigurationItem(std::string, JobStartFilter);
+                AddConfigurationItem(std::string, JobEndFilter);
+                AddConfigurationItem(std::string, TaskStartFilter);
                 AddConfigurationItem(bool, UseDefaultCA);
                 AddConfigurationItem(bool, Debug);
                 AddConfigurationItem(int, HostsFetchInterval);

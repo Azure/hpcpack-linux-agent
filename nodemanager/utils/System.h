@@ -59,6 +59,8 @@ namespace hpc
                     const std::string& key);
 
                 static int DeleteUser(const std::string& userName);
+                static int CreateTempFolder(char* folderTemplate, const std::string& userName);
+                static int WriteStringToFile(const std::string& fileName, const std::string& contents);
 
                 template <typename ... Args>
                 static int ExecuteCommandIn(const std::string& input, const std::string& cmd, const Args& ... args)

@@ -50,7 +50,7 @@ namespace hpc
 
                 virtual ~Process();
 
-                pplx::task<pid_t> Start();
+                pplx::task<std::pair<pid_t, pthread_t>> Start();
                 void Kill(int forcedExitCode = 0x0FFFFFFF, bool forced = true);
                 const hpc::data::ProcessStatistics& GetStatisticsFromCGroup();
 
@@ -150,7 +150,7 @@ namespace hpc
 
                 pthread_rwlock_t lock = PTHREAD_RWLOCK_INITIALIZER;
 
-                pplx::task_completion_event<pid_t> started;
+                pplx::task_completion_event<std::pair<pid_t, pthread_t>> started;
         };
     }
 }

@@ -5,12 +5,14 @@
 #include <cpprest/json.h>
 
 #include "../utils/Logger.h"
+#include "../filters/ExecutionFilter.h"
 #include "IRemoteExecutor.h"
 
 namespace hpc
 {
     using namespace utils;
     using namespace web;
+    using namespace filters;
 
     namespace core
     {
@@ -72,6 +74,7 @@ namespace hpc
                 IRemoteExecutor& executor;
 
                 web::http::experimental::listener::http_listener listener;
+                ExecutionFilter filter;
         };
     }
 }

@@ -17,6 +17,7 @@ using namespace hpc::arguments;
 using namespace hpc::core;
 using namespace hpc::common;
 using namespace web::http::experimental::listener;
+using namespace hpc::filters;
 
 RemoteCommunicator::RemoteCommunicator(IRemoteExecutor& exec, const http_listener_config& config) :
     listeningUri(NodeManagerConfig::GetListeningUri()), isListening(false), executor(exec),
@@ -56,7 +57,7 @@ void RemoteCommunicator::Open()
             this->isListening = !IsError(t);
             Logger::Info(
                 "Opening at {0}, result {1}",
-                this->listener.uri().to_string(),
+                this->listeningUri,
                 this->isListening ? "opened." : "failed.");
 
             if (!this->isListening)
@@ -176,19 +177,55 @@ void RemoteCommunicator::HandlePost(http_request request)
 json::value RemoteCommunicator::StartJobAndTask(const json::value& val, const std::string& callbackUri)
 {
     auto args = StartJobAndTaskArgs::FromJson(val);
-    return this->executor.StartJobAndTask(std::move(args), callbackUri);
+
+    json::value v;
+    std::string executionMessage;
+    int ret = this->filter.OnJobStart(args.JobId, val, v, executionMessage);
+    if (ret != 0)
+    {
+        throw new std::runtime_error(String::Join(" ", "StartJob filter fails with error code", ret, "execution message", executionMessage));
+        return v;
+    }
+    else
+    {
+        return this->executor.StartJobAndTask(StartJobAndTaskArgs::FromJson(v), callbackUri);
+    }
 }
 
 json::value RemoteCommunicator::StartTask(const json::value& val, const std::string& callbackUri)
 {
     auto args = StartTaskArgs::FromJson(val);
-    return this->executor.StartTask(std::move(args), callbackUri);
+
+    json::value v;
+    std::string executionMessage;
+    int ret = this->filter.OnTaskStart(args.JobId, args.TaskId, args.StartInfo.TaskRequeueCount, val, v, executionMessage);
+    if (ret != 0)
+    {
+        throw new std::runtime_error(String::Join(" ", "StartTask filter fails with error code", ret, "execution message", executionMessage));
+        return v;
+    }
+    else
+    {
+        return this->executor.StartTask(StartTaskArgs::FromJson(v), callbackUri);
+    }
 }
 
 json::value RemoteCommunicator::EndJob(const json::value& val, const std::string& callbackUri)
 {
     auto args = EndJobArgs::FromJson(val);
-    return this->executor.EndJob(std::move(args));
+
+    json::value v;
+    std::string executionMessage;
+    int ret = this->filter.OnJobEnd(args.JobId, val, v, executionMessage);
+    if (ret != 0)
+    {
+        throw new std::runtime_error(String::Join(" ", "EndJob filter fails with error code", ret, "execution message", executionMessage));
+        return v;
+    }
+    else
+    {
+        return this->executor.EndJob(EndJobArgs::FromJson(v));
+    }
 }
 
 json::value RemoteCommunicator::EndTask(const json::value& val, const std::string& callbackUri)

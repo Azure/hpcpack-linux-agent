@@ -251,25 +251,26 @@
 	<sstream>
 	"String.h"
 
-1427353132 /home/evanc/spdlog/include/spdlog/spdlog.h
+1440745033 /home/evanc/spdlog/include/spdlog/spdlog.h
+	"tweakme.h"
 	"common.h"
 	"logger.h"
 	"details/spdlog_impl.h"
 
-1427353132 /home/evanc/spdlog/include/spdlog/common.h
+1440745033 /home/evanc/spdlog/include/spdlog/common.h
 	<string>
 	<initializer_list>
 	<chrono>
 	<memory>
 
-1427353132 /home/evanc/spdlog/include/spdlog/logger.h
+1440745033 /home/evanc/spdlog/include/spdlog/logger.h
 	<vector>
 	<memory>
 	"sinks/base_sink.h"
 	"common.h"
 	"./details/logger_impl.h"
 
-1427353132 /home/evanc/spdlog/include/spdlog/sinks/base_sink.h
+1440745033 /home/evanc/spdlog/include/spdlog/sinks/base_sink.h
 	<string>
 	<mutex>
 	<atomic>
@@ -278,14 +279,15 @@
 	"../common.h"
 	"../details/log_msg.h"
 
-1427353132 /home/evanc/spdlog/include/spdlog/sinks/sink.h
+1440745033 /home/evanc/spdlog/include/spdlog/sinks/sink.h
 	"../details/log_msg.h"
 
-1427353132 /home/evanc/spdlog/include/spdlog/details/log_msg.h
+1440745033 /home/evanc/spdlog/include/spdlog/details/log_msg.h
+	<thread>
 	"../common.h"
 	"./format.h"
 
-1427353132 /home/evanc/spdlog/include/spdlog/details/format.h
+1440745033 /home/evanc/spdlog/include/spdlog/details/format.h
 	<stdint.h>
 	<cassert>
 	<cmath>
@@ -296,12 +298,13 @@
 	<stdexcept>
 	<string>
 	<sstream>
+	<map>
 	<iterator>
 	<intrin.h>
 	<utility>
 	"format.cc"
 
-1427353132 /home/evanc/spdlog/include/spdlog/details/format.cc
+1440745033 /home/evanc/spdlog/include/spdlog/details/format.cc
 	"format.h"
 	<string.h>
 	<cctype>
@@ -311,12 +314,13 @@
 	<cstdarg>
 	<cstring>
 	<windows.h>
+	<windows.h>
 
 1427353132 /home/evanc/spdlog/include/spdlog/formatter.h
 	"details/log_msg.h"
 	"details/pattern_formatter_impl.h"
 
-1427353132 /home/evanc/spdlog/include/spdlog/details/pattern_formatter_impl.h
+1440745033 /home/evanc/spdlog/include/spdlog/details/pattern_formatter_impl.h
 	<string>
 	<chrono>
 	<memory>
@@ -326,37 +330,42 @@
 	"./log_msg.h"
 	"./os.h"
 
-1427353132 /home/evanc/spdlog/include/spdlog/details/os.h
+1440745033 /home/evanc/spdlog/include/spdlog/details/os.h
 	<string>
 	<cstdio>
 	<ctime>
 	<Windows.h>
+	<share.h>
+	<sys/syscall.h>
+	<unistd.h>
+	<thread>
 	"../common.h"
 
-1427353132 /home/evanc/spdlog/include/spdlog/details/logger_impl.h
+1440745033 /home/evanc/spdlog/include/spdlog/details/logger_impl.h
 	"./line_logger.h"
 
-1427353132 /home/evanc/spdlog/include/spdlog/details/line_logger.h
+1440745033 /home/evanc/spdlog/include/spdlog/details/line_logger.h
 	<type_traits>
 	"../common.h"
 	"../logger.h"
 
-1427353132 /home/evanc/spdlog/include/spdlog/details/spdlog_impl.h
+1440745033 /home/evanc/spdlog/include/spdlog/details/spdlog_impl.h
 	"registry.h"
 	"../sinks/file_sinks.h"
 	"../sinks/stdout_sinks.h"
 	"../sinks/syslog_sink.h"
 
-1427353132 /home/evanc/spdlog/include/spdlog/details/registry.h
+1440745033 /home/evanc/spdlog/include/spdlog/details/registry.h
 	<string>
 	<mutex>
 	<unordered_map>
 	<functional>
+	"./null_mutex.h"
 	"../logger.h"
 	"../async_logger.h"
 	"../common.h"
 
-1427353132 /home/evanc/spdlog/include/spdlog/async_logger.h
+1440745033 /home/evanc/spdlog/include/spdlog/async_logger.h
 	<chrono>
 	<functional>
 	"common.h"
@@ -364,10 +373,10 @@
 	"spdlog.h"
 	"./details/async_logger_impl.h"
 
-1427353132 /home/evanc/spdlog/include/spdlog/details/async_logger_impl.h
+1440745033 /home/evanc/spdlog/include/spdlog/details/async_logger_impl.h
 	"./async_log_helper.h"
 
-1427353132 /home/evanc/spdlog/include/spdlog/details/async_log_helper.h
+1440745033 /home/evanc/spdlog/include/spdlog/details/async_log_helper.h
 	<chrono>
 	<thread>
 	<atomic>
@@ -377,12 +386,13 @@
 	"./mpmc_bounded_q.h"
 	"./log_msg.h"
 	"./format.h"
+	"os.h"
 
 1427353132 /home/evanc/spdlog/include/spdlog/details/mpmc_bounded_q.h
 	<atomic>
 	"../common.h"
 
-1427353132 /home/evanc/spdlog/include/spdlog/sinks/file_sinks.h
+1440745033 /home/evanc/spdlog/include/spdlog/sinks/file_sinks.h
 	<mutex>
 	"base_sink.h"
 	"../details/null_mutex.h"
@@ -391,26 +401,26 @@
 
 1427353132 /home/evanc/spdlog/include/spdlog/details/null_mutex.h
 
-1427353132 /home/evanc/spdlog/include/spdlog/details/file_helper.h
+1440745033 /home/evanc/spdlog/include/spdlog/details/file_helper.h
 	<string>
 	<thread>
 	<chrono>
 	"os.h"
 
-1427353132 /home/evanc/spdlog/include/spdlog/sinks/stdout_sinks.h
+1440745033 /home/evanc/spdlog/include/spdlog/sinks/stdout_sinks.h
 	<iostream>
 	<mutex>
 	"./ostream_sink.h"
 	"../details/null_mutex.h"
 
-1427353132 /home/evanc/spdlog/include/spdlog/sinks/ostream_sink.h
+1440745033 /home/evanc/spdlog/include/spdlog/sinks/ostream_sink.h
 	<ostream>
 	<mutex>
 	<memory>
 	"../details/null_mutex.h"
 	"./base_sink.h"
 
-1427353132 /home/evanc/spdlog/include/spdlog/sinks/syslog_sink.h
+1440745033 /home/evanc/spdlog/include/spdlog/sinks/syslog_sink.h
 	<array>
 	<string>
 	<syslog.h>
@@ -427,7 +437,7 @@
 	"core/RemoteExecutor.h"
 	"Version.h"
 
-1436264986 /home/evanc/whpc-linux-communicator/nodemanager/utils/Logger.h
+1447837233 /home/evanc/whpc-linux-communicator/nodemanager/utils/Logger.h
 	<syslog.h>
 	<stdio.h>
 	<stdarg.h>
@@ -435,24 +445,31 @@
 	<spdlog/spdlog.h>
 	"String.h"
 
-1427722564 /home/evanc/whpc-linux-communicator/nodemanager/core/RemoteCommunicator.h
+1464874241 /home/evanc/whpc-linux-communicator/nodemanager/core/RemoteCommunicator.h
 	<cpprest/http_listener.h>
 	<cpprest/json.h>
 	"../utils/Logger.h"
+	"../filters/ExecutionFilter.h"
 	"IRemoteExecutor.h"
 
-1427722694 /home/evanc/whpc-linux-communicator/nodemanager/core/IRemoteExecutor.h
+1437990898 /home/evanc/whpc-linux-communicator/nodemanager/core/IRemoteExecutor.h
 	"../arguments/StartJobAndTaskArgs.h"
 	"../arguments/StartTaskArgs.h"
 	"../arguments/EndJobArgs.h"
 	"../arguments/EndTaskArgs.h"
+	"../arguments/MetricCountersConfig.h"
 
-1428574742 /home/evanc/whpc-linux-communicator/nodemanager/core/RemoteExecutor.h
+1464733277 /home/evanc/whpc-linux-communicator/nodemanager/core/RemoteExecutor.h
+	<set>
+	<map>
 	"IRemoteExecutor.h"
 	"JobTaskTable.h"
 	"Monitor.h"
 	"Process.h"
 	"Reporter.h"
+	"HostsManager.h"
+	"../arguments/MetricCountersConfig.h"
+	"../data/ProcessStatistics.h"
 
 1427353166 source:/home/evanc/whpc-linux-communicator/nodemanager/arguments/EndJobArgs.cpp
 	"EndJobArgs.h"
@@ -461,7 +478,7 @@
 1427353166 /home/evanc/whpc-linux-communicator/nodemanager/arguments/EndJobArgs.h
 	<cpprest/json.h>
 
-1437473138 /home/evanc/whpc-linux-communicator/nodemanager/utils/JsonHelper.h
+1464941459 /home/evanc/whpc-linux-communicator/nodemanager/utils/JsonHelper.h
 	<vector>
 	<map>
 	<cpprest/json.h>
@@ -470,14 +487,14 @@
 	"EndTaskArgs.h"
 	"../utils/JsonHelper.h"
 
-1427353166 /home/evanc/whpc-linux-communicator/nodemanager/arguments/EndTaskArgs.h
+1433133379 /home/evanc/whpc-linux-communicator/nodemanager/arguments/EndTaskArgs.h
 	<cpprest/json.h>
 
-1429783386 source:/home/evanc/whpc-linux-communicator/nodemanager/arguments/ProcessStartInfo.cpp
+1464897409 source:/home/evanc/whpc-linux-communicator/nodemanager/arguments/ProcessStartInfo.cpp
 	"ProcessStartInfo.h"
 	"../utils/JsonHelper.h"
 
-1429783378 /home/evanc/whpc-linux-communicator/nodemanager/arguments/ProcessStartInfo.h
+1464897165 /home/evanc/whpc-linux-communicator/nodemanager/arguments/ProcessStartInfo.h
 	<string>
 	<vector>
 	<map>
@@ -487,7 +504,7 @@
 	"StartJobAndTaskArgs.h"
 	"../utils/JsonHelper.h"
 
-1427383873 /home/evanc/whpc-linux-communicator/nodemanager/arguments/StartJobAndTaskArgs.h
+1429010700 /home/evanc/whpc-linux-communicator/nodemanager/arguments/StartJobAndTaskArgs.h
 	<cpprest/json.h>
 	"ProcessStartInfo.h"
 
@@ -509,7 +526,7 @@
 	"../utils/String.h"
 	"../common/ErrorCodes.h"
 
-1428574604 /home/evanc/whpc-linux-communicator/nodemanager/core/Process.h
+1464871942 /home/evanc/whpc-linux-communicator/nodemanager/core/Process.h
 	<string>
 	<sstream>
 	<vector>
@@ -524,6 +541,7 @@
 	"../utils/Logger.h"
 	"../utils/System.h"
 	"../common/ErrorCodes.h"
+	"../data/ProcessStatistics.h"
 
 1429015468 /home/evanc/whpc-linux-communicator/nodemanager/utils/String.h
 	<string>
@@ -538,7 +556,7 @@
 	"../utils/System.h"
 	"../arguments/StartJobAndTaskArgs.h"
 
-1428574577 /home/evanc/whpc-linux-communicator/nodemanager/utils/System.h
+1464869302 /home/evanc/whpc-linux-communicator/nodemanager/utils/System.h
 	<string>
 	"String.h"
 	"Logger.h"
@@ -584,7 +602,7 @@
 	"../utils/WriterLock.h"
 	"../utils/ReaderLock.h"
 
-1438324701 /home/evanc/whpc-linux-communicator/nodemanager/core/JobTaskTable.h
+1438327680 /home/evanc/whpc-linux-communicator/nodemanager/core/JobTaskTable.h
 	<map>
 	<cpprest/json.h>
 	"../data/TaskInfo.h"
@@ -592,7 +610,7 @@
 	"../data/NodeInfo.h"
 	"../utils/ReaderLock.h"
 
-1436256679 /home/evanc/whpc-linux-communicator/nodemanager/data/TaskInfo.h
+1438325484 /home/evanc/whpc-linux-communicator/nodemanager/data/TaskInfo.h
 	<cpprest/json.h>
 	<vector>
 	<string>
@@ -662,10 +680,15 @@
 1424929892 source:/home/evanc/whpc-linux-communicator/nodemanager/utils/WriterLock.cpp
 	"WriterLock.h"
 
-1427383873 /home/evanc/whpc-linux-communicator/nodemanager/core/Monitor.h
+1438161680 /home/evanc/whpc-linux-communicator/nodemanager/core/Monitor.h
 	<cpprest/json.h>
 	<map>
+	<boost/uuid/uuid.hpp>
 	"../utils/System.h"
+	"../data/MonitoringPacket.h"
+	"../arguments/MetricCounter.h"
+	"../arguments/MetricCountersConfig.h"
+	"MetricCollectorBase.h"
 
 1428571893 source:/home/evanc/whpc-linux-communicator/nodemanager/core/Monitor.cpp
 	<pthread.h>
@@ -675,7 +698,7 @@
 	"../utils/Logger.h"
 	"../utils/System.h"
 
-1430202795 /home/evanc/whpc-linux-communicator/nodemanager/core/Reporter.h
+1446103482 /home/evanc/whpc-linux-communicator/nodemanager/core/Reporter.h
 	<cpprest/json.h>
 	<functional>
 	"../utils/Logger.h"
@@ -685,7 +708,7 @@
 	"Reporter.h"
 	"../utils/Logger.h"
 
-1437474755 /home/evanc/whpc-linux-communicator/nodemanager/common/ErrorCodes.h
+1464870624 /home/evanc/whpc-linux-communicator/nodemanager/common/ErrorCodes.h
 
 1429084854 source:/home/evanc/whpc-linux-communicator/nodemanager/Version.cpp
 	"Version.h"
@@ -720,7 +743,7 @@
 1437547414 source:/home/evanc/whpc-linux-communicator/nodemanager/core/NodeManagerConfig.cpp
 	"NodeManagerConfig.h"
 
-1440058578 /home/evanc/whpc-linux-communicator/nodemanager/core/NodeManagerConfig.h
+1464734870 /home/evanc/whpc-linux-communicator/nodemanager/core/NodeManagerConfig.h
 	"../utils/Configuration.h"
 
 1437732272 source:/home/evanc/whpc-linux-communicator/nodemanager/arguments/MonitoringConfig.cpp
@@ -745,7 +768,7 @@
 1437645025 source:/home/evanc/whpc-linux-communicator/nodemanager/core/HttpHelper.cpp
 	"HttpHelper.h"
 
-1440058706 /home/evanc/whpc-linux-communicator/nodemanager/core/HttpHelper.h
+1460020276 /home/evanc/whpc-linux-communicator/nodemanager/core/HttpHelper.h
 	<cpprest/http_client.h>
 	<boost/asio/ssl.hpp>
 	"NodeManagerConfig.h"
@@ -762,7 +785,7 @@
 1438238815 /home/evanc/whpc-linux-communicator/nodemanager/data/Umid.h
 	<inttypes.h>
 
-1433133379 /home/evanc/whpc-linux-communicator/nodemanager/data/ProcessStatistics.h
+1447837294 /home/evanc/whpc-linux-communicator/nodemanager/data/ProcessStatistics.h
 	<vector>
 	<inttypes.h>
 
@@ -960,4 +983,260 @@
 1438577914 /home/evanc/hpccasa/Release/include/cpprest/oauth2.h
 	"cpprest/http_msg.h"
 	"cpprest/details/http_constants.dat"
+
+1464885862 source:/home/evanc/whpc-linux-communicator/nodemanager/test/ExecutionFilterTest.cpp
+	"ExecutionFilterTest.h"
+	<iostream>
+	<string>
+	<cpprest/http_listener.h>
+	<cpprest/json.h>
+	"../utils/JsonHelper.h"
+	"../core/Process.h"
+	"../utils/Logger.h"
+	"../core/RemoteCommunicator.h"
+	"../core/RemoteExecutor.h"
+	"../core/NodeManagerConfig.h"
+	"../common/ErrorCodes.h"
+	"../core/HttpHelper.h"
+
+1464883806 /home/evanc/whpc-linux-communicator/nodemanager/test/ExecutionFilterTest.h
+
+1460016995 /home/evanc/evancasa/cpprestsdk/Release/include/cpprest/http_listener.h
+	<limits>
+	<functional>
+	"cpprest/http_msg.h"
+	<boost/asio/ssl.hpp>
+
+1460016995 /home/evanc/evancasa/cpprestsdk/Release/include/cpprest/http_msg.h
+	<map>
+	<memory>
+	<string>
+	<vector>
+	<system_error>
+	"pplx/pplxtasks.h"
+	"cpprest/json.h"
+	"cpprest/uri.h"
+	"cpprest/http_headers.h"
+	"cpprest/details/cpprest_compat.h"
+	"cpprest/asyncrt_utils.h"
+	"cpprest/streams.h"
+	"cpprest/containerstream.h"
+	"cpprest/details/http_constants.dat"
+	"cpprest/details/http_constants.dat"
+	"cpprest/details/http_constants.dat"
+
+1460016995 /home/evanc/evancasa/cpprestsdk/Release/include/pplx/pplxtasks.h
+	<ppltasks.h>
+	<concrt.h>
+	"pplx/pplx.h"
+	<jni.h>
+	<functional>
+	<vector>
+	<utility>
+	<exception>
+	<algorithm>
+	<windows.h>
+	<ctxtcall.h>
+	<agile.h>
+	<winapifamily.h>
+	<winapifamily.h>
+	<uithreadctxt.h>
+
+1460016995 /home/evanc/evancasa/cpprestsdk/Release/include/pplx/pplx.h
+	"cpprest/details/cpprest_compat.h"
+	"pplx/pplxwin.h"
+	"pplx/pplxlinux.h"
+	"pplx/pplxlinux.h"
+	"pplx/pplxcancellation_token.h"
+	<functional>
+
+1460016995 /home/evanc/evancasa/cpprestsdk/Release/include/cpprest/details/cpprest_compat.h
+	<sal.h>
+	<assert.h>
+	"cpprest/details/nosal.h"
+	<cstdio>
+
+1460016995 /home/evanc/evancasa/cpprestsdk/Release/include/cpprest/details/nosal.h
+
+1460016995 /home/evanc/evancasa/cpprestsdk/Release/include/pplx/pplxwin.h
+	"cpprest/details/cpprest_compat.h"
+	"pplx/pplxinterface.h"
+
+1460016995 /home/evanc/evancasa/cpprestsdk/Release/include/pplx/pplxinterface.h
+	<memory>
+	<atomic>
+
+1460016995 /home/evanc/evancasa/cpprestsdk/Release/include/pplx/pplxlinux.h
+	<signal.h>
+	"pthread.h"
+	"cpprest/details/cpprest_compat.h"
+	<dispatch/dispatch.h>
+	<boost/thread/mutex.hpp>
+	<boost/thread/condition_variable.hpp>
+	<mutex>
+	<condition_variable>
+	"pplx/pplxinterface.h"
+
+1460016995 /home/evanc/evancasa/cpprestsdk/Release/include/pplx/pplxcancellation_token.h
+	<cstdlib>
+	<string>
+	"pplx/pplxinterface.h"
+
+1460016995 /home/evanc/evancasa/cpprestsdk/Release/include/cpprest/json.h
+	<memory>
+	<string>
+	<sstream>
+	<vector>
+	<unordered_map>
+	<cstdint>
+	"cpprest/details/basic_types.h"
+	"cpprest/asyncrt_utils.h"
+
+1460016995 /home/evanc/evancasa/cpprestsdk/Release/include/cpprest/details/basic_types.h
+	<string>
+	<fstream>
+	<iostream>
+	<sstream>
+	"cpprest/details/cpprest_compat.h"
+	<stdint.h>
+	<cstdint>
+	"cpprest/details/SafeInt3.hpp"
+
+1460016995 /home/evanc/evancasa/cpprestsdk/Release/include/cpprest/details/SafeInt3.hpp
+	<cstddef>
+	<cstdlib>
+	<intrin.h>
+	<stdint.h>
+	<assert.h>
+	<stdlib.h>
+
+1460016995 /home/evanc/evancasa/cpprestsdk/Release/include/cpprest/asyncrt_utils.h
+	<string>
+	<vector>
+	<cstdint>
+	<system_error>
+	<random>
+	<locale.h>
+	"pplx/pplxtasks.h"
+	"cpprest/details/basic_types.h"
+	<chrono>
+	<boost/algorithm/string.hpp>
+	<xlocale.h>
+
+1460016995 /home/evanc/evancasa/cpprestsdk/Release/include/cpprest/uri.h
+	"cpprest/base_uri.h"
+	"cpprest/uri_builder.h"
+
+1460016995 /home/evanc/evancasa/cpprestsdk/Release/include/cpprest/base_uri.h
+	<map>
+	<memory>
+	<string>
+	<vector>
+	<functional>
+	"cpprest/asyncrt_utils.h"
+	"cpprest/details/basic_types.h"
+
+1460016995 /home/evanc/evancasa/cpprestsdk/Release/include/cpprest/uri_builder.h
+	<sstream>
+	<string>
+	<vector>
+	"cpprest/base_uri.h"
+	"cpprest/details/uri_parser.h"
+
+1460016995 /home/evanc/evancasa/cpprestsdk/Release/include/cpprest/details/uri_parser.h
+	<string>
+
+1460016995 /home/evanc/evancasa/cpprestsdk/Release/include/cpprest/http_headers.h
+	<map>
+	<memory>
+	<string>
+	<vector>
+	<system_error>
+	"cpprest/asyncrt_utils.h"
+
+1460016995 /home/evanc/evancasa/cpprestsdk/Release/include/cpprest/streams.h
+	"cpprest/astreambuf.h"
+	<iosfwd>
+
+1460016995 /home/evanc/evancasa/cpprestsdk/Release/include/cpprest/astreambuf.h
+	<ios>
+	<memory>
+	<cstring>
+	<math.h>
+	"pplx/pplxtasks.h"
+	"cpprest/details/basic_types.h"
+	"cpprest/asyncrt_utils.h"
+
+1460016995 /home/evanc/evancasa/cpprestsdk/Release/include/cpprest/containerstream.h
+	<vector>
+	<queue>
+	<algorithm>
+	<iterator>
+	"pplx/pplxtasks.h"
+	"cpprest/astreambuf.h"
+	"cpprest/streams.h"
+
+1460016995 /home/evanc/evancasa/cpprestsdk/Release/include/cpprest/details/http_constants.dat
+
+1440745033 /home/evanc/spdlog/include/spdlog/tweakme.h
+
+1464874650 /home/evanc/whpc-linux-communicator/nodemanager/filters/ExecutionFilter.h
+	<string>
+	<cpprest/json.h>
+	"../core/NodeManagerConfig.h"
+
+1437983925 /home/evanc/whpc-linux-communicator/nodemanager/arguments/MetricCountersConfig.h
+	"MetricCounter.h"
+	"../utils/JsonHelper.h"
+
+1430401912 /home/evanc/whpc-linux-communicator/nodemanager/data/MonitoringPacket.h
+	<boost/uuid/uuid.hpp>
+	"../utils/Logger.h"
+	"Umid.h"
+
+1453226140 /home/evanc/whpc-linux-communicator/nodemanager/core/HostsManager.h
+	<string>
+	<vector>
+	"HttpFetcher.h"
+	"../data/HostEntry.h"
+
+1447837236 /home/evanc/whpc-linux-communicator/nodemanager/core/HttpFetcher.h
+	<cpprest/json.h>
+	<cpprest/http_client.h>
+	<functional>
+	"Reporter.h"
+
+1460016995 /home/evanc/evancasa/cpprestsdk/Release/include/cpprest/http_client.h
+	<wrl.h>
+	<msxml6.h>
+	<memory>
+	<limits>
+	"pplx/pplxtasks.h"
+	"cpprest/http_msg.h"
+	"cpprest/json.h"
+	"cpprest/uri.h"
+	"cpprest/details/web_utilities.h"
+	"cpprest/details/basic_types.h"
+	"cpprest/asyncrt_utils.h"
+	"cpprest/oauth1.h"
+	"cpprest/oauth2.h"
+	"boost/asio/ssl.hpp"
+
+1460016995 /home/evanc/evancasa/cpprestsdk/Release/include/cpprest/details/web_utilities.h
+	"cpprest/asyncrt_utils.h"
+
+1460016995 /home/evanc/evancasa/cpprestsdk/Release/include/cpprest/oauth1.h
+	"cpprest/http_msg.h"
+	"cpprest/details/web_utilities.h"
+	"cpprest/details/http_constants.dat"
+	"cpprest/details/http_constants.dat"
+
+1460016995 /home/evanc/evancasa/cpprestsdk/Release/include/cpprest/oauth2.h
+	"cpprest/http_msg.h"
+	"cpprest/details/web_utilities.h"
+	"cpprest/details/http_constants.dat"
+
+1447837236 /home/evanc/whpc-linux-communicator/nodemanager/data/HostEntry.h
+	<string>
+	<cpprest/json.h>
 

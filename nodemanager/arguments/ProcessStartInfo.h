@@ -27,6 +27,7 @@ namespace hpc
                 ProcessStartInfo(ProcessStartInfo&& startInfo) = default;
 
                 static ProcessStartInfo FromJson(const web::json::value& jsonValue);
+                web::json::value ToJson() const;
 
                 std::string CommandLine;
                 std::string StdInFile;
