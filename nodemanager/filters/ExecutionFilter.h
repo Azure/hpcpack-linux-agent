@@ -16,15 +16,15 @@ namespace hpc
             public:
                 ExecutionFilter()
                 {
-                    filterFiles[JobStartFilter] = NodeManagerConfig::GetJobStartFilter();
-                    filterFiles[JobEndFilter] = NodeManagerConfig::GetJobEndFilter();
-                    filterFiles[TaskStartFilter] = NodeManagerConfig::GetTaskStartFilter();
+                    filterFiles[JobStartFilter] = "filters/OnJobTaskStart.sh";
+                    filterFiles[JobEndFilter] = "filters/OnJobEnd.sh";
+                    filterFiles[TaskStartFilter] = "filters/OnTaskEnd.sh";
                 }
 
-                int OnJobStart(int jobId, const json::value& input, json::value& output, std::string& executionMessage);
-                int OnJobEnd(int jobId, const json::value& input, json::value& output, std::string& executionMessage);
-                int OnTaskStart(int jobId, int taskId, int requeueCount, const json::value& input, json::value& output, std::string& executionMessage);
-                int ExecuteFilter(const std::string& filterType, int jobId, int taskId, int requeueCount, const json::value& input, json::value& output, std::string& executionMessage);
+                pplx::task<json::value> OnJobStart(int jobId, int taskId, int requeueCount, const json::value& input);
+                pplx::task<json::value> OnJobEnd(int jobId, const json::value& input);
+                pplx::task<json::value> OnTaskStart(int jobId, int taskId, int requeueCount, const json::value& input);
+                pplx::task<json::value> ExecuteFilter(const std::string& filterType, int jobId, int taskId, int requeueCount, const json::value& input);
 
             private:
                 std::map<std::string, std::string> filterFiles;

@@ -8,8 +8,5 @@
     "RegisterUri":"https://evancv1:40001/api/evanc.com/registerrequested",
     "CertificateChainFile":"/opt/hpcnodemanager/certs/evanc.com.crt",
     "PrivateKeyFile":"/opt/hpcnodemanager/certs/evanc.com.key",
-    "ListeningUri":"http://0.0.0.0:40000",
-    "JobStartFilter":"sed -s 's/123/456/g'",
-    "JobEndFilter":"sed -s 's/123/456/g'",
-    "TaskStartFilter":"sed -s 's/123/456/g'"
+    "ListeningUri":"http://0.0.0.0:40000"
 }

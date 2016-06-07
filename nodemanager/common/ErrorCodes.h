@@ -20,6 +20,7 @@ namespace hpc
             WriteFileError = 179,
             ReadFileError = 180,
             UnknownFilter = 181,
+            CannotFindHomeDir = 182,
         };
     }
 }

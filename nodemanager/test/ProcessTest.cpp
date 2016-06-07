@@ -129,11 +129,13 @@ a8lxTKnZCsRXU1HexqZs+DSc+30tz50bNqLdido/l5B4EJnQP03ciO0=\
 
     int ret = System::CreateUser(userName, password);
     if (ret != 0) return false;
-    ret = System::AddSshKey(userName, privateKey, "id_rsa");
+
+    std::string keyFileName;
+    ret = System::AddSshKey(userName, privateKey, "id_rsa", "600", keyFileName);
     if (ret != 0) return false;
-    ret = System::AddSshKey(userName, publicKey, "id_rsa.pub");
+    ret = System::AddSshKey(userName, publicKey, "id_rsa.pub", "644", keyFileName);
     if (ret != 0) return false;
-    ret = System::AddAuthorizedKey(userName, publicKey);
+    ret = System::AddAuthorizedKey(userName, publicKey, "600", keyFileName);
     if (ret != 0) return false;
 
     Process p(
@@ -220,11 +222,13 @@ a8lxTKnZCsRXU1HexqZs+DSc+30tz50bNqLdido/l5B4EJnQP03ciO0=\
 
     int ret = System::CreateUser(userName, password);
     if (ret != 0) return false;
-    ret = System::AddSshKey(userName, privateKey, "id_rsa");
+
+    std::string keyFileName;
+    ret = System::AddSshKey(userName, privateKey, "id_rsa", "600", keyFileName);
     if (ret != 0) return false;
-    ret = System::AddSshKey(userName, publicKey, "id_rsa.pub");
+    ret = System::AddSshKey(userName, publicKey, "id_rsa.pub", "644", keyFileName);
     if (ret != 0) return false;
-    ret = System::AddAuthorizedKey(userName, publicKey);
+    ret = System::AddAuthorizedKey(userName, publicKey, "600", keyFileName);
     if (ret != 0) return false;
 
     Process p(
@@ -311,11 +315,13 @@ a8lxTKnZCsRXU1HexqZs+DSc+30tz50bNqLdido/l5B4EJnQP03ciO0=\
 
     int ret = System::CreateUser(userName, password);
     if (ret != 0) return false;
-    ret = System::AddSshKey(userName, privateKey, "id_rsa");
+
+    std::string keyFileName;
+    ret = System::AddSshKey(userName, privateKey, "id_rsa", "600", keyFileName);
     if (ret != 0) return false;
-    ret = System::AddSshKey(userName, publicKey, "id_rsa.pub");
+    ret = System::AddSshKey(userName, publicKey, "id_rsa.pub", "644", keyFileName);
     if (ret != 0) return false;
-    ret = System::AddAuthorizedKey(userName, publicKey);
+    ret = System::AddAuthorizedKey(userName, publicKey, "600", keyFileName);
     if (ret != 0) return false;
 
     Process p(

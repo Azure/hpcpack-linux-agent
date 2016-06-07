@@ -56,6 +56,11 @@ namespace hpc
 
                 static void Cleanup();
 
+                pplx::task<void> OnCompleted();
+
+                int GetExitCode() const { return this->exitCode; }
+                std::string GetExecutionMessage() const { return this->message.str(); }
+
             protected:
             private:
                 void SetExitCode(int exitCode)
@@ -64,7 +69,6 @@ namespace hpc
                     this->exitCodeSet = true;
                 }
 
-                void OnCompleted();
                 int CreateTaskFolder();
 
                 template <typename ... Args>
@@ -114,6 +118,7 @@ namespace hpc
                 void Monitor();
                 std::string BuildScript();
                 std::unique_ptr<const char* []> PrepareEnvironment();
+                void OnCompletedInternal();
 
                 std::ostringstream stdOut;
                 std::ostringstream stdErr;
@@ -151,6 +156,7 @@ namespace hpc
                 pthread_rwlock_t lock = PTHREAD_RWLOCK_INITIALIZER;
 
                 pplx::task_completion_event<std::pair<pid_t, pthread_t>> started;
+                pplx::task_completion_event<void> completed;
         };
     }
 }

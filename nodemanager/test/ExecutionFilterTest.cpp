@@ -81,7 +81,7 @@ bool ExecutionFilterTest::JobStart()
         }
     }).wait();
 
-    sleep(2);
+    sleep(1);
 
     // verify the job start filter is called.
     // The command line is changed to echo 456.

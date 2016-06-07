@@ -44,7 +44,9 @@ namespace hpc
                 static int AddSshKey(
                     const std::string& userName,
                     const std::string& key,
-                    const std::string& fileName);
+                    const std::string& fileName,
+                    const std::string& filePermission,
+                    std::string& filePath);
 
                 static int RemoveSshKey(
                     const std::string& userName,
@@ -52,11 +54,15 @@ namespace hpc
 
                 static int AddAuthorizedKey(
                     const std::string& userName,
-                    const std::string& key);
+                    const std::string& key,
+                    const std::string& filePermission,
+                    std::string& filePath);
 
                 static int RemoveAuthorizedKey(
                     const std::string& userName,
                     const std::string& key);
+
+                static int GetHomeDir(const std::string& userName, std::string& homeDir);
 
                 static int DeleteUser(const std::string& userName);
                 static int CreateTempFolder(char* folderTemplate, const std::string& userName);

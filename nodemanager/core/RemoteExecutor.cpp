@@ -41,7 +41,7 @@ RemoteExecutor::RemoteExecutor(const std::string& networkName)
     this->StartHostsManager();
 }
 
-json::value RemoteExecutor::StartJobAndTask(StartJobAndTaskArgs&& args, const std::string& callbackUri)
+pplx::task<json::value> RemoteExecutor::StartJobAndTask(StartJobAndTaskArgs&& args, const std::string& callbackUri)
 {
     {
         WriterLock writerLock(&this->lock);
@@ -50,11 +50,17 @@ json::value RemoteExecutor::StartJobAndTask(StartJobAndTaskArgs&& args, const st
         auto isAdminIt = envi.find("CCP_ISADMIN");
         bool isAdmin = isAdminIt != envi.end() && isAdminIt->second == "1";
 
+        auto mapAdminUserIt = envi.find("CCP_MAP_ADMIN_USER");
+        bool mapAdminUser = mapAdminUserIt != envi.end() && mapAdminUserIt->second == "1";
+
         // If is admin, we won't create the user, default to root.
         // If username is empty, this is the old image, we use root.
-        if (!isAdmin && !args.UserName.empty())
+        if ((mapAdminUser || !isAdmin) && !args.UserName.empty())
         {
-            std::string userName = String::GetUserName(args.UserName);
+            auto preserveDomainIt = envi.find("CCP_PRESERVE_DOMAIN");
+            bool preserveDomain = preserveDomainIt != envi.end() && preserveDomainIt->second == "1";
+
+            std::string userName = preserveDomain ? args.UserName : String::GetUserName(args.UserName);
             if (userName == "root") { userName = "hpc_faked_root"; }
 
             int ret = System::CreateUser(userName, args.Password);
@@ -67,34 +73,14 @@ json::value RemoteExecutor::StartJobAndTask(StartJobAndTaskArgs&& args, const st
                     String::Join(" ", "Create user", userName, "failed with error code", ret));
             }
 
-            bool privateKeyAdded = 0 == System::AddSshKey(userName, args.PrivateKey, "id_rsa");
-            bool publicKeyAdded = privateKeyAdded && (0 == System::AddSshKey(userName, args.PublicKey, "id_rsa.pub"));
+            std::string privateKeyFile;
+            bool privateKeyAdded = 0 == System::AddSshKey(userName, args.PrivateKey, "id_rsa", "600", privateKeyFile);
 
-            bool authKeyAdded = privateKeyAdded && publicKeyAdded && (0 == System::AddAuthorizedKey(userName, args.PublicKey));
+            std::string publicKeyFile;
+            bool publicKeyAdded = privateKeyAdded && (0 == System::AddSshKey(userName, args.PublicKey, "id_rsa.pub", "644", publicKeyFile));
 
-            if (authKeyAdded)
-            {
-                std::string output;
-                std::string userAuthKeyFile = String::Join("", "/home/", userName, "/.ssh/authorized_keys");
-                System::ExecuteCommandOut(output, "chmod 600", userAuthKeyFile,
-                    "&& chown", userName, userAuthKeyFile);
-            }
-
-            if (privateKeyAdded)
-            {
-                std::string output;
-                std::string privateKeyFile = String::Join("", "/home/", userName, "/.ssh/id_rsa");
-                System::ExecuteCommandOut(output, "chmod 600", privateKeyFile,
-                    "&& chown", userName, privateKeyFile);
-            }
-
-            if (publicKeyAdded)
-            {
-                std::string output;
-                std::string publicKeyFile = String::Join("", "/home/", userName, "/.ssh/id_rsa.pub");
-                System::ExecuteCommandOut(output, "chmod 644", publicKeyFile,
-                    "&& chown", userName, publicKeyFile);
-            }
+            std::string userAuthKeyFile;
+            bool authKeyAdded = privateKeyAdded && publicKeyAdded && (0 == System::AddAuthorizedKey(userName, args.PublicKey, "600", userAuthKeyFile));
 
             Logger::Debug(args.JobId, args.TaskId, this->UnknowId,
                 "Create user {0} result: ret {1}, private {2}, public {3}, auth {4}",
@@ -134,7 +120,7 @@ json::value RemoteExecutor::StartJobAndTask(StartJobAndTaskArgs&& args, const st
     return this->StartTask(StartTaskArgs(args.JobId, args.TaskId, std::move(args.StartInfo)), callbackUri);
 }
 
-json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& callbackUri)
+pplx::task<json::value> RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& callbackUri)
 {
     WriterLock writerLock(&this->lock);
 
@@ -250,10 +236,10 @@ json::value RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& c
         }
     }
 
-    return json::value();
+    return pplx::task_from_result(json::value());
 }
 
-json::value RemoteExecutor::EndJob(hpc::arguments::EndJobArgs&& args)
+pplx::task<json::value> RemoteExecutor::EndJob(hpc::arguments::EndJobArgs&& args)
 {
     WriterLock writerLock(&this->lock);
 
@@ -383,10 +369,10 @@ json::value RemoteExecutor::EndJob(hpc::arguments::EndJobArgs&& args)
         this->jobUsers.erase(jobUser);
     }
 
-    return jsonBody;
+    return pplx::task_from_result(jsonBody);
 }
 
-json::value RemoteExecutor::EndTask(hpc::arguments::EndTaskArgs&& args, const std::string& callbackUri)
+pplx::task<json::value> RemoteExecutor::EndTask(hpc::arguments::EndTaskArgs&& args, const std::string& callbackUri)
 {
     ReaderLock readerLock(&this->lock);
     Logger::Info(args.JobId, args.TaskId, this->UnknowId, "EndTask: starting");
@@ -443,7 +429,7 @@ json::value RemoteExecutor::EndTask(hpc::arguments::EndTaskArgs&& args, const st
         Logger::Warn(args.JobId, args.TaskId, this->UnknowId, "EndTask: Task is already finished");
     }
 
-    return jsonBody;
+    return pplx::task_from_result(jsonBody);
 }
 
 void* RemoteExecutor::GracePeriodElapsed(void* data)
@@ -575,7 +561,7 @@ void RemoteExecutor::StartHostsManager()
     }
 }
 
-json::value RemoteExecutor::Ping(const std::string& callbackUri)
+pplx::task<json::value> RemoteExecutor::Ping(const std::string& callbackUri)
 {
     auto uri = NodeManagerConfig::GetHeartbeatUri();
 
@@ -585,7 +571,7 @@ json::value RemoteExecutor::Ping(const std::string& callbackUri)
         this->StartHeartbeat(callbackUri);
     }
 
-    return json::value();
+    return pplx::task_from_result(json::value());
 }
 
 void RemoteExecutor::StartMetric(const std::string& callbackUri)
@@ -611,7 +597,7 @@ void RemoteExecutor::StartMetric(const std::string& callbackUri)
     }
 }
 
-json::value RemoteExecutor::Metric(const std::string& callbackUri)
+pplx::task<json::value> RemoteExecutor::Metric(const std::string& callbackUri)
 {
     auto uri = NodeManagerConfig::GetMetricUri();
     if (uri != callbackUri)
@@ -622,10 +608,10 @@ json::value RemoteExecutor::Metric(const std::string& callbackUri)
         this->StartMetric(callbackUri);
     }
 
-    return json::value();
+    return pplx::task_from_result(json::value());
 }
 
-json::value RemoteExecutor::MetricConfig(
+pplx::task<json::value> RemoteExecutor::MetricConfig(
     MetricCountersConfig&& config,
     const std::string& callbackUri)
 {
@@ -633,7 +619,7 @@ json::value RemoteExecutor::MetricConfig(
 
     this->monitor.ApplyMetricConfig(std::move(config));
 
-    return json::value();
+    return pplx::task_from_result(json::value());
 }
 
 const ProcessStatistics* RemoteExecutor::TerminateTask(

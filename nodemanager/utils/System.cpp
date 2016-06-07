@@ -403,17 +403,43 @@ int System::CreateUser(
     return ret;
 }
 
+int System::GetHomeDir(const std::string& userName, std::string& homeDir)
+{
+    std::string folder = String::Join("", "~", userName);
+
+    int ret = System::ExecuteCommandOut(
+        homeDir,
+        "echo -n",
+        folder);
+
+    if (0 != ret || homeDir.find('~') != homeDir.npos)
+    {
+        Logger::Error("Cannot find home folder for user {0}", userName);
+        return ret == 0 ? (int)ErrorCodes::CannotFindHomeDir : ret;
+    }
+
+    return ret;
+}
+
 int System::AddSshKey(
     const std::string& userName,
     const std::string& key,
-    const std::string& fileName)
+    const std::string& fileName,
+    const std::string& filePermission,
+    std::string& filePath)
 {
-    std::string sshFolder = String::Join("", "/home/", userName, "/.ssh/");
-
     std::string output;
-    int ret = System::ExecuteCommandOut(
+    int ret = System::GetHomeDir(userName, output);
+
+    if (0 != ret) { return ret; }
+
+    std::string sshFolder = String::Join("", output, "/.ssh/");
+
+    Logger::Debug("User {0}'s ssh folder {1}", userName, sshFolder);
+
+    ret = System::ExecuteCommandOut(
         output,
-        "[ -d ", sshFolder, " ] || mkdir ", sshFolder,
+        "[ -d ", sshFolder, " ] || mkdir -p ", sshFolder,
         " && chown ", userName, " ", sshFolder, " && chmod 700 ", sshFolder);
 
     if (ret != 0)
@@ -422,24 +448,33 @@ int System::AddSshKey(
         return ret;
     }
 
+    filePath = String::Join("", sshFolder, fileName);
+
     if (!key.empty())
     {
-        auto keyFileName = String::Join("", sshFolder, fileName);
-        std::ifstream test(keyFileName);
+        std::ifstream test(filePath);
         // won't overwrite existing user's private key
         if (!test.good())
         {
-            std::ofstream keyFile(keyFileName, std::ios::trunc);
+            std::ofstream keyFile(filePath, std::ios::trunc);
             keyFile << key;
             keyFile.close();
-            return 0;
+
+            ret = System::ExecuteCommandOut(output, "chown", userName, filePath, "&& chmod", filePermission, filePath);
+
+            if (0 != ret)
+            {
+                Logger::Error("Error when change the file {0}'s permission to {1}, ret {2}", filePath, filePermission, ret);
+            }
         }
         else
         {
-            Logger::Info("File {0} exist, skip overwriting", keyFileName);
+            Logger::Info("File {0} exist, skip overwriting", filePath);
         }
 
         test.close();
+
+        return ret;
     }
 
     return -1;
@@ -449,7 +484,12 @@ int System::RemoveSshKey(
     const std::string& userName,
     const std::string& fileName)
 {
-    std::string sshFolder = String::Join("", "/home/", userName, "/.ssh/");
+    std::string output;
+    int ret = System::GetHomeDir(userName, output);
+
+    if (0 != ret) { return ret; }
+
+    std::string sshFolder = String::Join("", output, "/.ssh/");
 
     auto keyFileName = String::Join("", sshFolder, fileName);
     std::ifstream test(keyFileName);
@@ -457,31 +497,54 @@ int System::RemoveSshKey(
     if (test.good())
     {
         std::string output;
-        return System::ExecuteCommandOut(output, "rm -f", keyFileName);
+        ret = System::ExecuteCommandOut(output, "rm -f", keyFileName);
     }
 
     test.close();
 
-    return 0;
+    return ret;
 }
 
 int System::AddAuthorizedKey(
     const std::string& userName,
-    const std::string& key)
+    const std::string& key,
+    const std::string& filePermission,
+    std::string& filePath)
 {
-    std::string sshFolder = String::Join("", "/home/", userName, "/.ssh/");
+    std::string output;
+    int ret = System::GetHomeDir(userName, output);
 
-    std::ofstream authFile(String::Join("", sshFolder, "authorized_keys"), std::ios::app);
+    if (0 != ret) { return ret; }
 
-    int ret = -1;
+    std::string sshFolder = String::Join("", output, "/.ssh/");
+
+    filePath = String::Join("", sshFolder, "authorized_keys");
+
+    std::ofstream authFile(filePath, std::ios::app);
+
+    ret = (int)ErrorCodes::WriteFileError;
 
     if (authFile.good())
     {
         authFile << key;
+
         ret = 0;
     }
 
     authFile.close();
+
+    if (0 != ret)
+    {
+        Logger::Error("Error when open the auth file {0}", filePath);
+        return ret;
+    }
+
+    ret = System::ExecuteCommandOut(output, "chown", userName, filePath, "&& chmod", filePermission, filePath);
+
+    if (0 != ret)
+    {
+        Logger::Error("Error when change the file {0}'s permission to {1}, ret {2}", filePath, filePermission, ret);
+    }
 
     return ret;
 }
@@ -490,12 +553,18 @@ int System::RemoveAuthorizedKey(
     const std::string& userName,
     const std::string& key)
 {
-    std::string sshFolder = String::Join("", "/home/", userName, "/.ssh/");
+    std::string output;
+    int ret = System::GetHomeDir(userName, output);
 
-    std::ifstream authFile(String::Join("", sshFolder, "authorized_keys"), std::ios::in);
+    if (0 != ret) { return ret; }
+
+    std::string sshFolder = String::Join("", output, "/.ssh/");
+    std::string authFileName = String::Join("", sshFolder, "authorized_keys");
+
+    std::ifstream authFile(authFileName, std::ios::in);
     std::vector<std::string> lines;
 
-    int ret = -1;
+    ret = (int)ErrorCodes::WriteFileError;
 
     if (!authFile.good())
     {
@@ -515,7 +584,7 @@ int System::RemoveAuthorizedKey(
 
     authFile.close();
 
-    std::ofstream authFileOut(String::Join("", sshFolder, "authorized_keys"), std::ios::trunc);
+    std::ofstream authFileOut(authFileName, std::ios::trunc);
     for (auto& k : lines)
     {
         authFileOut << k << std::endl;
@@ -553,7 +622,7 @@ int System::CreateTempFolder(char* folderTemplate, const std::string& userName)
         int ret = System::ExecuteCommandOut(output, "chown -R", userName, p);
         if (ret == 0)
         {
-            ret = System::ExecuteCommandOut(output, "chmod -R u+rwX", p);
+            ret = System::ExecuteCommandOut(output, "chmod -R 700", p);
         }
 
         return ret;

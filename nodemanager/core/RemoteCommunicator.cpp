@@ -174,77 +174,56 @@ void RemoteCommunicator::HandlePost(http_request request)
     }
 }
 
-json::value RemoteCommunicator::StartJobAndTask(const json::value& val, const std::string& callbackUri)
+pplx::task<json::value> RemoteCommunicator::StartJobAndTask(const json::value& val, const std::string& callbackUri)
 {
     auto args = StartJobAndTaskArgs::FromJson(val);
 
-    json::value v;
-    std::string executionMessage;
-    int ret = this->filter.OnJobStart(args.JobId, val, v, executionMessage);
-    if (ret != 0)
+    return this->filter.OnJobStart(args.JobId, args.TaskId, args.StartInfo.TaskRequeueCount, val).then([&] (pplx::task<json::value> t)
     {
-        throw new std::runtime_error(String::Join(" ", "StartJob filter fails with error code", ret, "execution message", executionMessage));
-        return v;
-    }
-    else
-    {
-        return this->executor.StartJobAndTask(StartJobAndTaskArgs::FromJson(v), callbackUri);
-    }
+        auto filteredJson = t.get();
+        return this->executor.StartJobAndTask(StartJobAndTaskArgs::FromJson(filteredJson), callbackUri);
+    });
 }
 
-json::value RemoteCommunicator::StartTask(const json::value& val, const std::string& callbackUri)
+pplx::task<json::value> RemoteCommunicator::StartTask(const json::value& val, const std::string& callbackUri)
 {
     auto args = StartTaskArgs::FromJson(val);
 
-    json::value v;
-    std::string executionMessage;
-    int ret = this->filter.OnTaskStart(args.JobId, args.TaskId, args.StartInfo.TaskRequeueCount, val, v, executionMessage);
-    if (ret != 0)
+    return this->filter.OnTaskStart(args.JobId, args.TaskId, args.StartInfo.TaskRequeueCount, val).then([&] (pplx::task<json::value> t)
     {
-        throw new std::runtime_error(String::Join(" ", "StartTask filter fails with error code", ret, "execution message", executionMessage));
-        return v;
-    }
-    else
-    {
-        return this->executor.StartTask(StartTaskArgs::FromJson(v), callbackUri);
-    }
+        auto filteredJson = t.get();
+        return this->executor.StartTask(StartTaskArgs::FromJson(filteredJson), callbackUri);
+    });
 }
 
-json::value RemoteCommunicator::EndJob(const json::value& val, const std::string& callbackUri)
+pplx::task<json::value> RemoteCommunicator::EndJob(const json::value& val, const std::string& callbackUri)
 {
     auto args = EndJobArgs::FromJson(val);
 
-    json::value v;
-    std::string executionMessage;
-    int ret = this->filter.OnJobEnd(args.JobId, val, v, executionMessage);
-    if (ret != 0)
+    return this->filter.OnJobEnd(args.JobId, val).then([&] (pplx::task<json::value> t)
     {
-        throw new std::runtime_error(String::Join(" ", "EndJob filter fails with error code", ret, "execution message", executionMessage));
-        return v;
-    }
-    else
-    {
-        return this->executor.EndJob(EndJobArgs::FromJson(v));
-    }
+        auto filteredJson = t.get();
+        return this->executor.EndJob(EndJobArgs::FromJson(filteredJson));
+    });
 }
 
-json::value RemoteCommunicator::EndTask(const json::value& val, const std::string& callbackUri)
+pplx::task<json::value> RemoteCommunicator::EndTask(const json::value& val, const std::string& callbackUri)
 {
     auto args = EndTaskArgs::FromJson(val);
     return this->executor.EndTask(std::move(args), callbackUri);
 }
 
-json::value RemoteCommunicator::Ping(const json::value& val, const std::string& callbackUri)
+pplx::task<json::value> RemoteCommunicator::Ping(const json::value& val, const std::string& callbackUri)
 {
     return this->executor.Ping(callbackUri);
 }
 
-json::value RemoteCommunicator::Metric(const json::value& val, const std::string& callbackUri)
+pplx::task<json::value> RemoteCommunicator::Metric(const json::value& val, const std::string& callbackUri)
 {
     return this->executor.Metric(callbackUri);
 }
 
-json::value RemoteCommunicator::MetricConfig(const json::value& val, const std::string& callbackUri)
+pplx::task<json::value> RemoteCommunicator::MetricConfig(const json::value& val, const std::string& callbackUri)
 {
     auto args = MetricCountersConfig::FromJson(val);
     return this->executor.MetricConfig(std::move(args), callbackUri);

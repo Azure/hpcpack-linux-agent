@@ -464,6 +464,15 @@ namespace hpc
                             "Fixed some problems in json format processing",
                         }
                     },
+                    { "1.7.2.0",
+                        {
+                            "Fix the node unreachable error",
+                            "Detect user's home directory instead of hard code",
+                            "Skip the plugin if the file doesn't exist",
+                            "Pass home directory to user's process",
+                            "Added environment variable controlling bypass behavior of domain name on user name",
+                        }
+                    },
                 };
 
                 return versionHistory;

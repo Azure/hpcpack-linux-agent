@@ -128,6 +128,10 @@ define finish
 	$(indent);
 	cp scripts/* $(2)/
 	$(indent);
+	[ -d $(2)/filters ] || mkdir $(2)/filters
+	$(indent);
+	cp filters/*.sh $(2)/filters
+	$(indent);
 	[ -d $(2)/logs ] || mkdir $(2)/logs
 	$(indent);
 	[ -d $(2)/$(LIBOUTDIR) ] || mkdir $(2)/$(LIBOUTDIR)

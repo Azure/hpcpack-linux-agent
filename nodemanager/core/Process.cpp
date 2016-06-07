@@ -111,7 +111,12 @@ const ProcessStatistics& Process::GetStatisticsFromCGroup()
     return this->statistics;
 }
 
-void Process::OnCompleted()
+pplx::task<void> Process::OnCompleted()
+{
+    return pplx::task<void>(this->completed);
+}
+
+void Process::OnCompletedInternal()
 {
     try
     {
@@ -128,6 +133,8 @@ void Process::OnCompleted()
     {
         Logger::Error(this->jobId, this->taskId, this->requeueCount, "Unknown exception happened when callback");
     }
+
+    this->completed.set();
 }
 
 void* Process::ForkThread(void* arg)
@@ -235,7 +242,7 @@ Final:
     auto tmp = p->stdErr.str();
     if (!tmp.empty()) { p->message << tmp; }
 
-    p->OnCompleted();
+    p->OnCompletedInternal();
 
     pthread_detach(pthread_self());
     pthread_exit(nullptr);
@@ -571,7 +578,7 @@ std::string Process::BuildScript()
 
     if (!this->userName.empty())
     {
-        fsRunUser << "sudo -E -u " << this->userName << " env \"PATH=$PATH\" ";
+        fsRunUser << "sudo -H -E -u " << this->userName << " env \"PATH=$PATH\" ";
     }
 
     fsRunUser << "/bin/bash " << runDirInOut << std::endl;
