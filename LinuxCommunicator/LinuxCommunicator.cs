@@ -224,7 +224,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
                 try
                 {
-                    if (content != null)
+                    if (content != null && ex == null)
                     {
                         arg.JobInfo = await content.ReadAsAsync<ComputeClusterJobInformation>();
                     }
@@ -257,7 +257,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
                 try
                 {
-                    if (content != null)
+                    if (content != null && ex == null)
                     {
                         arg.TaskInfo = await content.ReadAsAsync<ComputeClusterTaskInformation>();
                     }
@@ -377,7 +377,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
                 await Task.Yield();
                 this.Tracer.TraceInfo("Compute node {0} metricconfig requested, callback {1}. Ex {2}", nodeGuid, callbackUri, ex);
             }, config);
-            
+
             this.SendRequest("metric", callbackUri, nodeName, async (content, ex) =>
             {
                 await Task.Yield();
@@ -418,8 +418,22 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
                 {
                     try
                     {
-                        response.EnsureSuccessStatusCode();
                         content = response.Content;
+
+                        if (!response.IsSuccessStatusCode)
+                        {
+                            using (content)
+                            {
+                                if (response.StatusCode >= HttpStatusCode.InternalServerError)
+                                {
+                                    throw new InvalidProgramException(await content.ReadAsStringAsync());
+                                }
+                                else
+                                {
+                                    response.EnsureSuccessStatusCode();
+                                }
+                            }
+                        }
                     }
                     catch (Exception e)
                     {
