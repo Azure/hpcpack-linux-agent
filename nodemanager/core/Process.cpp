@@ -120,6 +120,8 @@ void Process::OnCompletedInternal()
 {
     try
     {
+        this->completed.set();
+
         this->callback(
             this->exitCode,
             this->message.str(),
@@ -133,8 +135,6 @@ void Process::OnCompletedInternal()
     {
         Logger::Error(this->jobId, this->taskId, this->requeueCount, "Unknown exception happened when callback");
     }
-
-    this->completed.set();
 }
 
 void* Process::ForkThread(void* arg)

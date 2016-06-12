@@ -473,6 +473,11 @@ namespace hpc
                             "Added environment variable controlling bypass behavior of domain name on user name",
                         }
                     },
+                    { "1.7.3.0",
+                        {
+                            "Fix two node manager crash issues",
+                        }
+                    },
                 };
 
                 return versionHistory;

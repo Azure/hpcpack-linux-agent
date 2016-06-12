@@ -41,7 +41,7 @@ RemoteExecutor::RemoteExecutor(const std::string& networkName)
     this->StartHostsManager();
 }
 
-pplx::task<json::value> RemoteExecutor::StartJobAndTask(StartJobAndTaskArgs&& args, const std::string& callbackUri)
+pplx::task<json::value> RemoteExecutor::StartJobAndTask(StartJobAndTaskArgs&& args, std::string&& callbackUri)
 {
     {
         WriterLock writerLock(&this->lock);
@@ -117,10 +117,10 @@ pplx::task<json::value> RemoteExecutor::StartJobAndTask(StartJobAndTaskArgs&& ar
         }
     }
 
-    return this->StartTask(StartTaskArgs(args.JobId, args.TaskId, std::move(args.StartInfo)), callbackUri);
+    return this->StartTask(StartTaskArgs(args.JobId, args.TaskId, std::move(args.StartInfo)), std::move(callbackUri));
 }
 
-pplx::task<json::value> RemoteExecutor::StartTask(StartTaskArgs&& args, const std::string& callbackUri)
+pplx::task<json::value> RemoteExecutor::StartTask(StartTaskArgs&& args, std::string&& callbackUri)
 {
     WriterLock writerLock(&this->lock);
 
@@ -162,7 +162,7 @@ pplx::task<json::value> RemoteExecutor::StartTask(StartTaskArgs&& args, const st
                 userName,
                 std::move(args.StartInfo.Affinity),
                 std::move(args.StartInfo.EnvironmentVariables),
-                [taskInfo, callbackUri, this] (
+                [taskInfo, uri = std::move(callbackUri), this] (
                     int exitCode,
                     std::string&& message,
                     const ProcessStatistics& stat)
@@ -193,7 +193,7 @@ pplx::task<json::value> RemoteExecutor::StartTask(StartTaskArgs&& args, const st
                         }
 
                         this->ReportTaskCompletion(taskInfo->JobId, taskInfo->TaskId,
-                            taskInfo->GetTaskRequeueCount(), jsonBody, callbackUri);
+                            taskInfo->GetTaskRequeueCount(), jsonBody, uri);
 
                         // this won't remove the task entry added later as attempt id doesn't match
                         this->jobTaskTable.RemoveTask(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetAttemptId());
@@ -372,7 +372,7 @@ pplx::task<json::value> RemoteExecutor::EndJob(hpc::arguments::EndJobArgs&& args
     return pplx::task_from_result(jsonBody);
 }
 
-pplx::task<json::value> RemoteExecutor::EndTask(hpc::arguments::EndTaskArgs&& args, const std::string& callbackUri)
+pplx::task<json::value> RemoteExecutor::EndTask(hpc::arguments::EndTaskArgs&& args, std::string&& callbackUri)
 {
     ReaderLock readerLock(&this->lock);
     Logger::Info(args.JobId, args.TaskId, this->UnknowId, "EndTask: starting");
@@ -512,7 +512,7 @@ void RemoteExecutor::ReportTaskCompletion(
     }
 }
 
-void RemoteExecutor::StartHeartbeat(const std::string& callbackUri)
+void RemoteExecutor::StartHeartbeat(std::string&& callbackUri)
 {
     WriterLock writerLock(&this->lock);
 
@@ -561,20 +561,20 @@ void RemoteExecutor::StartHostsManager()
     }
 }
 
-pplx::task<json::value> RemoteExecutor::Ping(const std::string& callbackUri)
+pplx::task<json::value> RemoteExecutor::Ping(std::string&& callbackUri)
 {
     auto uri = NodeManagerConfig::GetHeartbeatUri();
 
     if (uri != callbackUri)
     {
         NodeManagerConfig::SaveHeartbeatUri(callbackUri);
-        this->StartHeartbeat(callbackUri);
+        this->StartHeartbeat(std::move(callbackUri));
     }
 
     return pplx::task_from_result(json::value());
 }
 
-void RemoteExecutor::StartMetric(const std::string& callbackUri)
+void RemoteExecutor::StartMetric(std::string&& callbackUri)
 {
     WriterLock writerLock(&this->lock);
 
@@ -597,7 +597,7 @@ void RemoteExecutor::StartMetric(const std::string& callbackUri)
     }
 }
 
-pplx::task<json::value> RemoteExecutor::Metric(const std::string& callbackUri)
+pplx::task<json::value> RemoteExecutor::Metric(std::string&& callbackUri)
 {
     auto uri = NodeManagerConfig::GetMetricUri();
     if (uri != callbackUri)
@@ -605,7 +605,7 @@ pplx::task<json::value> RemoteExecutor::Metric(const std::string& callbackUri)
         NodeManagerConfig::SaveMetricUri(callbackUri);
 
         // callbackUri is like udp://server:port/api/nodeguid/metricreported
-        this->StartMetric(callbackUri);
+        this->StartMetric(std::move(callbackUri));
     }
 
     return pplx::task_from_result(json::value());
@@ -613,9 +613,9 @@ pplx::task<json::value> RemoteExecutor::Metric(const std::string& callbackUri)
 
 pplx::task<json::value> RemoteExecutor::MetricConfig(
     MetricCountersConfig&& config,
-    const std::string& callbackUri)
+    std::string&& callbackUri)
 {
-    this->Metric(callbackUri);
+    this->Metric(std::move(callbackUri));
 
     this->monitor.ApplyMetricConfig(std::move(config));
 

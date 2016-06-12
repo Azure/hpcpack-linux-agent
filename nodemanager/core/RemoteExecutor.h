@@ -23,19 +23,19 @@ namespace hpc
                 RemoteExecutor(const std::string& networkName);
                 ~RemoteExecutor() { pthread_rwlock_destroy(&this->lock); }
 
-                virtual pplx::task<web::json::value> StartJobAndTask(hpc::arguments::StartJobAndTaskArgs&& args, const std::string& callbackUri);
-                virtual pplx::task<web::json::value> StartTask(hpc::arguments::StartTaskArgs&& args, const std::string& callbackUri);
+                virtual pplx::task<web::json::value> StartJobAndTask(hpc::arguments::StartJobAndTaskArgs&& args, std::string&& callbackUri);
+                virtual pplx::task<web::json::value> StartTask(hpc::arguments::StartTaskArgs&& args, std::string&& callbackUri);
                 virtual pplx::task<web::json::value> EndJob(hpc::arguments::EndJobArgs&& args);
-                virtual pplx::task<web::json::value> EndTask(hpc::arguments::EndTaskArgs&& args, const std::string& callbackUri);
-                virtual pplx::task<web::json::value> Ping(const std::string& callbackUri);
-                virtual pplx::task<web::json::value> Metric(const std::string& callbackUri);
-                virtual pplx::task<web::json::value> MetricConfig(hpc::arguments::MetricCountersConfig&& config, const std::string& callbackUri);
+                virtual pplx::task<web::json::value> EndTask(hpc::arguments::EndTaskArgs&& args, std::string&& callbackUri);
+                virtual pplx::task<web::json::value> Ping(std::string&& callbackUri);
+                virtual pplx::task<web::json::value> Metric(std::string&& callbackUri);
+                virtual pplx::task<web::json::value> MetricConfig(hpc::arguments::MetricCountersConfig&& config, std::string&& callbackUri);
             protected:
             private:
                 static void* GracePeriodElapsed(void* data);
 
-                void StartHeartbeat(const std::string& callbackUri);
-                void StartMetric(const std::string& callbackUri);
+                void StartHeartbeat(std::string&& callbackUri);
+                void StartMetric(std::string&& callbackUri);
                 void StartHostsManager();
 
                 const hpc::data::ProcessStatistics* TerminateTask(

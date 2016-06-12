@@ -55,13 +55,13 @@ namespace hpc
                     return IsError(t, errorMessage);
                 }
 
-                pplx::task<json::value> StartJobAndTask(const json::value& val, const std::string&);
-                pplx::task<json::value> StartTask(const json::value& val, const std::string&);
-                pplx::task<json::value> EndJob(const json::value& val, const std::string&);
-                pplx::task<json::value> EndTask(const json::value& val, const std::string&);
-                pplx::task<json::value> Ping(const json::value& val, const std::string&);
-                pplx::task<json::value> Metric(const json::value& val, const std::string&);
-                pplx::task<json::value> MetricConfig(const json::value& val, const std::string&);
+                pplx::task<json::value> StartJobAndTask(json::value&& val, std::string&&);
+                pplx::task<json::value> StartTask(json::value&& val, std::string&&);
+                pplx::task<json::value> EndJob(json::value&& val, std::string&&);
+                pplx::task<json::value> EndTask(json::value&& val, std::string&&);
+                pplx::task<json::value> Ping(json::value&& val, std::string&&);
+                pplx::task<json::value> Metric(json::value&& val, std::string&&);
+                pplx::task<json::value> MetricConfig(json::value&& val, std::string&&);
 
                 static const std::string ApiSpace;
                 static const std::string CallbackUriKey;
@@ -69,7 +69,7 @@ namespace hpc
 
                 bool isListening;
 
-                std::map<std::string, std::function<pplx::task<json::value>(const json::value&, const std::string&)>> processors;
+                std::map<std::string, std::function<pplx::task<json::value>(json::value&&, std::string&&)>> processors;
 
                 IRemoteExecutor& executor;
 
