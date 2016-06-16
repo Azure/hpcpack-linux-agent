@@ -437,7 +437,7 @@
 	"core/RemoteExecutor.h"
 	"Version.h"
 
-1447837233 /home/evanc/whpc-linux-communicator/nodemanager/utils/Logger.h
+1464951683 /home/evanc/whpc-linux-communicator/nodemanager/utils/Logger.h
 	<syslog.h>
 	<stdio.h>
 	<stdarg.h>
@@ -445,14 +445,14 @@
 	<spdlog/spdlog.h>
 	"String.h"
 
-1464874241 /home/evanc/whpc-linux-communicator/nodemanager/core/RemoteCommunicator.h
+1466044281 /home/evanc/whpc-linux-communicator/nodemanager/core/RemoteCommunicator.h
 	<cpprest/http_listener.h>
 	<cpprest/json.h>
 	"../utils/Logger.h"
 	"../filters/ExecutionFilter.h"
 	"IRemoteExecutor.h"
 
-1437990898 /home/evanc/whpc-linux-communicator/nodemanager/core/IRemoteExecutor.h
+1465727405 /home/evanc/whpc-linux-communicator/nodemanager/core/IRemoteExecutor.h
 	"../arguments/StartJobAndTaskArgs.h"
 	"../arguments/StartTaskArgs.h"
 	"../arguments/EndJobArgs.h"
@@ -475,10 +475,10 @@
 	"EndJobArgs.h"
 	"../utils/JsonHelper.h"
 
-1427353166 /home/evanc/whpc-linux-communicator/nodemanager/arguments/EndJobArgs.h
+1464951841 /home/evanc/whpc-linux-communicator/nodemanager/arguments/EndJobArgs.h
 	<cpprest/json.h>
 
-1464941459 /home/evanc/whpc-linux-communicator/nodemanager/utils/JsonHelper.h
+1464951683 /home/evanc/whpc-linux-communicator/nodemanager/utils/JsonHelper.h
 	<vector>
 	<map>
 	<cpprest/json.h>
@@ -487,14 +487,14 @@
 	"EndTaskArgs.h"
 	"../utils/JsonHelper.h"
 
-1433133379 /home/evanc/whpc-linux-communicator/nodemanager/arguments/EndTaskArgs.h
+1464951683 /home/evanc/whpc-linux-communicator/nodemanager/arguments/EndTaskArgs.h
 	<cpprest/json.h>
 
 1464897409 source:/home/evanc/whpc-linux-communicator/nodemanager/arguments/ProcessStartInfo.cpp
 	"ProcessStartInfo.h"
 	"../utils/JsonHelper.h"
 
-1464897165 /home/evanc/whpc-linux-communicator/nodemanager/arguments/ProcessStartInfo.h
+1464951683 /home/evanc/whpc-linux-communicator/nodemanager/arguments/ProcessStartInfo.h
 	<string>
 	<vector>
 	<map>
@@ -504,7 +504,7 @@
 	"StartJobAndTaskArgs.h"
 	"../utils/JsonHelper.h"
 
-1429010700 /home/evanc/whpc-linux-communicator/nodemanager/arguments/StartJobAndTaskArgs.h
+1464951864 /home/evanc/whpc-linux-communicator/nodemanager/arguments/StartJobAndTaskArgs.h
 	<cpprest/json.h>
 	"ProcessStartInfo.h"
 
@@ -512,7 +512,7 @@
 	"StartTaskArgs.h"
 	"../utils/JsonHelper.h"
 
-1427353166 /home/evanc/whpc-linux-communicator/nodemanager/arguments/StartTaskArgs.h
+1464951683 /home/evanc/whpc-linux-communicator/nodemanager/arguments/StartTaskArgs.h
 	<cpprest/json.h>
 	"ProcessStartInfo.h"
 
@@ -543,20 +543,26 @@
 	"../common/ErrorCodes.h"
 	"../data/ProcessStatistics.h"
 
-1429015468 /home/evanc/whpc-linux-communicator/nodemanager/utils/String.h
+1464951683 /home/evanc/whpc-linux-communicator/nodemanager/utils/String.h
 	<string>
 	<vector>
 	<sstream>
 	<algorithm>
 
-1428486600 source:/home/evanc/whpc-linux-communicator/nodemanager/core/RemoteCommunicator.cpp
+1466048510 source:/home/evanc/whpc-linux-communicator/nodemanager/core/RemoteCommunicator.cpp
 	<sstream>
+	<stdlib.h>
 	"RemoteCommunicator.h"
 	"../utils/String.h"
 	"../utils/System.h"
 	"../arguments/StartJobAndTaskArgs.h"
+	"../common/ErrorCodes.h"
+	"NodeManagerConfig.h"
+	"HttpHelper.h"
+	"../filters/FilterException.h"
+	"../arguments/MetricCountersConfig.h"
 
-1464869302 /home/evanc/whpc-linux-communicator/nodemanager/utils/System.h
+1465296749 /home/evanc/whpc-linux-communicator/nodemanager/utils/System.h
 	<string>
 	"String.h"
 	"Logger.h"
@@ -708,7 +714,7 @@
 	"Reporter.h"
 	"../utils/Logger.h"
 
-1464870624 /home/evanc/whpc-linux-communicator/nodemanager/common/ErrorCodes.h
+1466049879 /home/evanc/whpc-linux-communicator/nodemanager/common/ErrorCodes.h
 
 1429084854 source:/home/evanc/whpc-linux-communicator/nodemanager/Version.cpp
 	"Version.h"
@@ -734,7 +740,7 @@
 	"Configuration.h"
 	"../common/ErrorCodes.h"
 
-1438073135 /home/evanc/whpc-linux-communicator/nodemanager/utils/Configuration.h
+1464951683 /home/evanc/whpc-linux-communicator/nodemanager/utils/Configuration.h
 	<string>
 	<cpprest/json.h>
 	"Logger.h"
@@ -743,7 +749,7 @@
 1437547414 source:/home/evanc/whpc-linux-communicator/nodemanager/core/NodeManagerConfig.cpp
 	"NodeManagerConfig.h"
 
-1464734870 /home/evanc/whpc-linux-communicator/nodemanager/core/NodeManagerConfig.h
+1465297961 /home/evanc/whpc-linux-communicator/nodemanager/core/NodeManagerConfig.h
 	"../utils/Configuration.h"
 
 1437732272 source:/home/evanc/whpc-linux-communicator/nodemanager/arguments/MonitoringConfig.cpp
@@ -757,7 +763,7 @@
 	<string>
 	<cpprest/json.h>
 
-1438163596 /home/evanc/whpc-linux-communicator/nodemanager/arguments/MetricCounter.h
+1464951683 /home/evanc/whpc-linux-communicator/nodemanager/arguments/MetricCounter.h
 	<string>
 	<cpprest/json.h>
 
@@ -768,7 +774,7 @@
 1437645025 source:/home/evanc/whpc-linux-communicator/nodemanager/core/HttpHelper.cpp
 	"HttpHelper.h"
 
-1460020276 /home/evanc/whpc-linux-communicator/nodemanager/core/HttpHelper.h
+1464951683 /home/evanc/whpc-linux-communicator/nodemanager/core/HttpHelper.h
 	<cpprest/http_client.h>
 	<boost/asio/ssl.hpp>
 	"NodeManagerConfig.h"
@@ -1180,12 +1186,12 @@
 
 1440745033 /home/evanc/spdlog/include/spdlog/tweakme.h
 
-1464874650 /home/evanc/whpc-linux-communicator/nodemanager/filters/ExecutionFilter.h
+1465984773 /home/evanc/whpc-linux-communicator/nodemanager/filters/ExecutionFilter.h
 	<string>
 	<cpprest/json.h>
 	"../core/NodeManagerConfig.h"
 
-1437983925 /home/evanc/whpc-linux-communicator/nodemanager/arguments/MetricCountersConfig.h
+1464951683 /home/evanc/whpc-linux-communicator/nodemanager/arguments/MetricCountersConfig.h
 	"MetricCounter.h"
 	"../utils/JsonHelper.h"
 
@@ -1239,4 +1245,10 @@
 1447837236 /home/evanc/whpc-linux-communicator/nodemanager/data/HostEntry.h
 	<string>
 	<cpprest/json.h>
+
+1465984686 source:/home/evanc/whpc-linux-communicator/nodemanager/filters/FilterException.cpp
+	"FilterException.h"
+
+1466048408 /home/evanc/whpc-linux-communicator/nodemanager/filters/FilterException.h
+	<stdexcept>
 

@@ -160,6 +160,7 @@ pplx::task<json::value> RemoteExecutor::StartTask(StartTaskArgs&& args, std::str
                 std::move(args.StartInfo.StdInFile),
                 std::move(args.StartInfo.WorkDirectory),
                 userName,
+                true,
                 std::move(args.StartInfo.Affinity),
                 std::move(args.StartInfo.EnvironmentVariables),
                 [taskInfo, uri = std::move(callbackUri), this] (
@@ -220,7 +221,7 @@ pplx::task<json::value> RemoteExecutor::StartTask(StartTaskArgs&& args, std::str
                 args.JobId, args.TaskId, taskInfo->GetTaskRequeueCount(),
                 "StartTask for ProcessKey {0}, process count {1}", taskInfo->ProcessKey, this->processes.size());
 
-            process->Start().then([this, taskInfo] (std::pair<pid_t, pthread_t> ids)
+            process->Start(process).then([this, taskInfo] (std::pair<pid_t, pthread_t> ids)
             {
                 if (ids.first > 0)
                 {

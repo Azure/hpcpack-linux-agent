@@ -8,6 +8,7 @@
 #include "../common/ErrorCodes.h"
 #include "NodeManagerConfig.h"
 #include "HttpHelper.h"
+#include "../filters/FilterException.h"
 #include "../arguments/MetricCountersConfig.h"
 
 using namespace web::http;
@@ -157,22 +158,34 @@ void RemoteCommunicator::HandlePost(http_request request)
         })
         .then([request] (pplx::task<json::value> t)
         {
-            std::string errorMessage;
-            if (!IsError(t, errorMessage))
+            try
             {
-                auto jsonBody = t.get();
-                request.reply(status_codes::OK, jsonBody).then([] (auto t) { IsError(t); });
+                request.reply(status_codes::OK, t.get()).then([](auto t) { IsError(t); });
             }
-            else
+            catch (const web::http::http_exception& httpEx)
             {
-                request.reply(status_codes::InternalError, errorMessage).then([] (auto t) { IsError(t); });
+                const std::string errorMessage = httpEx.what();
+                Logger::Error("Http exception occurred: {0}", errorMessage);
+                request.reply(status_codes::InternalError, errorMessage).then([](auto t) { IsError(t); });
+            }
+            catch (const FilterException& filterEx)
+            {
+                const std::string errorMessage = filterEx.what();
+                Logger::Error("Filter exception occurred: {0}", errorMessage);
+                request.reply(status_codes::InternalError + 50, errorMessage).then([](auto t) { IsError(t); });
+            }
+            catch (const std::exception& ex)
+            {
+                const std::string errorMessage = ex.what();
+                Logger::Error("Exception occurred: {0}", errorMessage);
+                request.reply(status_codes::InternalError, errorMessage).then([](auto t) { IsError(t); });
             }
         });
     }
     else
     {
         Logger::Warn("Unable to find the method {0}", methodName.c_str());
-        request.reply(status_codes::NotFound, "").then([this](auto t) { this->IsError(t); });
+        request.reply(status_codes::NotFound, "Cannot find the method").then([this](auto t) { this->IsError(t); });
     }
 }
 
@@ -181,7 +194,7 @@ pplx::task<json::value> RemoteCommunicator::StartJobAndTask(json::value&& val, s
     auto args = StartJobAndTaskArgs::FromJson(val);
 
     return this->filter.OnJobStart(args.JobId, args.TaskId, args.StartInfo.TaskRequeueCount, val).then(
-    [this, callback = std::move(callbackUri)] (pplx::task<json::value> t)
+    [this, callback = std::move(callbackUri)](pplx::task<json::value> t)
     {
         auto filteredJson = t.get();
         auto uri = callback;
@@ -194,7 +207,7 @@ pplx::task<json::value> RemoteCommunicator::StartTask(json::value&& val, std::st
     auto args = StartTaskArgs::FromJson(val);
 
     return this->filter.OnTaskStart(args.JobId, args.TaskId, args.StartInfo.TaskRequeueCount, val).then(
-    [this, callback = std::move(callbackUri)] (pplx::task<json::value> t)
+    [this, callback = std::move(callbackUri)](pplx::task<json::value> t)
     {
         auto filteredJson = t.get();
         auto uri = callback;
@@ -205,12 +218,8 @@ pplx::task<json::value> RemoteCommunicator::StartTask(json::value&& val, std::st
 pplx::task<json::value> RemoteCommunicator::EndJob(json::value&& val, std::string&& callbackUri)
 {
     auto args = EndJobArgs::FromJson(val);
-
-    return this->filter.OnJobEnd(args.JobId, val).then([this] (pplx::task<json::value> t)
-    {
-        auto filteredJson = t.get();
-        return this->executor.EndJob(EndJobArgs::FromJson(filteredJson));
-    });
+    this->filter.OnJobEnd(args.JobId, val).then([this](pplx::task<json::value> t) { this->IsError(t); });
+    return this->executor.EndJob(std::move(args));
 }
 
 pplx::task<json::value> RemoteCommunicator::EndTask(json::value&& val, std::string&& callbackUri)

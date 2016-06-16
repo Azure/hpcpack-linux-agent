@@ -18,7 +18,7 @@ namespace hpc
                 {
                     filterFiles[JobStartFilter] = "filters/OnJobTaskStart.sh";
                     filterFiles[JobEndFilter] = "filters/OnJobEnd.sh";
-                    filterFiles[TaskStartFilter] = "filters/OnTaskEnd.sh";
+                    filterFiles[TaskStartFilter] = "filters/OnTaskStart.sh";
                 }
 
                 pplx::task<json::value> OnJobStart(int jobId, int taskId, int requeueCount, const json::value& input) const;

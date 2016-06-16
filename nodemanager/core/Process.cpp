@@ -29,12 +29,13 @@ Process::Process(
     const std::string& standardIn,
     const std::string& workDir,
     const std::string& user,
+    bool dumpStdoutToExecutionMessage,
     std::vector<uint64_t>&& cpuAffinity,
     std::map<std::string, std::string>&& envi,
     const std::function<Callback> completed) :
     jobId(jobId), taskId(taskId), requeueCount(requeueCount), taskExecutionId(String::Join("_", taskId, requeueCount)),
     commandLine(cmdLine), stdOutFile(standardOut), stdErrFile(standardErr), stdInFile(standardIn),
-    workDirectory(workDir), userName(user.empty() ? "root" : user),
+    workDirectory(workDir), userName(user.empty() ? "root" : user), dumpStdout(dumpStdoutToExecutionMessage),
     affinity(cpuAffinity), environments(envi), callback(completed), processId(0)
 {
     this->streamOutput = boost::algorithm::starts_with(stdOutFile, "http://") ||
@@ -45,6 +46,7 @@ Process::Process(
 
 Process::~Process()
 {
+    Logger::Debug(this->jobId, this->taskId, this->requeueCount, "~Process");
     this->Kill();
 
     pthread_rwlock_destroy(&this->lock);
@@ -57,8 +59,9 @@ void Process::Cleanup()
     Logger::Info("Cleanup zombie result: {0}", output);
 }
 
-pplx::task<std::pair<pid_t, pthread_t>> Process::Start()
+pplx::task<std::pair<pid_t, pthread_t>> Process::Start(std::shared_ptr<Process> self)
 {
+    this->SetSelfPtr(self);
     pthread_create(&this->threadId, nullptr, ForkThread, this);
 
     Logger::Debug(this->jobId, this->taskId, this->requeueCount, "Created thread {0}", this->threadId);
@@ -244,6 +247,8 @@ Final:
 
     p->OnCompletedInternal();
 
+    p->ResetSelfPtr();
+
     pthread_detach(pthread_self());
     pthread_exit(nullptr);
 }
@@ -348,16 +353,21 @@ void Process::Monitor()
     if (WIFEXITED(status))
     {
         Logger::Info(this->jobId, this->taskId, this->requeueCount,
-            "Process {0}: exite code {1}", this->processId, WEXITSTATUS(status));
+            "Process {0}: exit code {1}", this->processId, WEXITSTATUS(status));
         this->SetExitCode(WEXITSTATUS(status));
 
         if (!this->streamOutput)
         {
             std::string output;
-            int ret = System::ExecuteCommandOut(output, "head -c 1500", this->stdOutFile);
-            if (ret == 0)
+
+            int ret = 0;
+            if (this->dumpStdout)
             {
-                this->message << "STDOUT: " << output << std::endl;
+                ret = System::ExecuteCommandOut(output, "head -c 1500", this->stdOutFile);
+                if (ret == 0)
+                {
+                    this->message << "STDOUT: " << output << std::endl;
+                }
             }
 
             if (this->stdOutFile != this->stdErrFile)
