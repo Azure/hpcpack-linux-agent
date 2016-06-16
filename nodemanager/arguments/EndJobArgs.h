@@ -16,7 +16,7 @@ namespace hpc
 
                 static EndJobArgs FromJson(const web::json::value& jsonValue);
 
-             protected:
+            protected:
             private:
         };
     }

@@ -1,9 +1,6 @@
 #!/bin/bash
 
 CGroupSubSys=cpuacct,cpuset,memory,freezer
-CGroupRoot=/cgroup
-[ -d $CGroupRoot ] || CGroupRoot=/sys/fs/cgroup
-
 CGInstalled=false
 command -v cgexec > /dev/null 2>&1 && CGInstalled=true
 
@@ -20,17 +17,18 @@ function GetExistingCGroupNames
 
 function GetGroupPath
 {
-    local groupName=$1
-    local subsys=$2
-    [ "$CGroupRoot" == "/cgroup" ] && echo "$CGroupRoot/$groupName" || echo "$CGroupRoot/$subsys/$groupName"
+	local groupName=$1
+	local subsys=$2
+	local groupPath=$(lssubsys -am | grep $subsys | cut -d' ' -f2)
+	echo $groupPath/$groupName
 }
 
 function GetGroupFile
 {
-    local groupName=$1
-    local subsys=$2
-    local fileName=$3
-    echo "$(GetGroupPath "$groupName" "$subsys")"/"$fileName"
+	local groupName=$1
+	local subsys=$2
+	local fileName=$3
+	echo "$(GetGroupPath "$groupName" "$subsys")"/"$fileName"
 }
 
 function GetCpusFile

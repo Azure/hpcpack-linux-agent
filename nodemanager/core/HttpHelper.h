@@ -58,7 +58,7 @@ namespace hpc
                 {
                     http::client::http_client_config config;
 
-                    config.set_ssl_context_options_callback([](context& ctx)
+                    config.set_ssl_context_callback([](context& ctx)
                     {
                         if (NodeManagerConfig::GetUseDefaultCA())
                         {

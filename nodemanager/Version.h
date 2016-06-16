@@ -430,6 +430,49 @@ namespace hpc
                             "Give the statistics an initial value to avoid overflow in scheduler database",
                         }
                     },
+                    { "1.6.15.0",
+                        {
+                            "Fix a security issue which will disclose secrets",
+                        }
+                    },
+                    { "1.6.16.0",
+                        {
+                            "Atomically change the configuration file",
+                        }
+                    },
+                    { "1.6.17.0",
+                        {
+                            "Fix the host file manager bug",
+                        }
+                    },
+                    { "1.6.18.0",
+                        {
+                            "Fix the cgroup root path issue",
+                        }
+                    },
+                    { "1.6.19.0",
+                        {
+                            "Upgrade to use the latest cpprestsdk",
+                            "Fix a memory leak issue in the cpprestsdk",
+                        }
+                    },
+                    { "1.7.1.0",
+                        {
+                            "Added the execution filter support",
+                            "Added unit test for execution filter",
+                            "Improved the unit test framework",
+                            "Fixed some problems in json format processing",
+                        }
+                    },
+                    { "1.7.2.0",
+                        {
+                            "Fix the node unreachable error",
+                            "Detect user's home directory instead of hard code",
+                            "Skip the plugin if the file doesn't exist",
+                            "Pass home directory to user's process",
+                            "Added environment variable controlling bypass behavior of domain name on user name",
+                        }
+                    },
                 };
 
                 return versionHistory;

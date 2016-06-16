@@ -1,7 +1,7 @@
 # node manager makefile.
 
 # casablanca
-CASABLANCA = ../../hpccasa
+CASABLANCA = ../../evancasa/cpprestsdk
 CASA_RELEASE = $(CASABLANCA)/Release
 CASA_INC = $(CASA_RELEASE)/include
 CASA_LIB_DEBUG = $(CASA_RELEASE)/build.debug/Binaries
@@ -127,6 +127,10 @@ define finish
 	cp config/* $(2)/
 	$(indent);
 	cp scripts/* $(2)/
+	$(indent);
+	[ -d $(2)/filters ] || mkdir $(2)/filters
+	$(indent);
+	cp filters/*.sh $(2)/filters
 	$(indent);
 	[ -d $(2)/logs ] || mkdir $(2)/logs
 	$(indent);

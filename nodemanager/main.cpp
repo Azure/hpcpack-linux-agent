@@ -86,7 +86,7 @@ int main(int argc, char* argv[])
     RemoteExecutor executor(networkName);
 
     http_listener_config config;
-    config.set_ssl_context_configurer([] (auto& ctx)
+    config.set_ssl_context_callback([] (auto& ctx)
     {
         HttpHelper::ConfigListenerSslContext(ctx);
     });

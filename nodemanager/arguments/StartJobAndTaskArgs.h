@@ -20,6 +20,7 @@ namespace hpc
                     std::string&& password);
 
                 StartJobAndTaskArgs(StartJobAndTaskArgs&& args) = default;
+                web::json::value ToJson() const;
 
                 int JobId;
                 int TaskId;
@@ -32,7 +33,7 @@ namespace hpc
 
                 static StartJobAndTaskArgs FromJson(const web::json::value& jsonValue);
 
-             protected:
+            protected:
             private:
         };
     }

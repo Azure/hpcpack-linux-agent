@@ -76,7 +76,7 @@ namespace hpc
                     return std::move(values);
                 }
 
-                static json::array ToJson(const std::vector<T>& vec)
+                static json::value ToJson(const std::vector<T>& vec)
                 {
                     std::vector<json::value> values;
 
@@ -126,11 +126,21 @@ namespace hpc
 
                     return std::move(values);
                 }
-//
-//                static json::object ToJson(const std::map<std::string, T>& m)
-//                {
-//                    return json::value::object(m);
-//                }
+
+                static json::value ToJson(const std::map<std::string, T>& m)
+                {
+                    json::value v;
+
+                    std::for_each(
+                        m.cbegin(),
+                        m.cend(),
+                        [&v](const std::pair<std::string, T>& p)
+                        {
+                            v[p.first] = JsonHelper<T>::ToJson(p.second);
+                        });
+
+                    return std::move(v);
+                }
        //         static void Write(const std::string& name, json::value& v, const std::vector<T>& t);
 
             protected:

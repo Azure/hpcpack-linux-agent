@@ -17,6 +17,7 @@ using namespace hpc::arguments;
 using namespace hpc::core;
 using namespace hpc::common;
 using namespace web::http::experimental::listener;
+using namespace hpc::filters;
 
 RemoteCommunicator::RemoteCommunicator(IRemoteExecutor& exec, const http_listener_config& config) :
     listeningUri(NodeManagerConfig::GetListeningUri()), isListening(false), executor(exec),
@@ -56,7 +57,7 @@ void RemoteCommunicator::Open()
             this->isListening = !IsError(t);
             Logger::Info(
                 "Opening at {0}, result {1}",
-                this->listener.uri().to_string(),
+                this->listeningUri,
                 this->isListening ? "opened." : "failed.");
 
             if (!this->isListening)
@@ -148,7 +149,7 @@ void RemoteCommunicator::HandlePost(http_request request)
         request.extract_json().then([processor, callback = std::move(callbackUri)](pplx::task<json::value> t)
         {
             auto j = t.get();
-            Logger::Debug("Json: {0}", j.serialize());
+         //   Logger::Debug("Json: {0}", j.serialize());
 
             return processor->second(j, callback);
         })
@@ -173,41 +174,56 @@ void RemoteCommunicator::HandlePost(http_request request)
     }
 }
 
-json::value RemoteCommunicator::StartJobAndTask(const json::value& val, const std::string& callbackUri)
+pplx::task<json::value> RemoteCommunicator::StartJobAndTask(const json::value& val, const std::string& callbackUri)
 {
     auto args = StartJobAndTaskArgs::FromJson(val);
-    return this->executor.StartJobAndTask(std::move(args), callbackUri);
+
+    return this->filter.OnJobStart(args.JobId, args.TaskId, args.StartInfo.TaskRequeueCount, val).then([&] (pplx::task<json::value> t)
+    {
+        auto filteredJson = t.get();
+        return this->executor.StartJobAndTask(StartJobAndTaskArgs::FromJson(filteredJson), callbackUri);
+    });
 }
 
-json::value RemoteCommunicator::StartTask(const json::value& val, const std::string& callbackUri)
+pplx::task<json::value> RemoteCommunicator::StartTask(const json::value& val, const std::string& callbackUri)
 {
     auto args = StartTaskArgs::FromJson(val);
-    return this->executor.StartTask(std::move(args), callbackUri);
+
+    return this->filter.OnTaskStart(args.JobId, args.TaskId, args.StartInfo.TaskRequeueCount, val).then([&] (pplx::task<json::value> t)
+    {
+        auto filteredJson = t.get();
+        return this->executor.StartTask(StartTaskArgs::FromJson(filteredJson), callbackUri);
+    });
 }
 
-json::value RemoteCommunicator::EndJob(const json::value& val, const std::string& callbackUri)
+pplx::task<json::value> RemoteCommunicator::EndJob(const json::value& val, const std::string& callbackUri)
 {
     auto args = EndJobArgs::FromJson(val);
-    return this->executor.EndJob(std::move(args));
+
+    return this->filter.OnJobEnd(args.JobId, val).then([&] (pplx::task<json::value> t)
+    {
+        auto filteredJson = t.get();
+        return this->executor.EndJob(EndJobArgs::FromJson(filteredJson));
+    });
 }
 
-json::value RemoteCommunicator::EndTask(const json::value& val, const std::string& callbackUri)
+pplx::task<json::value> RemoteCommunicator::EndTask(const json::value& val, const std::string& callbackUri)
 {
     auto args = EndTaskArgs::FromJson(val);
     return this->executor.EndTask(std::move(args), callbackUri);
 }
 
-json::value RemoteCommunicator::Ping(const json::value& val, const std::string& callbackUri)
+pplx::task<json::value> RemoteCommunicator::Ping(const json::value& val, const std::string& callbackUri)
 {
     return this->executor.Ping(callbackUri);
 }
 
-json::value RemoteCommunicator::Metric(const json::value& val, const std::string& callbackUri)
+pplx::task<json::value> RemoteCommunicator::Metric(const json::value& val, const std::string& callbackUri)
 {
     return this->executor.Metric(callbackUri);
 }
 
-json::value RemoteCommunicator::MetricConfig(const json::value& val, const std::string& callbackUri)
+pplx::task<json::value> RemoteCommunicator::MetricConfig(const json::value& val, const std::string& callbackUri)
 {
     auto args = MetricCountersConfig::FromJson(val);
     return this->executor.MetricConfig(std::move(args), callbackUri);

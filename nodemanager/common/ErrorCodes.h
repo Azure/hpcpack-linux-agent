@@ -17,6 +17,10 @@ namespace hpc
             TestRunFailed = 176,
             FailedToOpenPort = 177,
             ConfigurationFileError = 178,
+            WriteFileError = 179,
+            ReadFileError = 180,
+            UnknownFilter = 181,
+            CannotFindHomeDir = 182,
         };
     }
 }

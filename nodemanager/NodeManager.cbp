@@ -45,7 +45,7 @@
 			<Add option="-fexceptions" />
 			<Add option="-Wno-unused-local-typedefs" />
 			<Add option="-std=c++1y" />
-			<Add directory="../../hpccasa/Release/include" />
+			<Add directory="../../evancasa/cpprestsdk/Release/include" />
 			<Add directory="../../spdlog/include" />
 		</Compiler>
 		<Unit filename="Readme.txt" />
@@ -111,6 +111,11 @@
 		<Unit filename="data/TaskInfo.h" />
 		<Unit filename="data/Umid.cpp" />
 		<Unit filename="data/Umid.h" />
+		<Unit filename="filters/ExecutionFilter.cpp" />
+		<Unit filename="filters/ExecutionFilter.h" />
+		<Unit filename="filters/OnJobEnd.sh" />
+		<Unit filename="filters/OnJobTaskStart.sh" />
+		<Unit filename="filters/OnTaskStart.sh" />
 		<Unit filename="main.cpp" />
 		<Unit filename="makefile" />
 		<Unit filename="scripts/CleanupAllTasks.sh" />
@@ -122,6 +127,8 @@
 		<Unit filename="scripts/Statistics.sh" />
 		<Unit filename="scripts/WaitForTrust.sh" />
 		<Unit filename="scripts/common.sh" />
+		<Unit filename="test/ExecutionFilterTest.cpp" />
+		<Unit filename="test/ExecutionFilterTest.h" />
 		<Unit filename="test/ProcessTest.cpp" />
 		<Unit filename="test/ProcessTest.h" />
 		<Unit filename="test/TestRunner.cpp" />

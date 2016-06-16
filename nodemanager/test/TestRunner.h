@@ -16,6 +16,7 @@ namespace hpc
                 TestRunner();
 
                 bool Run();
+
             protected:
             private:
                 std::map<std::string, std::function<bool(void)>> tests;
