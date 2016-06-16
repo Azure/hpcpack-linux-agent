@@ -48,8 +48,8 @@ bool ProcessTest::ClusRun()
 
     Logger::Info("Listener opened");
 
-    Process p(
-        25, 28, 1, "echo 30; sleep 1; echo 31", listeningUri, "", "", "", "root",
+    std::shared_ptr<Process> p = std::make_shared<Process>(
+        25, 28, 1, "echo 30; sleep 1; echo 31", listeningUri, "", "", "", "root", true,
         std::vector<uint64_t>(), std::map<std::string, std::string>(),
         [&result, &callbacked]
         (int exitCode, std::string&& message, const ProcessStatistics& stat)
@@ -67,7 +67,7 @@ bool ProcessTest::ClusRun()
 
     pthread_t threadId;
 
-    p.Start().then([&result, &started, &threadId] (std::pair<pid_t, pthread_t> ids)
+    p->Start(p).then([&result, &started, &threadId] (std::pair<pid_t, pthread_t> ids)
     {
         if (ids.first <= 0) result = false;
         Logger::Info("pid {0}, result {1}", ids.first, result);
@@ -138,8 +138,8 @@ a8lxTKnZCsRXU1HexqZs+DSc+30tz50bNqLdido/l5B4EJnQP03ciO0=\
     ret = System::AddAuthorizedKey(userName, publicKey, "600", keyFileName);
     if (ret != 0) return false;
 
-    Process p(
-        25, 28, 1, "echo 30", "", "", "", "", userName,
+    std::shared_ptr<Process> p = std::make_shared<Process>(
+        25, 28, 1, "echo 30", "", "", "", "", userName, true,
         std::vector<uint64_t>(), std::map<std::string, std::string>(),
         [&result, &callbacked]
         (int exitCode, std::string&& message, const ProcessStatistics& stat)
@@ -157,7 +157,7 @@ a8lxTKnZCsRXU1HexqZs+DSc+30tz50bNqLdido/l5B4EJnQP03ciO0=\
 
     pthread_t threadId;
 
-    p.Start().then([&result, &started, &threadId] (std::pair<pid_t, pthread_t> ids)
+    p->Start(p).then([&result, &started, &threadId] (std::pair<pid_t, pthread_t> ids)
     {
         if (ids.first <= 0) result = false;
         Logger::Info("pid {0}, result {1}", ids.first, result);
@@ -231,8 +231,8 @@ a8lxTKnZCsRXU1HexqZs+DSc+30tz50bNqLdido/l5B4EJnQP03ciO0=\
     ret = System::AddAuthorizedKey(userName, publicKey, "600", keyFileName);
     if (ret != 0) return false;
 
-    Process p(
-        25, 28, 1, "echo 30", "", "", "", "", userName,
+    std::shared_ptr<Process> p = std::make_shared<Process>(
+        25, 28, 1, "echo 30", "", "", "", "", userName, true,
         std::vector<uint64_t>({ UINT64_C(4) }), std::map<std::string, std::string>(),
         [&result, &callbacked]
         (int exitCode, std::string&& message, const ProcessStatistics& stat)
@@ -250,7 +250,7 @@ a8lxTKnZCsRXU1HexqZs+DSc+30tz50bNqLdido/l5B4EJnQP03ciO0=\
 
     pthread_t threadId;
 
-    p.Start().then([&result, &started, &threadId] (std::pair<pid_t, pthread_t> ids)
+    p->Start(p).then([&result, &started, &threadId] (std::pair<pid_t, pthread_t> ids)
     {
         if (ids.first <= 0) result = false;
         Logger::Info("pid {0}, result {1}", ids.first, result);
@@ -324,8 +324,8 @@ a8lxTKnZCsRXU1HexqZs+DSc+30tz50bNqLdido/l5B4EJnQP03ciO0=\
     ret = System::AddAuthorizedKey(userName, publicKey, "600", keyFileName);
     if (ret != 0) return false;
 
-    Process p(
-        25, 28, 1, "echo 30; sleep 5 &", "", "", "", "", userName,
+    std::shared_ptr<Process> p = std::make_shared<Process>(
+        25, 28, 1, "echo 30; sleep 5 &", "", "", "", "", userName, true,
         std::vector<uint64_t>({ UINT64_C(4) }), std::map<std::string, std::string>(),
         [&result, &callbacked]
         (int exitCode, std::string&& message, const ProcessStatistics& stat)
@@ -378,7 +378,7 @@ a8lxTKnZCsRXU1HexqZs+DSc+30tz50bNqLdido/l5B4EJnQP03ciO0=\
 
     pthread_t threadId;
 
-    p.Start().then([&result, &started, &threadId] (std::pair<pid_t, pthread_t> ids)
+    p->Start(p).then([&result, &started, &threadId] (std::pair<pid_t, pthread_t> ids)
     {
         if (ids.first <= 0) result = false;
         Logger::Info("pid {0}, result {1}", ids.first, result);

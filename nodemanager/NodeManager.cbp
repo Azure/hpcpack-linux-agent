@@ -113,6 +113,8 @@
 		<Unit filename="data/Umid.h" />
 		<Unit filename="filters/ExecutionFilter.cpp" />
 		<Unit filename="filters/ExecutionFilter.h" />
+		<Unit filename="filters/FilterException.cpp" />
+		<Unit filename="filters/FilterException.h" />
 		<Unit filename="filters/OnJobEnd.sh" />
 		<Unit filename="filters/OnJobTaskStart.sh" />
 		<Unit filename="filters/OnTaskStart.sh" />

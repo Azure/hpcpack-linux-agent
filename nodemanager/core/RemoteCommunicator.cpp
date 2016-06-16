@@ -8,6 +8,7 @@
 #include "../common/ErrorCodes.h"
 #include "NodeManagerConfig.h"
 #include "HttpHelper.h"
+#include "../filters/FilterException.h"
 #include "../arguments/MetricCountersConfig.h"
 
 using namespace web::http;
@@ -34,13 +35,13 @@ RemoteCommunicator::RemoteCommunicator(IRemoteExecutor& exec, const http_listene
             [this](auto request) { this->HandleGet(request); });
     }
 
-    this->processors["startjobandtask"] = [this] (const auto& j, const auto& c) { return this->StartJobAndTask(j, c); };
-    this->processors["starttask"] = [this] (const auto& j, const auto& c) { return this->StartTask(j, c); };
-    this->processors["endjob"] = [this] (const auto& j, const auto& c) { return this->EndJob(j, c); };
-    this->processors["endtask"] = [this] (const auto& j, const auto& c) { return this->EndTask(j, c); };
-    this->processors["ping"] = [this] (const auto& j, const auto& c) { return this->Ping(j, c); };
-    this->processors["metric"] = [this] (const auto& j, const auto& c) { return this->Metric(j, c); };
-    this->processors["metricconfig"] = [this] (const auto& j, const auto& c) { return this->MetricConfig(j, c); };
+    this->processors["startjobandtask"] = [this] (auto&& j, auto&& c) mutable -> pplx::task<json::value> { return this->StartJobAndTask(std::move(j), std::move(c)); };
+    this->processors["starttask"] = [this] (auto&& j, auto&& c) mutable -> pplx::task<json::value> { return this->StartTask(std::move(j), std::move(c)); };
+    this->processors["endjob"] = [this] (auto&& j, auto&& c) mutable -> pplx::task<json::value> { return this->EndJob(std::move(j), std::move(c)); };
+    this->processors["endtask"] = [this] (auto&& j, auto&& c) { return this->EndTask(std::move(j), std::move(c)); };
+    this->processors["ping"] = [this] (auto&& j, auto&& c) { return this->Ping(std::move(j), std::move(c)); };
+    this->processors["metric"] = [this] (auto&& j, auto&& c) { return this->Metric(std::move(j), std::move(c)); };
+    this->processors["metricconfig"] = [this] (auto&& j, auto&& c) { return this->MetricConfig(std::move(j), std::move(c)); };
 }
 
 RemoteCommunicator::~RemoteCommunicator()
@@ -146,87 +147,101 @@ void RemoteCommunicator::HandlePost(http_request request)
 
     if (processor != this->processors.end())
     {
-        request.extract_json().then([processor, callback = std::move(callbackUri)](pplx::task<json::value> t)
+        request.extract_json().then(
+        [processor, callback = std::move(callbackUri)] (pplx::task<json::value> t)
         {
             auto j = t.get();
          //   Logger::Debug("Json: {0}", j.serialize());
+            auto uri = callback;
 
-            return processor->second(j, callback);
+            return processor->second(std::move(j), std::move(uri));
         })
-        .then([request, this](pplx::task<json::value> t)
+        .then([request] (pplx::task<json::value> t)
         {
-            std::string errorMessage;
-            if (!this->IsError(t, errorMessage))
+            try
             {
-                auto jsonBody = t.get();
-                request.reply(status_codes::OK, jsonBody).then([this](auto t) { this->IsError(t); });
+                request.reply(status_codes::OK, t.get()).then([](auto t) { IsError(t); });
             }
-            else
+            catch (const web::http::http_exception& httpEx)
             {
-                request.reply(status_codes::InternalError, errorMessage).then([this](auto t) { this->IsError(t); });
+                const std::string errorMessage = httpEx.what();
+                Logger::Error("Http exception occurred: {0}", errorMessage);
+                request.reply(status_codes::InternalError, errorMessage).then([](auto t) { IsError(t); });
+            }
+            catch (const FilterException& filterEx)
+            {
+                const std::string errorMessage = filterEx.what();
+                Logger::Error("Filter exception occurred: {0}", errorMessage);
+                request.reply(status_codes::InternalError + 50, errorMessage).then([](auto t) { IsError(t); });
+            }
+            catch (const std::exception& ex)
+            {
+                const std::string errorMessage = ex.what();
+                Logger::Error("Exception occurred: {0}", errorMessage);
+                request.reply(status_codes::InternalError, errorMessage).then([](auto t) { IsError(t); });
             }
         });
     }
     else
     {
         Logger::Warn("Unable to find the method {0}", methodName.c_str());
-        request.reply(status_codes::NotFound, "").then([this](auto t) { this->IsError(t); });
+        request.reply(status_codes::NotFound, "Cannot find the method").then([this](auto t) { this->IsError(t); });
     }
 }
 
-pplx::task<json::value> RemoteCommunicator::StartJobAndTask(const json::value& val, const std::string& callbackUri)
+pplx::task<json::value> RemoteCommunicator::StartJobAndTask(json::value&& val, std::string&& callbackUri)
 {
     auto args = StartJobAndTaskArgs::FromJson(val);
 
-    return this->filter.OnJobStart(args.JobId, args.TaskId, args.StartInfo.TaskRequeueCount, val).then([&] (pplx::task<json::value> t)
+    return this->filter.OnJobStart(args.JobId, args.TaskId, args.StartInfo.TaskRequeueCount, val).then(
+    [this, callback = std::move(callbackUri)](pplx::task<json::value> t)
     {
         auto filteredJson = t.get();
-        return this->executor.StartJobAndTask(StartJobAndTaskArgs::FromJson(filteredJson), callbackUri);
+        auto uri = callback;
+        return this->executor.StartJobAndTask(StartJobAndTaskArgs::FromJson(filteredJson), std::move(uri));
     });
 }
 
-pplx::task<json::value> RemoteCommunicator::StartTask(const json::value& val, const std::string& callbackUri)
+pplx::task<json::value> RemoteCommunicator::StartTask(json::value&& val, std::string&& callbackUri)
 {
     auto args = StartTaskArgs::FromJson(val);
 
-    return this->filter.OnTaskStart(args.JobId, args.TaskId, args.StartInfo.TaskRequeueCount, val).then([&] (pplx::task<json::value> t)
+    return this->filter.OnTaskStart(args.JobId, args.TaskId, args.StartInfo.TaskRequeueCount, val).then(
+    [this, callback = std::move(callbackUri)](pplx::task<json::value> t)
     {
         auto filteredJson = t.get();
-        return this->executor.StartTask(StartTaskArgs::FromJson(filteredJson), callbackUri);
+        auto uri = callback;
+        return this->executor.StartTask(StartTaskArgs::FromJson(filteredJson), std::move(uri));
     });
 }
 
-pplx::task<json::value> RemoteCommunicator::EndJob(const json::value& val, const std::string& callbackUri)
+pplx::task<json::value> RemoteCommunicator::EndJob(json::value&& val, std::string&& callbackUri)
 {
     auto args = EndJobArgs::FromJson(val);
-
-    return this->filter.OnJobEnd(args.JobId, val).then([&] (pplx::task<json::value> t)
-    {
-        auto filteredJson = t.get();
-        return this->executor.EndJob(EndJobArgs::FromJson(filteredJson));
-    });
+    this->filter.OnJobEnd(args.JobId, val).then([this](pplx::task<json::value> t) { this->IsError(t); });
+    return this->executor.EndJob(std::move(args));
 }
 
-pplx::task<json::value> RemoteCommunicator::EndTask(const json::value& val, const std::string& callbackUri)
+pplx::task<json::value> RemoteCommunicator::EndTask(json::value&& val, std::string&& callbackUri)
 {
     auto args = EndTaskArgs::FromJson(val);
-    return this->executor.EndTask(std::move(args), callbackUri);
+    return this->executor.EndTask(std::move(args), std::move(callbackUri));
 }
 
-pplx::task<json::value> RemoteCommunicator::Ping(const json::value& val, const std::string& callbackUri)
+pplx::task<json::value> RemoteCommunicator::Ping(json::value&& val, std::string&& callbackUri)
 {
-    return this->executor.Ping(callbackUri);
+    return this->executor.Ping(std::move(callbackUri));
 }
 
-pplx::task<json::value> RemoteCommunicator::Metric(const json::value& val, const std::string& callbackUri)
+pplx::task<json::value> RemoteCommunicator::Metric(json::value&& val, std::string&& callbackUri)
 {
-    return this->executor.Metric(callbackUri);
+    return this->executor.Metric(std::move(callbackUri));
 }
 
-pplx::task<json::value> RemoteCommunicator::MetricConfig(const json::value& val, const std::string& callbackUri)
+pplx::task<json::value> RemoteCommunicator::MetricConfig(json::value&& val, std::string&& callbackUri)
 {
     auto args = MetricCountersConfig::FromJson(val);
-    return this->executor.MetricConfig(std::move(args), callbackUri);
+    return this->executor.MetricConfig(std::move(args), std::move(callbackUri));
 }
 
 const std::string RemoteCommunicator::ApiSpace = "api";

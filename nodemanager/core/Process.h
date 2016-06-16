@@ -42,6 +42,7 @@ namespace hpc
                     const std::string& standardIn,
                     const std::string& workDir,
                     const std::string& user,
+                    bool dumpStdoutToExecutionMessage,
                     std::vector<uint64_t>&& cpuAffinity,
                     std::map<std::string, std::string>&& envi,
                     const std::function<Callback> completed);
@@ -50,7 +51,7 @@ namespace hpc
 
                 virtual ~Process();
 
-                pplx::task<std::pair<pid_t, pthread_t>> Start();
+                pplx::task<std::pair<pid_t, pthread_t>> Start(std::shared_ptr<Process> self);
                 void Kill(int forcedExitCode = 0x0FFFFFFF, bool forced = true);
                 const hpc::data::ProcessStatistics& GetStatisticsFromCGroup();
 
@@ -60,6 +61,9 @@ namespace hpc
 
                 int GetExitCode() const { return this->exitCode; }
                 std::string GetExecutionMessage() const { return this->message.str(); }
+
+                void SetSelfPtr(std::shared_ptr<Process> self) { this->selfPtr.swap(self); }
+                void ResetSelfPtr() { this->selfPtr.reset(); }
 
             protected:
             private:
@@ -140,6 +144,7 @@ namespace hpc
                 const std::string stdInFile;
                 const std::string workDirectory;
                 const std::string userName;
+                bool dumpStdout = false;
                 const std::vector<uint64_t> affinity;
                 const std::map<std::string, std::string> environments;
                 std::vector<std::string> environmentsBuffer;
@@ -147,6 +152,8 @@ namespace hpc
                 int stdoutPipe[2];
 
                 const std::function<Callback> callback;
+
+                std::shared_ptr<Process> selfPtr;
 
                 pthread_t threadId = 0;
                 pthread_t outputThreadId = 0;
