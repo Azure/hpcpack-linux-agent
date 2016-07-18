@@ -56,7 +56,7 @@ pplx::task<json::value> ExecutionFilter::ExecuteFilter(const std::string& filter
 //    Logger::Debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>> {0}", tt);
 
     char folder[256];
-    sprintf(folder, "/tmp/nodemanager_executionfilter_%d.XXXXXX", jobId);
+    sprintf(folder, "/tmp/nodemanager_executionfilter_%d_%d_%d.XXXXXX", jobId, taskId, requeueCount);
     int ret = System::CreateTempFolder(folder, "root");
 
     if (ret != 0)
@@ -80,7 +80,7 @@ pplx::task<json::value> ExecutionFilter::ExecuteFilter(const std::string& filter
     std::string stderrFile = stdoutFile;
 
     std::shared_ptr<Process> p = std::make_shared<Process>(
-        jobId, taskId, requeueCount, filterFile, stdoutFile, stderrFile, stdinFile, folderString, "root", false,
+        jobId, taskId, requeueCount, "Filter", filterFile, stdoutFile, stderrFile, stdinFile, folderString, "root", false,
         std::vector<uint64_t>(), std::map<std::string, std::string>(),
         [=] (int exitCode, std::string&& message, const ProcessStatistics& stat)
         {

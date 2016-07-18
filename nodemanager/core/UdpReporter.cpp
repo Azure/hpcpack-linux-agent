@@ -73,9 +73,9 @@ UdpReporter::~UdpReporter()
     this->Stop();
 }
 
-void UdpReporter::Report()
+int UdpReporter::Report()
 {
-    if (!this->initialized) { return; }
+    if (!this->initialized) { return -1; }
 
     const std::string& uri = this->reportUri;
 
@@ -100,4 +100,6 @@ void UdpReporter::Report()
             this->s,
             errno);
     }
+
+    return ret;
 }

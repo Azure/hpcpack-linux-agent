@@ -33,7 +33,7 @@ namespace hpc
                     this->Stop();
                 }
 
-                virtual void Report();
+                virtual int Report();
 
             private:
                 std::function<bool(http::http_request&)> requestHandler;

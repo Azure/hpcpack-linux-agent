@@ -497,6 +497,13 @@ namespace hpc
                             "Cleanup the execution filter folder",
                         }
                     },
+                    { "1.7.7.0",
+                        {
+                            "Retry the heartbeat when failed to minimize heartbeat lost",
+                            "Isolate the filter execution from task execution",
+                            "Refine the folder name of filter execution directory",
+                        }
+                    },
                 };
 
                 return versionHistory;

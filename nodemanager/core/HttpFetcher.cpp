@@ -7,7 +7,7 @@ using namespace web::http::client;
 using namespace hpc::core;
 using namespace hpc::utils;
 
-void HttpFetcher::Report()
+int HttpFetcher::Report()
 {
     try
     {
@@ -20,7 +20,7 @@ void HttpFetcher::Report()
             if (!this->requestHandler(request))
             {
                 Logger::Warn("Skipped fetching from {0} because of failure in request handler", uri);
-                return;
+                return -1;
             }
         }
 
@@ -33,6 +33,8 @@ void HttpFetcher::Report()
                 Logger::Warn("Error in response handler for the fetch request to {0}", uri);
             }
         }
+
+        return 0;
     }
     catch (const http_exception& httpEx)
     {
@@ -46,4 +48,6 @@ void HttpFetcher::Report()
     {
         Logger::Error("Unknown error occurred when fetching from {0}", this->reportUri);
     }
+
+    return -1;
 }

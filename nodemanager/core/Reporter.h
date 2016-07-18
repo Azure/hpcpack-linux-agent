@@ -46,7 +46,7 @@ namespace hpc
                     Logger::Debug("Destruct Reporter {0}", this->reportUri);
                 }
 
-                virtual void Report() = 0;
+                virtual int Report() = 0;
 
             protected:
                 const std::string reportUri;
@@ -64,18 +64,21 @@ namespace hpc
 
                     while (r->isRunning)
                     {
+                        bool needRetry = false;
                         if (!r->reportUri.empty())
                         {
                             r->inRequest = true;
-                            r->Report();
+                            needRetry = (0 != r->Report());
                             r->inRequest = false;
                         }
 
-                        sleep(r->intervalSeconds);
+                        sleep(needRetry ? r->ErrorRetrySeconds : r->intervalSeconds);
                     }
 
                     pthread_exit(nullptr);
                 }
+
+                const int ErrorRetrySeconds = 2;
 
                 int holdSeconds;
 

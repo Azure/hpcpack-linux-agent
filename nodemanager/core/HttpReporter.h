@@ -31,7 +31,7 @@ namespace hpc
                     this->Stop();
                 }
 
-                virtual void Report();
+                virtual int Report();
 
             protected:
             private:

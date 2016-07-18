@@ -23,6 +23,7 @@ Process::Process(
     int jobId,
     int taskId,
     int requeueCount,
+    const std::string& taskExecutionName,
     const std::string& cmdLine,
     const std::string& standardOut,
     const std::string& standardErr,
@@ -33,7 +34,7 @@ Process::Process(
     std::vector<uint64_t>&& cpuAffinity,
     std::map<std::string, std::string>&& envi,
     const std::function<Callback> completed) :
-    jobId(jobId), taskId(taskId), requeueCount(requeueCount), taskExecutionId(String::Join("_", taskId, requeueCount)),
+    jobId(jobId), taskId(taskId), requeueCount(requeueCount), taskExecutionId(String::Join("_", taskExecutionName, taskId, requeueCount)),
     commandLine(cmdLine), stdOutFile(standardOut), stdErrFile(standardErr), stdInFile(standardIn),
     workDirectory(workDir), userName(user.empty() ? "root" : user), dumpStdout(dumpStdoutToExecutionMessage),
     affinity(cpuAffinity), environments(envi), callback(completed), processId(0)

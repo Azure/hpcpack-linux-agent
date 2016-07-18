@@ -36,6 +36,7 @@ namespace hpc
                     int jobId,
                     int taskId,
                     int requeueCount,
+                    const std::string& taskExecutionName,
                     const std::string& cmdLine,
                     const std::string& standardOut,
                     const std::string& standardErr,

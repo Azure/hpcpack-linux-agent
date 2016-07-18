@@ -154,6 +154,7 @@ pplx::task<json::value> RemoteExecutor::StartTask(StartTaskArgs&& args, std::str
                 taskInfo->JobId,
                 taskInfo->TaskId,
                 taskInfo->GetTaskRequeueCount(),
+                "Task",
                 std::move(args.StartInfo.CommandLine),
                 std::move(args.StartInfo.StdOutFile),
                 std::move(args.StartInfo.StdErrFile),

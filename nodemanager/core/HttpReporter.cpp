@@ -7,7 +7,7 @@ using namespace web::http::client;
 using namespace hpc::core;
 using namespace hpc::utils;
 
-void HttpReporter::Report()
+int HttpReporter::Report()
 {
     try
     {
@@ -17,7 +17,7 @@ void HttpReporter::Report()
         if (jsonBody.is_null())
         {
             Logger::Error("Skipped reporting to {0} because json is null", uri);
-            return;
+            return -1;
         }
 
         Logger::Debug("---------> Report to {0} with {1}", uri, jsonBody);
@@ -39,6 +39,8 @@ void HttpReporter::Report()
         }
 
         Logger::Debug("---------> Reported to {0} response code {1}, value {2}, interval {3}", uri, response.status_code(), milliseconds, this->intervalSeconds);
+
+        return 0;
     }
     catch (const http_exception& httpEx)
     {
@@ -52,4 +54,6 @@ void HttpReporter::Report()
     {
         Logger::Error("Unknown error occurred when report to {0}", this->reportUri);
     }
+
+    return -1;
 }

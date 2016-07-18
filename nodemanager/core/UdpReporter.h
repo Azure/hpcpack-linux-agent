@@ -21,7 +21,7 @@ namespace hpc
 
                 virtual ~UdpReporter();
 
-                virtual void Report();
+                virtual int Report();
 
             protected:
             private:
