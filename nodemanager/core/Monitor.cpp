@@ -40,9 +40,7 @@ Monitor::Monitor(const std::string& nodeName, const std::string& netName, int in
 
     this->collectors["\\Memory\\Pages/sec"] = std::make_shared<MetricCollectorBase>([this] (const std::string& instanceName)
     {
-        float pagesPerSec = 0, contextSwitchesPerSec = 0;
-        System::Vmstat(pagesPerSec, contextSwitchesPerSec);
-        return (float)pagesPerSec;
+        return this->pagesPerSec;
     });
 
     this->collectors["\\Memory\\Available MBytes"] = std::make_shared<MetricCollectorBase>([this] (const std::string& instanceName)
@@ -52,9 +50,7 @@ Monitor::Monitor(const std::string& nodeName, const std::string& netName, int in
 
     this->collectors["\\System\\Context switches/sec"] = std::make_shared<MetricCollectorBase>([this] (const std::string& instanceName)
     {
-        float pagesPerSec = 0, contextSwitchesPerSec = 0;
-        System::Vmstat(pagesPerSec, contextSwitchesPerSec);
-        return (float)contextSwitchesPerSec;
+        return this->contextSwitchesPerSec;
     });
 
     this->collectors["\\System\\System Calls/sec"] = std::make_shared<MetricCollectorBase>([this] (const std::string& instanceName)
@@ -69,32 +65,22 @@ Monitor::Monitor(const std::string& nodeName, const std::string& netName, int in
 
     this->collectors["\\PhysicalDisk\\Disk Bytes/sec"] = std::make_shared<MetricCollectorBase>([this] (const std::string& instanceName)
     {
-        float bytesPerSecond = 0.0f;
-        if (instanceName == "_Total")
-        {
-            System::Iostat(bytesPerSecond);
-        }
-        else
+        if (instanceName != "_Total")
         {
             Logger::Warn("Unable to collect {0} for \\PhysicalDisk\\Disk Bytes/sec", instanceName);
         }
 
-        return bytesPerSecond;
+        return this->bytesPerSecond;
     });
 
     this->collectors["\\LogicalDisk\\Avg. Disk Queue Length"] = std::make_shared<MetricCollectorBase>([this] (const std::string& instanceName)
     {
-        float queueLength = 0.0f;
-        if (instanceName == "_Total")
-        {
-            System::IostatX(queueLength);
-        }
-        else
+        if (instanceName != "_Total")
         {
             Logger::Warn("Unable to collect {0} for \\LogicalDisk\\Avg. Disk Queue Length", instanceName);
         }
 
-        return queueLength;
+        return this->queueLength;
     });
 
     this->collectors["\\Node Manager\\Number of Cores in use"] = std::make_shared<MetricCollectorBase>([this] (const std::string& instanceName)
@@ -137,9 +123,7 @@ Monitor::Monitor(const std::string& nodeName, const std::string& netName, int in
     {
         if (instanceName == "_Total" || instanceName.empty())
         {
-            float freeSpacePercent = 0.0f;
-            System::FreeSpace(freeSpacePercent);
-            return freeSpacePercent;
+            return this->freeSpacePercent;
         }
         else
         {
@@ -159,6 +143,186 @@ Monitor::Monitor(const std::string& nodeName, const std::string& netName, int in
             return 0.0f;
             Logger::Warn("Unable to collect {0} for \\Network Interface\\Bytes Total/sec", instanceName);
         }
+    });
+
+    this->collectors["\\GPU\\GPU Time (%)"] = std::make_shared<MetricCollectorBase>([this] (const std::string& instanceName)
+    {
+        if (instanceName == "_Total" || instanceName.empty())
+        {
+            return this->gpuInfo.GetGpuPercentage();
+        }
+        else
+        {
+            auto index = String::ConvertTo<size_t>(instanceName);
+            if (index >= 0 && index < this->gpuInfo.GpuInfos.size())
+            {
+                float v = this->gpuInfo.GpuInfos[index].GetGpuPercentage();
+                //Logger::Debug("\\GPU\\GPU Time (%), for index {0} is {1}", index, v);
+                return v;
+            }
+            else
+            {
+                Logger::Warn("Collect \\GPU\\GPU Time (%) for instance {0}, index {1}, invalid index", instanceName, index);
+                return 0.0f;
+            }
+        }
+    },
+    [this]()
+    {
+        return this->gpuInfo.GetGpuInstanceNames();
+    });
+
+    this->collectors["\\GPU\\GPU Fan Speed (%)"] = std::make_shared<MetricCollectorBase>([this] (const std::string& instanceName)
+    {
+        if (instanceName == "_Total" || instanceName.empty())
+        {
+            return this->gpuInfo.GetFanPercentage();
+        }
+        else
+        {
+            auto index = String::ConvertTo<size_t>(instanceName);
+            if (index >= 0 && index < this->gpuInfo.GpuInfos.size())
+            {
+                return this->gpuInfo.GpuInfos[index].FanPercentage;
+            }
+            else
+            {
+                Logger::Warn("Collect \\GPU\\GPU Fan Speed (%) for instance {0}, index {1}, invalid index", instanceName, index);
+                return 0.0f;
+            }
+        }
+    },
+    [this]()
+    {
+        return this->gpuInfo.GetGpuInstanceNames();
+    });
+
+    this->collectors["\\GPU\\GPU Memory Usage (%)"] = std::make_shared<MetricCollectorBase>([this] (const std::string& instanceName)
+    {
+        if (instanceName == "_Total" || instanceName.empty())
+        {
+            return this->gpuInfo.GetUsedMemoryPercentage();
+        }
+        else
+        {
+            auto index = String::ConvertTo<size_t>(instanceName);
+            if (index >= 0 && index < this->gpuInfo.GpuInfos.size())
+            {
+                return this->gpuInfo.GpuInfos[index].GetUsedMemoryPercentage();
+            }
+            else
+            {
+                Logger::Warn("Collect \\GPU\\GPU Memory Usage (%) for instance {0}, index {1}, invalid index", instanceName, index);
+                return 0.0f;
+            }
+        }
+    },
+    [this]()
+    {
+        return this->gpuInfo.GetGpuInstanceNames();
+    });
+
+    this->collectors["\\GPU\\GPU Memory Used (MB)"] = std::make_shared<MetricCollectorBase>([this] (const std::string& instanceName)
+    {
+        if (instanceName == "_Total" || instanceName.empty())
+        {
+            // Get GPU Time;
+            return this->gpuInfo.GetUsedMemoryMB();
+        }
+        else
+        {
+            auto index = String::ConvertTo<size_t>(instanceName);
+            if (index >= 0 && index < this->gpuInfo.GpuInfos.size())
+            {
+                return this->gpuInfo.GpuInfos[index].UsedMemoryMB;
+            }
+            else
+            {
+                Logger::Warn("Collect \\GPU\\GPU Memory Used (MB) for instance {0}, index {1}, invalid index", instanceName, index);
+                return 0.0f;
+            }
+        }
+    },
+    [this]()
+    {
+        return this->gpuInfo.GetGpuInstanceNames();
+    });
+
+    this->collectors["\\GPU\\GPU Power Usage (Watts)"] = std::make_shared<MetricCollectorBase>([this] (const std::string& instanceName)
+    {
+        if (instanceName == "_Total" || instanceName.empty())
+        {
+            return this->gpuInfo.GetPowerWatt();
+        }
+        else
+        {
+            auto index = String::ConvertTo<size_t>(instanceName);
+            if (index >= 0 && index < this->gpuInfo.GpuInfos.size())
+            {
+                return this->gpuInfo.GpuInfos[index].PowerWatt;
+            }
+            else
+            {
+                Logger::Warn("Collect \\GPU\\GPU Power Usage (Watts) for instance {0}, index {1}, invalid index", instanceName, index);
+                return 0.0f;
+            }
+        }
+    },
+    [this]()
+    {
+        return this->gpuInfo.GetGpuInstanceNames();
+    });
+
+    this->collectors["\\GPU\\GPU SM Clock (MHz)"] = std::make_shared<MetricCollectorBase>([this] (const std::string& instanceName)
+    {
+        if (instanceName == "_Total" || instanceName.empty())
+        {
+            // Get GPU Time;
+            return this->gpuInfo.GetCurrentSMClock();
+        }
+        else
+        {
+            auto index = String::ConvertTo<size_t>(instanceName);
+            if (index >= 0 && index < this->gpuInfo.GpuInfos.size())
+            {
+                return this->gpuInfo.GpuInfos[index].CurrentSMClock;
+            }
+            else
+            {
+                Logger::Warn("Collect \\GPU\\GPU SM Clock (MHz) for instance {0}, index {1}, invalid index", instanceName, index);
+                return 0.0f;
+            }
+        }
+    },
+    [this]()
+    {
+        return this->gpuInfo.GetGpuInstanceNames();
+    });
+
+    this->collectors["\\GPU\\GPU Temperature (degrees C)"] = std::make_shared<MetricCollectorBase>([this] (const std::string& instanceName)
+    {
+        if (instanceName == "_Total" || instanceName.empty())
+        {
+            // Get GPU Time;
+            return this->gpuInfo.GetTemperature();
+        }
+        else
+        {
+            auto index = String::ConvertTo<size_t>(instanceName);
+            if (index >= 0 && index < this->gpuInfo.GpuInfos.size())
+            {
+                return this->gpuInfo.GpuInfos[index].Temperature;
+            }
+            else
+            {
+                Logger::Warn("Collect \\GPU\\GPU Temperature for instance {0}, index {1}, invalid index", instanceName, index);
+                return 0.0f;
+            }
+        }
+    },
+    [this]()
+    {
+        return this->gpuInfo.GetGpuInstanceNames();
     });
 
     int result = pthread_create(&this->threadId, nullptr, MonitoringThread, this);
@@ -231,6 +395,11 @@ std::vector<unsigned char> Monitor::GetMonitorPacketData()
 
         int p = 0;
 
+        if (NodeManagerConfig::GetDebug())
+        {
+            Logger::Debug("Start get package data");
+        }
+
         for (auto& c : this->collectors)
         {
             if (c.second->IsEnabled())
@@ -241,7 +410,7 @@ std::vector<unsigned char> Monitor::GetMonitorPacketData()
                 {
                     if (NodeManagerConfig::GetDebug())
                     {
-                        Logger::Debug("Report {0} {1} {2}", v.first, v.second.MetricId, v.second.InstanceId);
+                        Logger::Debug("Report p={0}, value={1}, metricId={2}, instanceId={3}", p, v.first, v.second.MetricId, v.second.InstanceId);
                     }
 
                     this->packet.Umids[p] = v.second;
@@ -292,12 +461,34 @@ json::value Monitor::GetRegisterInfo()
 
     j["NetworksInfo"] = json::value::array(networkValues);
 
+    std::vector<json::value> gpuValues;
+
+    for (const auto& info : this->gpuInfo.GpuInfos)
+    {
+        json::value v;
+        v["Name"] = json::value::string(info.Name);
+        v["Uuid"] = json::value::string(info.Uuid);
+        v["PciBusDevice"] = json::value::string(info.GetPciBusDevice());
+        v["PciBusId"] = json::value::string(info.PciBusId);
+        v["TotalMemory"] = info.TotalMemoryMB;
+        v["MaxSMClock"] = info.MaxSMClock;
+
+        gpuValues.push_back(v);
+    }
+
+    j["GpuInfo"] = json::value::array(gpuValues);
+
     return std::move(j);
 }
 
 void Monitor::Run()
 {
     uint64_t cpuLast = 0, idleLast = 0, networkLast = 0;
+
+    Logger::Info("Initializaing GPU driver.");
+    std::string output;
+    int gpuInitRet = System::ExecuteCommandOut(output, "nvidia-smi -pm 1");
+    Logger::Info("Initialize GPU ret code {0}", gpuInitRet);
 
     while (true)
     {
@@ -317,6 +508,12 @@ void Monitor::Run()
         System::Memory(available, total);
         float availableMemoryMb = (float)available / 1024.0f;
         float totalMemoryMb = (float)total / 1024.0f;
+
+        float freeSpacePercent = 0.0f, queueLength = 0.0f, pagesPerSec = 0.0f, contextSwitchesPerSec = 0.0f, bytesPerSecond = 0.0f;
+        System::FreeSpace(freeSpacePercent);
+        System::IostatX(queueLength);
+        System::Vmstat(pagesPerSec, contextSwitchesPerSec);
+        System::Iostat(bytesPerSecond);
 
         uint64_t networkCurrent = 0;
         int ret = System::NetworkUsage(networkCurrent, this->networkName);
@@ -342,6 +539,13 @@ void Monitor::Run()
         // networks;
         auto netInfo = System::GetNetworkInfo();
 
+        // GPU
+        System::GpuInfoList gpuInfo;
+        if (gpuInitRet == 0)
+        {
+            gpuInitRet = System::QueryGpuInfo(gpuInfo);
+        }
+
         {
             WriterLock writerLock(&this->lock);
 
@@ -357,6 +561,18 @@ void Monitor::Run()
             this->socketCount = sockets;
             this->distroInfo = distro;
             this->networkInfo = std::move(netInfo);
+
+            this->freeSpacePercent = freeSpacePercent;
+            this->queueLength = queueLength;
+            this->pagesPerSec = pagesPerSec;
+            this->contextSwitchesPerSec = contextSwitchesPerSec;
+            this->bytesPerSecond = bytesPerSecond;
+
+            if (gpuInitRet == 0)
+            {
+                Logger::Debug("Saving Gpu Info ret {0}, info count {1}", gpuInitRet, gpuInfo.GpuInfos.size());
+                this->gpuInfo = std::move(gpuInfo);
+            }
         }
 
         this->isCollected = true;

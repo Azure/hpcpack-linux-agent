@@ -80,6 +80,11 @@ namespace hpc
                     Log(LogLevel::Debug, f.c_str(), args...);
                 }
 
+                static void SetLevel(spdlog::level::level_enum l)
+                {
+                    spdlog::set_level(l);
+                }
+
                 template <typename ...Args>
                 static void Log(LogLevel level, const char* fmt, Args ...args)
                 {

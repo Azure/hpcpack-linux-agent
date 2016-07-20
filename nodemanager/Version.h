@@ -504,6 +504,12 @@ namespace hpc
                             "Refine the folder name of filter execution directory",
                         }
                     },
+                    { "1.7.8.0",
+                        {
+                            "Report instance level GPU metrics",
+                            "Register with GPU information",
+                        }
+                    },
                 };
 
                 return versionHistory;

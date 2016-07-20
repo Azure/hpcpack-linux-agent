@@ -42,6 +42,23 @@ int main(int argc, char* argv[])
     }
 
     std::cout << "Node manager started." << std::endl;
+
+/*
+    trace = 0,
+    debug = 1,
+    info = 2,
+    notice = 3,
+    warn = 4,
+    err = 5,
+    critical = 6,
+    alert = 7,
+    emerg = 8,
+    off = 9
+*/
+    auto level = spdlog::level::info;
+    try { level = (spdlog::level::level_enum)NodeManagerConfig::GetLogLevel(); } catch (...) { std::cout << "No log level found in config file" << std::endl; }
+    std::cout << "Log Level " << level << std::endl;
+    Logger::SetLevel(level);
     Logger::Info("Log system works.");
     Logger::Info("Version: {0}", Version::GetVersion());
 

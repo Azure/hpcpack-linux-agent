@@ -137,6 +137,8 @@
 		<Unit filename="test/TestRunner.h" />
 		<Unit filename="utils/Configuration.cpp" />
 		<Unit filename="utils/Configuration.h" />
+		<Unit filename="utils/Enumerable.cpp" />
+		<Unit filename="utils/Enumerable.h" />
 		<Unit filename="utils/JsonHelper.cpp" />
 		<Unit filename="utils/JsonHelper.h" />
 		<Unit filename="utils/Logger.cpp" />

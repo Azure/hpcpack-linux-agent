@@ -55,10 +55,17 @@ namespace hpc
                 std::vector<hpc::utils::System::NetInfo> networkInfo;
                 std::map<std::string, std::shared_ptr<MetricCollectorBase>> collectors;
                 hpc::data::MonitoringPacket<MaxCountersInPacket> packet = 1;
+
+                System::GpuInfoList gpuInfo;
                 pthread_rwlock_t lock;
 
                 int intervalSeconds;
                 bool isCollected;
+                float freeSpacePercent = 0.0f;
+                float queueLength = 0.0f;
+                float pagesPerSec = 0.0f;
+                float contextSwitchesPerSec = 0.0f;
+                float bytesPerSecond = 0.0f;
                 pthread_t threadId = 0;
         };
     }

@@ -3,7 +3,10 @@
 
 #include <vector>
 #include <map>
+#include <cpprest/json.h>
+#include <cpprest/http_client.h>
 
+#include "HttpHelper.h"
 #include "../data/Umid.h"
 #include "../arguments/MetricCounter.h"
 
@@ -17,25 +20,14 @@ namespace hpc
         class MetricCollectorBase
         {
             public:
-                MetricCollectorBase(std::function<float(const std::string&)> func)
-                    : collectFunc(func)
+                MetricCollectorBase(std::function<float(const std::string&)> collecter, std::function<std::vector<std::string>()> instanceNameQuerier = std::function<std::vector<std::string>()>())
+                    : collectFunc(collecter), instanceNamesFunc(instanceNameQuerier)
                 {
                 }
 
                 MetricCollectorBase() = default;
 
-                void ApplyConfig(const MetricCounter& config)
-                {
-                    this->metricId = config.MetricId;
-
-                    this->cachedInstanceIds[config.InstanceId] = config.InstanceName;
-                    if (config.InstanceName.empty())
-                    {
-                        // TODO: get instance ids by metric.
-                    }
-
-                    this->enabled = true;
-                }
+                void ApplyConfig(const MetricCounter& config);
 
                 void Reset()
                 {
@@ -43,7 +35,7 @@ namespace hpc
                     this->cachedInstanceIds.clear();
                 }
 
-                bool IsInstanceLevelMetric() { return false; }
+                bool IsInstanceLevelMetric() { return this->isInstanceLevelMetric; }
 
                 bool IsEnabled() const { return this->enabled; }
 
@@ -64,7 +56,9 @@ namespace hpc
             private:
                 uint16_t metricId;
                 bool enabled = false;
+                bool isInstanceLevelMetric = false;
                 std::function<float(const std::string&)> collectFunc;
+                std::function<std::vector<std::string>()> instanceNamesFunc;
                 std::map<uint16_t, std::string> cachedInstanceIds;
         };
     }

@@ -471,7 +471,7 @@
 	"../arguments/MetricCountersConfig.h"
 	"../data/ProcessStatistics.h"
 
-1427353166 source:/home/evanc/whpc-linux-communicator/nodemanager/arguments/EndJobArgs.cpp
+1464951683 source:/home/evanc/whpc-linux-communicator/nodemanager/arguments/EndJobArgs.cpp
 	"EndJobArgs.h"
 	"../utils/JsonHelper.h"
 
@@ -483,7 +483,7 @@
 	<map>
 	<cpprest/json.h>
 
-1427353166 source:/home/evanc/whpc-linux-communicator/nodemanager/arguments/EndTaskArgs.cpp
+1464951683 source:/home/evanc/whpc-linux-communicator/nodemanager/arguments/EndTaskArgs.cpp
 	"EndTaskArgs.h"
 	"../utils/JsonHelper.h"
 
@@ -526,7 +526,7 @@
 	"../utils/String.h"
 	"../common/ErrorCodes.h"
 
-1464871942 /home/evanc/whpc-linux-communicator/nodemanager/core/Process.h
+1466155975 /home/evanc/whpc-linux-communicator/nodemanager/core/Process.h
 	<string>
 	<sstream>
 	<vector>
@@ -543,7 +543,7 @@
 	"../common/ErrorCodes.h"
 	"../data/ProcessStatistics.h"
 
-1464951683 /home/evanc/whpc-linux-communicator/nodemanager/utils/String.h
+1468855756 /home/evanc/whpc-linux-communicator/nodemanager/utils/String.h
 	<string>
 	<vector>
 	<sstream>
@@ -562,11 +562,12 @@
 	"../filters/FilterException.h"
 	"../arguments/MetricCountersConfig.h"
 
-1465296749 /home/evanc/whpc-linux-communicator/nodemanager/utils/System.h
+1468852155 /home/evanc/whpc-linux-communicator/nodemanager/utils/System.h
 	<string>
 	"String.h"
 	"Logger.h"
 	"../common/ErrorCodes.h"
+	"Enumerable.h"
 
 1428574636 source:/home/evanc/whpc-linux-communicator/nodemanager/core/RemoteExecutor.cpp
 	<cpprest/http_client.h>
@@ -588,7 +589,7 @@
 	<sstream>
 	"String.h"
 
-1427269578 source:/home/evanc/whpc-linux-communicator/nodemanager/utils/System.cpp
+1468851798 source:/home/evanc/whpc-linux-communicator/nodemanager/utils/System.cpp
 	<string>
 	<sys/types.h>
 	<ifaddrs.h>
@@ -602,6 +603,7 @@
 	"System.h"
 	"String.h"
 	"Logger.h"
+	"../common/ErrorCodes.h"
 
 1431328499 source:/home/evanc/whpc-linux-communicator/nodemanager/core/JobTaskTable.cpp
 	"JobTaskTable.h"
@@ -749,7 +751,7 @@
 1437547414 source:/home/evanc/whpc-linux-communicator/nodemanager/core/NodeManagerConfig.cpp
 	"NodeManagerConfig.h"
 
-1465297961 /home/evanc/whpc-linux-communicator/nodemanager/core/NodeManagerConfig.h
+1469009751 /home/evanc/whpc-linux-communicator/nodemanager/core/NodeManagerConfig.h
 	"../utils/Configuration.h"
 
 1437732272 source:/home/evanc/whpc-linux-communicator/nodemanager/arguments/MonitoringConfig.cpp
@@ -767,7 +769,7 @@
 	<string>
 	<cpprest/json.h>
 
-1437988299 source:/home/evanc/whpc-linux-communicator/nodemanager/arguments/MetricCounter.cpp
+1464951683 source:/home/evanc/whpc-linux-communicator/nodemanager/arguments/MetricCounter.cpp
 	"MetricCounter.h"
 	"../utils/JsonHelper.h"
 
@@ -779,19 +781,22 @@
 	<boost/asio/ssl.hpp>
 	"NodeManagerConfig.h"
 
-1438161609 source:/home/evanc/whpc-linux-communicator/nodemanager/core/MetricCollectorBase.cpp
+1464951683 source:/home/evanc/whpc-linux-communicator/nodemanager/core/MetricCollectorBase.cpp
 	"MetricCollectorBase.h"
 
-1438242875 /home/evanc/whpc-linux-communicator/nodemanager/core/MetricCollectorBase.h
+1469012210 /home/evanc/whpc-linux-communicator/nodemanager/core/MetricCollectorBase.h
 	<vector>
 	<map>
+	<cpprest/json.h>
+	<cpprest/http_client.h>
+	"HttpHelper.h"
 	"../data/Umid.h"
 	"../arguments/MetricCounter.h"
 
-1438238815 /home/evanc/whpc-linux-communicator/nodemanager/data/Umid.h
+1464951683 /home/evanc/whpc-linux-communicator/nodemanager/data/Umid.h
 	<inttypes.h>
 
-1447837294 /home/evanc/whpc-linux-communicator/nodemanager/data/ProcessStatistics.h
+1464951683 /home/evanc/whpc-linux-communicator/nodemanager/data/ProcessStatistics.h
 	<vector>
 	<inttypes.h>
 
@@ -1251,4 +1256,23 @@
 
 1466048408 /home/evanc/whpc-linux-communicator/nodemanager/filters/FilterException.h
 	<stdexcept>
+
+1464951683 source:/home/evanc/whpc-linux-communicator/nodemanager/arguments/MetricCountersConfig.cpp
+	"MetricCountersConfig.h"
+
+1466156105 source:/home/evanc/whpc-linux-communicator/nodemanager/filters/ExecutionFilter.cpp
+	"ExecutionFilter.h"
+	"FilterException.h"
+	"../utils/Logger.h"
+	"../common/ErrorCodes.h"
+	"../utils/System.h"
+	"../core/Process.h"
+	"../data/ProcessStatistics.h"
+
+1468849260 source:/home/evanc/whpc-linux-communicator/nodemanager/utils/Enumerable.cpp
+	"Enumerable.h"
+
+1468850808 /home/evanc/whpc-linux-communicator/nodemanager/utils/Enumerable.h
+	<utility>
+	<functional>
 
