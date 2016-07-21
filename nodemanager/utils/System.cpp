@@ -397,8 +397,8 @@ int System::QueryGpuInfo(System::GpuInfoList& gpuInfo)
         info.Uuid = String::Trim(values[1]);
         info.PciBusId = String::Trim(values[2]);
         info.DeviceId = String::Trim(values[3]);
-        info.MaxSMClock = String::ConvertTo<float>(values[4]);
-        info.TotalMemoryMB = String::ConvertTo<float>(values[5]);
+        info.TotalMemoryMB = String::ConvertTo<float>(values[4]);
+        info.MaxSMClock = String::ConvertTo<float>(values[5]);
         info.FanPercentage = String::ConvertTo<float>(values[6]);
         info.UsedMemoryMB = String::ConvertTo<float>(values[7]);
         info.PowerWatt = String::ConvertTo<float>(values[8]);

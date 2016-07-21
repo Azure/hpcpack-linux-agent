@@ -515,6 +515,11 @@ namespace hpc
                             "Fix a metric packet count issue",
                         }
                     },
+                    { "1.7.10.0",
+                        {
+                            "Fix a bug of total memory data in metrics",
+                        }
+                    },
                 };
 
                 return versionHistory;
