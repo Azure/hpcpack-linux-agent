@@ -4,6 +4,7 @@
 #include <unistd.h>
 
 #include "UdpReporter.h"
+#include "NodeManagerConfig.h"
 
 using namespace hpc::core;
 using namespace hpc::utils;
@@ -90,6 +91,14 @@ int UdpReporter::Report()
 //    Logger::Debug("Report datasize {0}, data {1}", data.size(), String::Join<' '>(dataInt));
 
     auto buffer = &data[0];
+
+    if (NodeManagerConfig::GetDebug())
+    {
+        std::vector<int> d;
+        d.assign(data.begin(), data.end());
+
+        Logger::Debug("Udp packet sent: {0}", String::Join<','>(d));
+    }
 
     int ret = write(this->s, buffer, data.size());
     if (ret == -1)

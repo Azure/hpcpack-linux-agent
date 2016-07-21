@@ -385,7 +385,7 @@ std::vector<unsigned char> Monitor::GetMonitorPacketData()
 
     if (this->isCollected)
     {
-        this->packet.Count = std::count_if(this->collectors.begin(), this->collectors.end(), [] (auto& kvp) { return kvp.second->IsEnabled(); });
+       // this->packet.Count = std::count_if(this->collectors.begin(), this->collectors.end(), [] (auto& kvp) { return kvp.second->IsEnabled(); });
         this->packet.TickCount = this->intervalSeconds;
         for (int i = 0; i < MaxCountersInPacket; i++)
         {
@@ -419,6 +419,8 @@ std::vector<unsigned char> Monitor::GetMonitorPacketData()
                 }
             }
         }
+
+        this->packet.Count = p;
 
         memcpy(&packetData[0], &this->packet, std::min(sizeof(this->packet), MaxPacketSize));
     }

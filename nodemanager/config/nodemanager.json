@@ -4,9 +4,12 @@
     "UseDefaultCA":false,
     "ClusterAuthenticationKey":"",
     "HeartbeatUri":"https://evancv1:40001/api/evanc.com/computenodereported",
+    "MetricInstanceIdsUri":"https://evancv1:40001/api/evanc.com/getinstanceids",
     "MetricUri":"udp://EVANCV1.fareast.corp.microsoft.com:9894/api/4aed4836-c0c8-4e92-853d-cac4698582d1/metricreported",
     "RegisterUri":"https://evancv1:40001/api/evanc.com/registerrequested",
     "CertificateChainFile":"/opt/hpcnodemanager/certs/evanc.com.crt",
     "PrivateKeyFile":"/opt/hpcnodemanager/certs/evanc.com.key",
-    "ListeningUri":"http://0.0.0.0:40000"
+    "ListeningUri":"http://0.0.0.0:40000",
+    "Debug":true,
+    "LogLevel":1
 }

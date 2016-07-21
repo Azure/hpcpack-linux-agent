@@ -510,6 +510,11 @@ namespace hpc
                             "Register with GPU information",
                         }
                     },
+                    { "1.7.9.0",
+                        {
+                            "Fix a metric packet count issue",
+                        }
+                    },
                 };
 
                 return versionHistory;
