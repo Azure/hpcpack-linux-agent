@@ -149,14 +149,14 @@ Monitor::Monitor(const std::string& nodeName, const std::string& netName, int in
     {
         if (instanceName == "_Total" || instanceName.empty())
         {
-            return this->gpuInfo.GetGpuPercentage();
+            return this->gpuInfo.GetGpuUtilization();
         }
         else
         {
             auto index = String::ConvertTo<size_t>(instanceName);
             if (index >= 0 && index < this->gpuInfo.GpuInfos.size())
             {
-                float v = this->gpuInfo.GpuInfos[index].GetGpuPercentage();
+                float v = this->gpuInfo.GpuInfos[index].GpuUtilization;
                 //Logger::Debug("\\GPU\\GPU Time (%), for index {0} is {1}", index, v);
                 return v;
             }

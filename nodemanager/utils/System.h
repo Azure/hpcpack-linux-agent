@@ -37,6 +37,7 @@ namespace hpc
                     float PowerWatt;
                     float CurrentSMClock;
                     float Temperature;
+                    float GpuUtilization;
 
                     // take 00:01 from B174:00:01.0
                     std::string GetPciBusDevice() const
@@ -46,7 +47,6 @@ namespace hpc
                         return String::Join(':', ids[1], ids[2]);
                     }
 
-                    float GetGpuPercentage() const { return 100 * this->CurrentSMClock / this->MaxSMClock; }
                     float GetUsedMemoryPercentage() const { return 100 * this->UsedMemoryMB / this->TotalMemoryMB; }
                 } GpuInfo;
 
@@ -54,14 +54,14 @@ namespace hpc
                 {
                     std::vector<GpuInfo> GpuInfos;
                     float GetTotalMemoryMB() const { return Enumerable::Sum<std::vector<GpuInfo>, float, GpuInfo>(this->GpuInfos, [] (const GpuInfo& i) { return i.TotalMemoryMB; }); }
-                    float GetMaxSMClock() const { return Enumerable::Sum<std::vector<GpuInfo>, float, GpuInfo>(this->GpuInfos, [] (const GpuInfo& i) { return i.MaxSMClock; }); }
+                    float GetMaxSMClock() const { return Enumerable::Avg<std::vector<GpuInfo>, float, GpuInfo>(this->GpuInfos, [] (const GpuInfo& i) { return i.MaxSMClock; }); }
                     float GetFanPercentage() const { return Enumerable::First<std::vector<GpuInfo>, float, GpuInfo>(this->GpuInfos, [] (const GpuInfo& i) { return i.FanPercentage; }); }
                     float GetUsedMemoryMB() const { return Enumerable::Sum<std::vector<GpuInfo>, float, GpuInfo>(this->GpuInfos, [] (const GpuInfo& i) { return i.UsedMemoryMB; }); }
                     float GetPowerWatt() const { return Enumerable::Sum<std::vector<GpuInfo>, float, GpuInfo>(this->GpuInfos, [] (const GpuInfo& i) { return i.PowerWatt; }); }
-                    float GetCurrentSMClock() const { return Enumerable::Sum<std::vector<GpuInfo>, float, GpuInfo>(this->GpuInfos, [] (const GpuInfo& i) { return i.CurrentSMClock; }); }
-                    float GetTemperature() const { return Enumerable::First<std::vector<GpuInfo>, float, GpuInfo>(this->GpuInfos, [] (const GpuInfo& i) { return i.Temperature; }); }
+                    float GetCurrentSMClock() const { return Enumerable::Avg<std::vector<GpuInfo>, float, GpuInfo>(this->GpuInfos, [] (const GpuInfo& i) { return i.CurrentSMClock; }); }
+                    float GetTemperature() const { return Enumerable::Avg<std::vector<GpuInfo>, float, GpuInfo>(this->GpuInfos, [] (const GpuInfo& i) { return i.Temperature; }); }
 
-                    float GetGpuPercentage() const { return 100 * this->GetCurrentSMClock() / this->GetMaxSMClock(); }
+                    float GetGpuUtilization() const { return Enumerable::Avg<std::vector<GpuInfo>, float, GpuInfo>(this->GpuInfos, [] (const GpuInfo& i) { return i.GpuUtilization; }); }
                     float GetUsedMemoryPercentage() const { return 100 * this->GetUsedMemoryMB() / this->GetTotalMemoryMB(); }
 
                     std::vector<std::string> gpuInstanceNames;
@@ -76,7 +76,7 @@ namespace hpc
                                 this->gpuInstanceNames.push_back(std::to_string(i));
                             }
 
-                            this->gpuInstanceNames.push_back("_Total");
+                           // this->gpuInstanceNames.push_back("_Total");
                         }
 
                         return this->gpuInstanceNames;

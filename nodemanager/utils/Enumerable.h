@@ -24,6 +24,18 @@ namespace hpc
                 }
 
                 template <typename S, typename T, typename E>
+                static T Avg(const S& enumerable, std::function<T(const E&)> func = [] (const E& e) { return (T)e; } )
+                {
+                    T result = T();
+                    for (const E& e : enumerable)
+                    {
+                        result += func(e);
+                    }
+
+                    return result / enumerable.size();
+                }
+
+                template <typename S, typename T, typename E>
                 static T First(const S& enumerable, std::function<T(const E&)> func = [] (const E& e) { return (T)e; } )
                 {
                     for (const E& e : enumerable)

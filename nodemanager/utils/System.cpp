@@ -379,7 +379,7 @@ int System::QueryGpuInfo(System::GpuInfoList& gpuInfo)
         gpuInfoString,
         "nvidia-smi",
         "--format=csv,noheader",
-        "--query-gpu=name,uuid,pci.bus_id,pci.device_id,memory.total,clocks.max.sm,fan.speed,memory.used,power.draw,clocks.current.sm,temperature.gpu");
+        "--query-gpu=name,uuid,pci.bus_id,pci.device_id,memory.total,clocks.max.sm,fan.speed,memory.used,power.draw,clocks.current.sm,temperature.gpu,utilization.gpu");
 
     if (127 == ret)
     {
@@ -404,6 +404,7 @@ int System::QueryGpuInfo(System::GpuInfoList& gpuInfo)
         info.PowerWatt = String::ConvertTo<float>(values[8]);
         info.CurrentSMClock = String::ConvertTo<float>(values[9]);
         info.Temperature = String::ConvertTo<float>(values[10]);
+        info.GpuUtilization = String::ConvertTo<float>(values[11]);
 
         gpuInfo.GpuInfos.push_back(info);
     }
