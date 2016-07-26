@@ -467,13 +467,31 @@ void* RemoteExecutor::GracePeriodElapsed(void* data)
 
         if (stat != nullptr)
         {
+            Logger::Debug(jobId, taskId, requeueCount, "remaining pids size {0}", stat->ProcessIds.size());
+
+            if (NodeManagerConfig::GetDebug())
+            {
+                for (int pid : stat->ProcessIds)
+                {
+                    std::string process;
+                    std::string groupFile = "/sys/fs/cgroup/cpu,cpuacct/nmgroup_";
+                    groupFile = String::Join("", groupFile, "Task_", taskId, "_", requeueCount, "/tasks");
+                    System::ExecuteCommandOut(process, "ps -p", pid);
+                    Logger::Debug(jobId, taskId, requeueCount, "undead process {1}, {0}", process, pid);
+                    System::ExecuteCommandOut(process, "cat", groupFile);
+                    Logger::Debug(jobId, taskId, requeueCount, "tasks file {0}", process);
+                }
+            }
+
             // stat == nullptr means the processKey is already removed from the map
             // which means the main task has exited already.
             taskInfo->Exited = true;
             taskInfo->ExitCode = (int)ErrorCodes::EndTaskExitCode;
+            taskInfo->AssignFromStat(*stat);
+            taskInfo->ProcessIds.clear();
+
             e->jobTaskTable.RemoveTask(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetAttemptId());
 
-            taskInfo->AssignFromStat(*stat);
             json::value jsonBody = taskInfo->ToCompletionEventArgJson();
             Logger::Info(jobId, taskId, e->UnknowId, "EndTask: ended {0}", jsonBody);
             e->ReportTaskCompletion(jobId, taskId, requeueCount, jsonBody, callbackUri);
@@ -500,10 +518,22 @@ void RemoteExecutor::ReportTaskCompletion(
 
             client::http_client client = HttpHelper::GetHttpClient(callbackUri);
             http_request request = HttpHelper::GetHttpRequest(methods::POST, jsonBody);
-            http_response response = client.request(request).get();
 
-            Logger::Info(jobId, taskId, taskRequeueCount,
-                "Callback to {0} response code {1}", callbackUri, response.status_code());
+            client.request(request).then([=](pplx::task<http_response> t)
+            {
+                try
+                {
+                    auto response = t.get();
+                    Logger::Info(jobId, taskId, taskRequeueCount,
+                        "Callback to {0} response code {1}", callbackUri, response.status_code());
+                }
+                catch (const std::exception& ex)
+                {
+                    this->jobTaskTable.RequestResync();
+                    Logger::Error(jobId, taskId, taskRequeueCount,
+                        "Exception when sending back task result. {0}", ex.what());
+                }
+            });
         }
     }
     catch (const std::exception& ex)

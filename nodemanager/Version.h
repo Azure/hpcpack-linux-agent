@@ -520,6 +520,12 @@ namespace hpc
                             "Fix a bug of total memory data in metrics",
                         }
                     },
+                    { "1.7.11.0",
+                        {
+                            "Fix a crash issue when cancelling a job",
+                            "Fix a process statistics issue when cancelling a job which results in the job stuck in cancelling state",
+                        }
+                    },
                 };
 
                 return versionHistory;
