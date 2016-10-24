@@ -59,8 +59,6 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
             instance = this;
             this.headNodeFqdn = new Lazy<string>(() => Dns.GetHostEntryAsync(this.HeadNode).Result.HostName, LazyThreadSafetyMode.ExecutionAndPublication);
-            this.MonitoringConfigManager = new MonitoringConfigManager(this.headNodeFqdn.Value);
-            this.HostsManager = new HostsFileManager();
         }
 
         public event EventHandler<RegisterEventArgs> RegisterRequested;
@@ -128,6 +126,10 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
         public bool Initialize()
         {
             this.Tracer.TraceInfo("Initializing LinuxCommunicator.");
+
+            this.MonitoringConfigManager = new MonitoringConfigManager();
+            Task.Run(() => this.MonitoringConfigManager.Initialize(this.headNodeFqdn.Value));
+            this.HostsManager = new HostsFileManager();
 
             ServicePointManager.ServerCertificateValidationCallback += (s, cert, chain, sslPolicyErrors) =>
             {

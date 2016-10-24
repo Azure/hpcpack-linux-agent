@@ -65,13 +65,31 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.Monitoring
 
         private MetricCountersConfig metricCountersConfig = new MetricCountersConfig();
 
-        public MonitoringConfigManager(string server)
+        public MonitoringConfigManager() { }
+
+        public void Initialize(string server)
         {
-            this.Store = MonitoringStoreConnection.Connect(server, "LinuxCommunicator");
-            this.checkConfigTimer.AutoReset = true;
-            this.checkConfigTimer.Interval = 5 * 60 * 1000;
-            this.checkConfigTimer.Elapsed += checkConfigTimer_Elapsed;
-            this.checkConfigTimer_Elapsed(this, null);
+            RetryManager rm = new RetryManager(new PeriodicRetryTimer(30 * 1000));
+            while (true)
+            {
+                try
+                {
+                    this.Store = MonitoringStoreConnection.Connect(server, "LinuxCommunicator");
+                    this.checkConfigTimer_Elapsed(this, null);
+                    this.checkConfigTimer.AutoReset = true;
+                    this.checkConfigTimer.Interval = 5 * 60 * 1000;
+                    this.checkConfigTimer.Elapsed += checkConfigTimer_Elapsed;
+                    break;
+                }
+                catch (Exception e)
+                {
+                    if (rm.HasAttemptsLeft)
+                    {
+                        LinuxCommunicator.Instance.Tracer.TraceException(e, "MonitoringConfigManager initialization failed. Retry count {0}, retry wait time {1}.", rm.RetryCount, rm.NextWaitTime);
+                        rm.WaitForNextAttempt();
+                    }
+                }
+            }
         }
 
         public event EventHandler<ConfigChangedEventArgs> ConfigChanged;
