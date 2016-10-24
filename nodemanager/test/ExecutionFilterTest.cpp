@@ -40,7 +40,7 @@ bool ExecutionFilterTest::JobStart()
         HttpHelper::ConfigListenerSslContext(ctx);
     });
 
-    RemoteCommunicator rc(executor, config);
+    RemoteCommunicator rc(executor, config, "http://localhost:40000");
     rc.Open();
 
     http_client client(U("http://localhost:40000/"));

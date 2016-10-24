@@ -108,7 +108,7 @@ int main(int argc, char* argv[])
         HttpHelper::ConfigListenerSslContext(ctx);
     });
 
-    RemoteCommunicator rc(executor, config);
+    RemoteCommunicator rc(executor, config, NodeManagerConfig::GetListeningUri());
     rc.Open();
 
     while (true)

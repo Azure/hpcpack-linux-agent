@@ -20,8 +20,8 @@ using namespace hpc::common;
 using namespace web::http::experimental::listener;
 using namespace hpc::filters;
 
-RemoteCommunicator::RemoteCommunicator(IRemoteExecutor& exec, const http_listener_config& config) :
-    listeningUri(NodeManagerConfig::GetListeningUri()), isListening(false), executor(exec),
+RemoteCommunicator::RemoteCommunicator(IRemoteExecutor& exec, const http_listener_config& config, const std::string& uri) :
+    listeningUri(uri), isListening(false), executor(exec),
     listener(listeningUri, config)
 {
     this->listener.support(

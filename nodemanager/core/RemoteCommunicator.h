@@ -19,7 +19,7 @@ namespace hpc
         class RemoteCommunicator
         {
             public:
-                RemoteCommunicator(IRemoteExecutor& executor, const web::http::experimental::listener::http_listener_config& config);
+                RemoteCommunicator(IRemoteExecutor& executor, const web::http::experimental::listener::http_listener_config& config, const std::string& uri);
                 ~RemoteCommunicator();
 
                 void Open();
