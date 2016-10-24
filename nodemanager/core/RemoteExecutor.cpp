@@ -29,15 +29,16 @@ RemoteExecutor::RemoteExecutor(const std::string& networkName)
     this->registerReporter =
         std::unique_ptr<Reporter<json::value>>(
             new HttpReporter(
-                NodeManagerConfig::GetRegisterUri(),
+                "RegisterReporter",
+                []() { return NodeManagerConfig::ResolveRegisterUri(); },
                 3,
                 this->RegisterInterval,
                 [this]() { return this->monitor.GetRegisterInfo(); }));
 
     this->registerReporter->Start();
 
-    this->StartHeartbeat(NodeManagerConfig::GetHeartbeatUri());
-    this->StartMetric(NodeManagerConfig::GetMetricUri());
+    this->StartHeartbeat();
+    this->StartMetric();
     this->StartHostsManager();
 }
 
@@ -513,10 +514,11 @@ void RemoteExecutor::ReportTaskCompletion(
     {
         if (!jsonBody.is_null())
         {
+            std::string uri = NodeManagerConfig::ResolveTaskCompletedUri(callbackUri);
             Logger::Debug(jobId, taskId, taskRequeueCount,
-                "Callback to {0} with {1}", callbackUri, jsonBody);
+                "Callback to {0} with {1}", uri, jsonBody);
 
-            client::http_client client = HttpHelper::GetHttpClient(callbackUri);
+            client::http_client client = HttpHelper::GetHttpClient(uri);
             http_request request = HttpHelper::GetHttpRequest(methods::POST, jsonBody);
 
             client.request(request).then([=](pplx::task<http_response> t)
@@ -525,7 +527,7 @@ void RemoteExecutor::ReportTaskCompletion(
                 {
                     auto response = t.get();
                     Logger::Info(jobId, taskId, taskRequeueCount,
-                        "Callback to {0} response code {1}", callbackUri, response.status_code());
+                        "Callback to {0} response code {1}", uri, response.status_code());
                 }
                 catch (const std::exception& ex)
                 {
@@ -544,14 +546,15 @@ void RemoteExecutor::ReportTaskCompletion(
     }
 }
 
-void RemoteExecutor::StartHeartbeat(std::string&& callbackUri)
+void RemoteExecutor::StartHeartbeat()
 {
     WriterLock writerLock(&this->lock);
 
     this->nodeInfoReporter =
         std::unique_ptr<Reporter<json::value>>(
             new HttpReporter(
-                callbackUri,
+                "HeartbeatReporter",
+                []() { return NodeManagerConfig::ResolveHeartbeatUri(); },
                 0,
                 this->NodeInfoReportInterval,
                 [this]() { return this->jobTaskTable.ToJson(); }));
@@ -561,7 +564,7 @@ void RemoteExecutor::StartHeartbeat(std::string&& callbackUri)
 
 void RemoteExecutor::StartHostsManager()
 {
-    std::string hostsUri = NodeManagerConfig::GetHostsFileUri();
+    std::string hostsUri = NodeManagerConfig::ResolveHostsFileUri();
     if (!hostsUri.empty())
     {
         int interval = this->DefaultHostsFetchInterval;
@@ -584,7 +587,7 @@ void RemoteExecutor::StartHostsManager()
 
         WriterLock writerLock(&this->lock);
 
-        this->hostsManager = std::unique_ptr<HostsManager>(new HostsManager(hostsUri, interval));
+        this->hostsManager = std::unique_ptr<HostsManager>(new HostsManager([]() { return NodeManagerConfig::ResolveHostsFileUri(); }, interval));
         this->hostsManager->Start();
     }
     else
@@ -600,19 +603,20 @@ pplx::task<json::value> RemoteExecutor::Ping(std::string&& callbackUri)
     if (uri != callbackUri)
     {
         NodeManagerConfig::SaveHeartbeatUri(callbackUri);
-        this->StartHeartbeat(std::move(callbackUri));
+        this->StartHeartbeat();
     }
 
     return pplx::task_from_result(json::value());
 }
 
-void RemoteExecutor::StartMetric(std::string&& callbackUri)
+void RemoteExecutor::StartMetric()
 {
     WriterLock writerLock(&this->lock);
 
-    if (!callbackUri.empty())
+    std::string uri = NodeManagerConfig::ResolveMetricUri();
+    if (!uri.empty())
     {
-        auto tokens = String::Split(callbackUri, '/');
+        auto tokens = String::Split(uri, '/');
         uuid id = string_generator()(tokens[4]);
 
         this->monitor.SetNodeUuid(id);
@@ -620,7 +624,8 @@ void RemoteExecutor::StartMetric(std::string&& callbackUri)
         this->metricReporter =
             std::unique_ptr<Reporter<std::vector<unsigned char>>>(
                 new UdpReporter(
-                    callbackUri,
+                    "MetricReporter",
+                    []() { return NodeManagerConfig::ResolveMetricUri(); },
                     0,
                     this->MetricReportInterval,
                     [this]() { return this->monitor.GetMonitorPacketData(); }));
@@ -637,7 +642,7 @@ pplx::task<json::value> RemoteExecutor::Metric(std::string&& callbackUri)
         NodeManagerConfig::SaveMetricUri(callbackUri);
 
         // callbackUri is like udp://server:port/api/nodeguid/metricreported
-        this->StartMetric(std::move(callbackUri));
+        this->StartMetric();
     }
 
     return pplx::task_from_result(json::value());

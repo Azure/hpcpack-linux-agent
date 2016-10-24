@@ -9,9 +9,11 @@ using namespace hpc::utils;
 
 int HttpReporter::Report()
 {
+    std::string uri;
+
     try
     {
-        const std::string& uri = this->reportUri;
+        uri = this->getReportUri();
 
         auto jsonBody = this->valueFetcher();
         if (jsonBody.is_null())
@@ -44,15 +46,15 @@ int HttpReporter::Report()
     }
     catch (const http_exception& httpEx)
     {
-        Logger::Warn("HttpException occurred when report to {0}, ex {1}", this->reportUri, httpEx.what());
+        Logger::Warn("HttpException occurred when {2} report to {0}, ex {1}", uri, httpEx.what(), this->name);
     }
     catch (const std::exception& ex)
     {
-        Logger::Error("Exception occurred when report to {0}, ex {1}", this->reportUri, ex.what());
+        Logger::Error("Exception occurred when {2} report to {0}, ex {1}", uri, ex.what(), this->name);
     }
     catch (...)
     {
-        Logger::Error("Unknown error occurred when report to {0}", this->reportUri);
+        Logger::Error("Unknown error occurred when {1} report to {0}", uri, this->name);
     }
 
     return -1;

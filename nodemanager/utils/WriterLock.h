@@ -3,14 +3,20 @@
 
 #include <pthread.h>
 
-class WriterLock
+namespace hpc
 {
-    public:
-        WriterLock(pthread_rwlock_t* l) : lock(l) { pthread_rwlock_wrlock(lock); }
-        ~WriterLock() { pthread_rwlock_unlock(lock); }
-    protected:
-    private:
-        pthread_rwlock_t* lock;
-};
+    namespace utils
+    {
+        class WriterLock
+        {
+            public:
+                WriterLock(pthread_rwlock_t* l) : lock(l) { pthread_rwlock_wrlock(lock); }
+                ~WriterLock() { pthread_rwlock_unlock(lock); }
+            protected:
+            private:
+                pthread_rwlock_t* lock;
+        };
+    }
+}
 
 #endif // WRITERLOCK_H

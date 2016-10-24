@@ -526,6 +526,12 @@ namespace hpc
                             "Fix a process statistics issue when cancelling a job which results in the job stuck in cancelling state",
                         }
                     },
+                    { "2.1.1.0",
+                        {
+                            "Hpc Pack 2016 head node support",
+                            "Dynamically resolve the Uris of the head node services",
+                        }
+                    },
                 };
 
                 return versionHistory;

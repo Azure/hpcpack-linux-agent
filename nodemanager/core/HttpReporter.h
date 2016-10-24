@@ -17,11 +17,12 @@ namespace hpc
         {
             public:
                 HttpReporter(
-                    const std::string& uri,
+                    const std::string& reporterName,
+                    std::function<std::string()> getUri,
                     int hold,
                     int interval,
                     std::function<json::value()> fetcher)
-                : Reporter<json::value>(uri, hold, interval, fetcher)
+                : Reporter<json::value>(reporterName, getUri, hold, interval, fetcher)
                 {
                 }
 

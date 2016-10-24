@@ -34,8 +34,8 @@ namespace hpc
             private:
                 static void* GracePeriodElapsed(void* data);
 
-                void StartHeartbeat(std::string&& callbackUri);
-                void StartMetric(std::string&& callbackUri);
+                void StartHeartbeat();
+                void StartMetric();
                 void StartHostsManager();
 
                 const hpc::data::ProcessStatistics* TerminateTask(

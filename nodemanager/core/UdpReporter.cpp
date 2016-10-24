@@ -2,6 +2,7 @@
 #include <sys/socket.h>
 #include <netdb.h>
 #include <unistd.h>
+#include <cpprest/http_client.h>
 
 #include "UdpReporter.h"
 #include "NodeManagerConfig.h"
@@ -10,62 +11,94 @@ using namespace hpc::core;
 using namespace hpc::utils;
 
 UdpReporter::UdpReporter(
-    const std::string& uri,
+    const std::string& name,
+    std::function<std::string()> getReportUri,
     int hold,
     int interval,
     std::function<std::vector<unsigned char>()> fetcher)
-    : Reporter<std::vector<unsigned char>>(uri, hold, interval, fetcher)
+    : Reporter<std::vector<unsigned char>>(name, getReportUri, hold, interval, fetcher)
 {
-    auto tokens = String::Split(uri, '/');
-    auto endpoint = String::Split(tokens[2], ':');
-    auto server = endpoint[0];
-    auto port = endpoint[1];
+}
 
-    addrinfo hints;
-    memset(&hints, 0, sizeof(hints));
-    hints.ai_family = AF_INET;
-    hints.ai_socktype = SOCK_DGRAM;
-    hints.ai_flags = 0;
-    hints.ai_protocol = 0;
-
-    addrinfo* siRemote, *current;
-    Logger::Info("getaddrinfo server {0}, port {1}", server, port);
-
-    int ret = getaddrinfo(server.c_str(), port.c_str(), &hints, &siRemote);
-    if (ret != 0)
+void UdpReporter::ReConnect()
+{
+    if (this->s)
     {
-        Logger::Error("getaddrinfo failed {0}", gai_strerror(ret));
-        return;
-    }
-
-    bool success = false;
-    for (current = siRemote;
-        current != nullptr;
-        current = current->ai_next)
-    {
-        if ((this->s = socket(AF_INET, SOCK_DGRAM | SOCK_CLOEXEC, IPPROTO_UDP)) == -1)
-        {
-            Logger::Warn("create socket failed with errno {0}", errno);
-            continue;
-        }
-
-        if (connect(this->s, current->ai_addr, current->ai_addrlen) != -1)
-        {
-            success = true;
-            break;
-        }
-
         close(this->s);
     }
 
-    freeaddrinfo(siRemote);
+    std::string uri;
 
-    if (!success)
+    try
     {
-        throw std::runtime_error("Cannot connect to socket successfully");
+        uri = this->getReportUri();
+    }
+    catch (const http::http_exception& httpEx)
+    {
+        Logger::Warn("HttpException occurred when {2} report to {0}, ex {1}", uri, httpEx.what(), this->name);
+    }
+    catch (const std::exception& ex)
+    {
+        Logger::Error("Exception occurred when {2} report to {0}, ex {1}", uri, ex.what(), this->name);
+    }
+    catch (...)
+    {
+        Logger::Error("Unknown error occurred when {1} report to {0}", uri, this->name);
     }
 
-    this->initialized = true;
+    if (!uri.empty())
+    {
+        auto tokens = String::Split(uri, '/');
+        auto endpoint = String::Split(tokens[2], ':');
+        auto server = endpoint[0];
+        auto port = endpoint[1];
+
+        addrinfo hints;
+        memset(&hints, 0, sizeof(hints));
+        hints.ai_family = AF_INET;
+        hints.ai_socktype = SOCK_DGRAM;
+        hints.ai_flags = 0;
+        hints.ai_protocol = 0;
+
+        addrinfo* siRemote, *current;
+        Logger::Info("getaddrinfo server {0}, port {1}", server, port);
+
+        int ret = getaddrinfo(server.c_str(), port.c_str(), &hints, &siRemote);
+        if (ret != 0)
+        {
+            Logger::Error("getaddrinfo failed {0}", gai_strerror(ret));
+            return;
+        }
+
+        bool success = false;
+        for (current = siRemote;
+            current != nullptr;
+            current = current->ai_next)
+        {
+            if ((this->s = socket(AF_INET, SOCK_DGRAM | SOCK_CLOEXEC, IPPROTO_UDP)) == -1)
+            {
+                Logger::Warn("create socket failed with errno {0}", errno);
+                continue;
+            }
+
+            if (connect(this->s, current->ai_addr, current->ai_addrlen) != -1)
+            {
+                success = true;
+                break;
+            }
+
+            close(this->s);
+        }
+
+        freeaddrinfo(siRemote);
+
+        this->uri = uri;
+        this->initialized = success;
+    }
+    else
+    {
+        this->initialized = false;
+    }
 }
 
 UdpReporter::~UdpReporter()
@@ -76,13 +109,11 @@ UdpReporter::~UdpReporter()
 
 int UdpReporter::Report()
 {
-    if (!this->initialized) { return -1; }
-
-    const std::string& uri = this->reportUri;
-
-    auto tokens = String::Split(String::Split(uri, '/')[2], ':');
-    auto serverName = tokens[0];
-    auto port = tokens[1];
+    if (!this->initialized)
+    {
+        this->ReConnect();
+        return -1;
+    }
 
     auto data = this->valueFetcher();
 
@@ -105,9 +136,11 @@ int UdpReporter::Report()
     {
         Logger::Error(
             "Error when sendto {0}, socket {1}, errno {2}",
-            uri,
+            this->uri,
             this->s,
             errno);
+
+        this->initialized = false;
     }
 
     return ret;

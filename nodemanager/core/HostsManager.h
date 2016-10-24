@@ -18,7 +18,7 @@ namespace hpc
                 const std::string HPCHostEntryPattern = R"delimiter(^([0-9\.]+)\s+([^\s#]+)\s+#HPC\s*$)delimiter";
                 const std::string UpdateIdHeaderName = "UpdateId";
 
-                HostsManager(const std::string& hostsUri, int fetchInterval);
+                HostsManager(std::function<std::string()> getHostsUri, int fetchInterval);
                 ~HostsManager() { this->Stop(); }
 
                 void Start() { this->hostsFetcher->Start(); }

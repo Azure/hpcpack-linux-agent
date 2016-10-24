@@ -9,9 +9,10 @@ using namespace hpc::utils;
 
 int HttpFetcher::Report()
 {
+    std::string uri;
     try
     {
-        const std::string& uri = this->reportUri;
+        uri = this->getReportUri();
         http_client client = HttpHelper::GetHttpClient(uri);
 
         http_request request = HttpHelper::GetHttpRequest(methods::GET);
@@ -38,15 +39,15 @@ int HttpFetcher::Report()
     }
     catch (const http_exception& httpEx)
     {
-        Logger::Warn("HttpException occurred when fetching from {0}, ex {1}", this->reportUri, httpEx.what());
+        Logger::Warn("HttpException occurred when {2} fetching from {0}, ex {1}", uri, httpEx.what(), this->name);
     }
     catch (const std::exception& ex)
     {
-        Logger::Error("Exception occurred when fetching from {0}, ex {1}", this->reportUri, ex.what());
+        Logger::Error("Exception occurred when {2} fetching from {0}, ex {1}", uri, ex.what(), this->name);
     }
     catch (...)
     {
-        Logger::Error("Unknown error occurred when fetching from {0}", this->reportUri);
+        Logger::Error("Unknown error occurred when {1} fetching from {0}", uri, this->name);
     }
 
     return -1;

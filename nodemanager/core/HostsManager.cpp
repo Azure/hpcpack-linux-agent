@@ -12,12 +12,13 @@ using namespace hpc::data;
 using namespace web::http;
 using namespace hpc::core;
 
-HostsManager::HostsManager(const std::string& hostsUri, int fetchInterval)
+HostsManager::HostsManager(std::function<std::string()> getHostsUri, int fetchInterval)
 {
     this->hostsFetcher =
         std::unique_ptr<HttpFetcher>(
             new HttpFetcher(
-                hostsUri,
+                "HostsFetcher",
+                getHostsUri,
                 0,
                 fetchInterval,
                 [this](http_request& request)

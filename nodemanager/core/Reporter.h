@@ -16,14 +16,14 @@ namespace hpc
         class Reporter
         {
             public:
-                Reporter(const std::string& uri, int hold, int interval, std::function<ReportType()> fetcher)
-                    : reportUri(uri), valueFetcher(fetcher), intervalSeconds(interval), holdSeconds(hold)
+                Reporter(std::string reporterName, std::function<std::string()> getUri, int hold, int interval, std::function<ReportType()> fetcher)
+                    : name(reporterName), getReportUri(getUri), valueFetcher(fetcher), intervalSeconds(interval), holdSeconds(hold)
                 {
                 }
 
                 void Start()
                 {
-                    if (!this->reportUri.empty())
+                    if (this->getReportUri)
                     {
                         pthread_create(&this->threadId, nullptr, ReportingThread, this);
                     }
@@ -37,19 +37,20 @@ namespace hpc
                         while (this->inRequest) usleep(1);
                         pthread_cancel(this->threadId);
                         pthread_join(this->threadId, nullptr);
-                        Logger::Debug("Destructed Reporter {0}", this->reportUri);
+                        Logger::Debug("Destructed Reporter {0}", this->name);
                     }
                 }
 
                 virtual ~Reporter()
                 {
-                    Logger::Debug("Destruct Reporter {0}", this->reportUri);
+                    Logger::Debug("Destruct Reporter {0}", this->name);
                 }
 
                 virtual int Report() = 0;
 
             protected:
-                const std::string reportUri;
+                std::string name;
+                std::function<std::string()> getReportUri;
                 std::function<ReportType()> valueFetcher;
                 int intervalSeconds;
 
@@ -65,7 +66,7 @@ namespace hpc
                     while (r->isRunning)
                     {
                         bool needRetry = false;
-                        if (!r->reportUri.empty())
+                        if (r->getReportUri)
                         {
                             r->inRequest = true;
                             needRetry = (0 != r->Report());

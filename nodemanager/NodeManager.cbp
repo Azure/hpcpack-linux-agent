@@ -83,6 +83,8 @@
 		<Unit filename="core/MetricCollectorBase.h" />
 		<Unit filename="core/Monitor.cpp" />
 		<Unit filename="core/Monitor.h" />
+		<Unit filename="core/NamingClient.cpp" />
+		<Unit filename="core/NamingClient.h" />
 		<Unit filename="core/NodeManagerConfig.cpp" />
 		<Unit filename="core/NodeManagerConfig.h" />
 		<Unit filename="core/Process.cpp" />

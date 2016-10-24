@@ -16,12 +16,13 @@ namespace hpc
         {
             public:
                 HttpFetcher(
-                    const std::string& uri,
+                    const std::string& name,
+                    std::function<std::string()> getReportUri,
                     int hold,
                     int interval,
                     std::function<bool(http::http_request&)> requestHandler,
                     std::function<bool(http::http_response&)> responseHandler)
-                : Reporter<void>(uri, hold, interval, nullptr),
+                : Reporter<void>(name, getReportUri, hold, interval, nullptr),
                 requestHandler(requestHandler),
                 responseHandler(responseHandler)
                 {

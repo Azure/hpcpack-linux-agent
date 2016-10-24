@@ -1,15 +1,22 @@
 {
-    "TrustedCAFile":"/opt/hpcnodemanager/certs/test.pem",
+    "TrustedCAFile":"/opt/hpcnodemanager/certs/hpclocal.onmicrosoft.com.pem",
     "TrustedCAPath":"/opt/hpcnodemanager/certs/",
     "UseDefaultCA":false,
     "ClusterAuthenticationKey":"",
-    "HeartbeatUri":"https://evancv1:40001/api/evanc.com/computenodereported",
-    "MetricInstanceIdsUri":"https://evancv1:40001/api/evanc.com/getinstanceids",
-    "MetricUri":"udp://EVANCV1.fareast.corp.microsoft.com:9894/api/4aed4836-c0c8-4e92-853d-cac4698582d1/metricreported",
-    "RegisterUri":"https://evancv1:40001/api/evanc.com/registerrequested",
-    "CertificateChainFile":"/opt/hpcnodemanager/certs/evanc.com.crt",
-    "PrivateKeyFile":"/opt/hpcnodemanager/certs/evanc.com.key",
-    "ListeningUri":"http://0.0.0.0:40000",
-    "Debug":true,
-    "LogLevel":1
+    "HeartbeatUri":"https://{0}:40001/api/evanclv9/computenodereported",
+    "MetricInstanceIdsUri":"https://{0}:40001/api/evanclv9/getinstanceids",
+    "MetricUri":"udp://EVANCV7.fareast.corp.microsoft.com:9894/api/4aed4836-c0c8-4e92-853d-cac4698582d1/metricreported",
+    "RegisterUri":"https://{0}:40001/api/evanclv9/registerrequested",
+    "CertificateChainFile":"/opt/hpcnodemanager/certs/hpclocal.onmicrosoft.com.crt",
+    "PrivateKeyFile":"/opt/hpcnodemanager/certs/hpclocal.onmicrosoft.com.key",
+    "ListeningUri":"https://0.0.0.0:40002",
+    "Debug":false,
+    "LogLevel":1,
+    "NamingServiceUri":[
+        "http://evancv7:8939/api/fabric/resolve/singleton/",
+        "http://evancv7:8939/api/fabric/resolve/singleton/",
+        "http://evancv7:8939/api/fabric/resolve/singleton/"
+        ],
+    "DefaultServiceName":"SchedulerStatefulService",
+    "UdpMetricServiceName":"MonitoringStatefulService"
 }

@@ -15,7 +15,7 @@ void MetricCollectorBase::ApplyConfig(const MetricCounter& config)
 
             if (!instanceNames.empty())
             {
-                web::http::client::http_client client = HttpHelper::GetHttpClient(NodeManagerConfig::GetMetricInstanceIdsUri());
+                web::http::client::http_client client = HttpHelper::GetHttpClient(NodeManagerConfig::ResolveMetricInstanceIdsUri());
 
                 json::value jsonBody = JsonHelper<std::vector<std::string>>::ToJson(instanceNames);
                 web::http::http_request request = HttpHelper::GetHttpRequest(web::http::methods::POST, jsonBody);
@@ -64,7 +64,8 @@ void MetricCollectorBase::ApplyConfig(const MetricCounter& config)
                     }
                     catch (const std::exception& ex)
                     {
-                        Logger::Error("Error when query instance ids for {0}, ex {1}", String::Join<','>(instanceNames), ex.what());
+                        Logger::Error("Error when query instance ids for {0}, ex {1}, resetting naming cache", String::Join<','>(instanceNames), ex.what());
+                        NamingClient::InvalidateCache();
                     }
                 });
             }

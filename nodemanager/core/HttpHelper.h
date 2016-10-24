@@ -44,6 +44,7 @@ namespace hpc
                     if (!certChain.empty())
                     {
                         ctx.use_certificate_chain_file(certChain);
+                        Logger::Debug("Use the certificate chain file {0}", certChain);
                     }
 
                     auto privateKey = NodeManagerConfig::GetPrivateKeyFile();
@@ -51,6 +52,7 @@ namespace hpc
                     if (!privateKey.empty())
                     {
                         ctx.use_private_key_file(privateKey, context::pem);
+                        Logger::Debug("Use the private key file {0}", privateKey);
                     }
                 }
 
@@ -58,6 +60,7 @@ namespace hpc
                 {
                     http::client::http_client_config config;
 
+                    config.set_validate_certificates(false);
                     config.set_ssl_context_callback([](context& ctx)
                     {
                         if (NodeManagerConfig::GetUseDefaultCA())

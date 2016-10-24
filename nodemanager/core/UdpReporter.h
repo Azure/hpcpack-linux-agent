@@ -14,7 +14,8 @@ namespace hpc
         {
             public:
                 UdpReporter(
-                    const std::string& uri,
+                    const std::string& name,
+                    std::function<std::string()> getReportUri,
                     int hold,
                     int interval,
                     std::function<std::vector<unsigned char>()> fetcher);
@@ -25,7 +26,10 @@ namespace hpc
 
             protected:
             private:
-                int s;
+                void ReConnect();
+
+                std::string uri;
+                int s = 0;
                 bool initialized = false;
         };
     }
