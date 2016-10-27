@@ -532,6 +532,11 @@ namespace hpc
                             "Dynamically resolve the Uris of the head node services",
                         }
                     },
+                    { "2.1.2.0",
+                        {
+                            "Fix the unknown node availability issue",
+                        }
+                    },
                 };
 
                 return versionHistory;
