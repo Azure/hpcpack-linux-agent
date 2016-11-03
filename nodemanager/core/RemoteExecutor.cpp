@@ -532,6 +532,7 @@ void RemoteExecutor::ReportTaskCompletion(
                 catch (const std::exception& ex)
                 {
                     this->jobTaskTable.RequestResync();
+                    NamingClient::InvalidateCache();
                     Logger::Error(jobId, taskId, taskRequeueCount,
                         "Exception when sending back task result. {0}", ex.what());
                 }
@@ -541,6 +542,7 @@ void RemoteExecutor::ReportTaskCompletion(
     catch (const std::exception& ex)
     {
         this->jobTaskTable.RequestResync();
+        NamingClient::InvalidateCache();
         Logger::Error(jobId, taskId, taskRequeueCount,
             "Exception when sending back task result. {0}", ex.what());
     }

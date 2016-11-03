@@ -30,30 +30,17 @@ namespace hpc
 
                 static std::shared_ptr<NamingClient> GetInstance(const std::vector<std::string>& namingServices)
                 {
-                    if (!instance)
-                    {
-                        instance = std::make_shared<NamingClient>(namingServices, 1);
-                    }
+                    static std::shared_ptr<NamingClient> instance = std::make_shared<NamingClient>(namingServices, 1);
 
                     return instance;
                 }
 
                 std::string GetServiceLocation(const std::string& serviceName);
 
-                static void InvalidateCache()
-                {
-                    if (instance)
-                    {
-                        WriterLock writerLock(&instance->lock);
-
-                        instance->serviceLocations.clear();
-                    }
-                }
+                static void InvalidateCache();
 
             private:
                 void RequestForServiceLocation(const std::string& serviceName, std::string& serviceLocation);
-
-                static std::shared_ptr<NamingClient> instance;
 
                 int intervalSeconds;
                 std::map<std::string, std::string> serviceLocations;

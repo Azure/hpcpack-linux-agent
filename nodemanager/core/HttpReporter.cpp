@@ -42,7 +42,14 @@ int HttpReporter::Report()
 
         Logger::Debug("---------> Reported to {0} response code {1}, value {2}, interval {3}", uri, response.status_code(), milliseconds, this->intervalSeconds);
 
-        return 0;
+        if (response.status_code() == http::status_codes::OK)
+        {
+            return 0;
+        }
+        else
+        {
+            return -1;
+        }
     }
     catch (const http_exception& httpEx)
     {

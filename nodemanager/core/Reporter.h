@@ -5,6 +5,7 @@
 #include <functional>
 
 #include "../utils/Logger.h"
+#include "NamingClient.h"
 
 using namespace hpc::utils;
 
@@ -69,7 +70,11 @@ namespace hpc
                         if (r->getReportUri)
                         {
                             r->inRequest = true;
-                            needRetry = (0 != r->Report());
+                            if ((needRetry = (0 != r->Report())))
+                            {
+                                NamingClient::InvalidateCache();
+                            }
+
                             r->inRequest = false;
                         }
 

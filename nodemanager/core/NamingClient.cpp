@@ -10,7 +10,18 @@ using namespace web::http::client;
 using namespace hpc::core;
 using namespace hpc::utils;
 
-std::shared_ptr<NamingClient> NamingClient::instance;
+void NamingClient::InvalidateCache()
+{
+    auto instance = GetInstance(NodeManagerConfig::GetNamingServiceUri());
+
+    if (instance)
+    {
+        WriterLock writerLock(&instance->lock);
+
+        Logger::Debug("ResolveServiceLocation> Cleared.");
+        instance->serviceLocations.clear();
+    }
+}
 
 std::string NamingClient::GetServiceLocation(const std::string& serviceName)
 {
@@ -24,6 +35,12 @@ std::string NamingClient::GetServiceLocation(const std::string& serviceName)
     if (location == this->serviceLocations.end())
     {
         WriterLock writerLock(&this->lock);
+        Logger::Debug("ResolveServiceLocation> there is no entry for {0}", serviceName);
+        for (auto kvp : this->serviceLocations)
+        {
+            Logger::Debug("ResolveServiceLocation> entry {0} = {1}", kvp.first, kvp.second);
+        }
+
         location = this->serviceLocations.find(serviceName);
         if (location == this->serviceLocations.end())
         {

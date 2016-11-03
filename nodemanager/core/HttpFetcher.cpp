@@ -16,6 +16,7 @@ int HttpFetcher::Report()
         http_client client = HttpHelper::GetHttpClient(uri);
 
         http_request request = HttpHelper::GetHttpRequest(methods::GET);
+
         if (this->requestHandler)
         {
             if (!this->requestHandler(request))
@@ -27,12 +28,18 @@ int HttpFetcher::Report()
 
         http_response response = client.request(request, this->cts.get_token()).get();
         Logger::Debug("---------> Fetched from {0} response code {1}", uri, response.status_code());
-        if(this->responseHandler)
+
+        if (this->responseHandler)
         {
             if (!this->responseHandler(response))
             {
                 Logger::Warn("Error in response handler for the fetch request to {0}", uri);
+                return -1;
             }
+        }
+        else if (response.status_code() != http::status_codes::OK)
+        {
+            return -1;
         }
 
         return 0;

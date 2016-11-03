@@ -35,15 +35,15 @@ void UdpReporter::ReConnect()
     }
     catch (const http::http_exception& httpEx)
     {
-        Logger::Warn("HttpException occurred when {2} report to {0}, ex {1}", uri, httpEx.what(), this->name);
+        Logger::Warn("UdpReporter, HttpException occurred when {2} report to {0}, ex {1}", uri, httpEx.what(), this->name);
     }
     catch (const std::exception& ex)
     {
-        Logger::Error("Exception occurred when {2} report to {0}, ex {1}", uri, ex.what(), this->name);
+        Logger::Error("UdpReporter, Exception occurred when {2} report to {0}, ex {1}", uri, ex.what(), this->name);
     }
     catch (...)
     {
-        Logger::Error("Unknown error occurred when {1} report to {0}", uri, this->name);
+        Logger::Error("UdpReporter, Unknown error occurred when {1} report to {0}", uri, this->name);
     }
 
     if (!uri.empty())
@@ -61,12 +61,12 @@ void UdpReporter::ReConnect()
         hints.ai_protocol = 0;
 
         addrinfo* siRemote, *current;
-        Logger::Info("getaddrinfo server {0}, port {1}", server, port);
+        Logger::Info("UdpReporter, getaddrinfo server {0}, port {1}", server, port);
 
         int ret = getaddrinfo(server.c_str(), port.c_str(), &hints, &siRemote);
         if (ret != 0)
         {
-            Logger::Error("getaddrinfo failed {0}", gai_strerror(ret));
+            Logger::Error("UdpReporter, getaddrinfo failed {0}", gai_strerror(ret));
             return;
         }
 
@@ -77,16 +77,18 @@ void UdpReporter::ReConnect()
         {
             if ((this->s = socket(AF_INET, SOCK_DGRAM | SOCK_CLOEXEC, IPPROTO_UDP)) == -1)
             {
-                Logger::Warn("create socket failed with errno {0}", errno);
+                Logger::Warn("UdpReporter, create socket failed with errno {0}", errno);
                 continue;
             }
 
             if (connect(this->s, current->ai_addr, current->ai_addrlen) != -1)
             {
+                Logger::Info("UdpReporter, connect succeeds.");
                 success = true;
                 break;
             }
 
+            Logger::Warn("UdpReporter, connect failed with errno {0}.", errno);
             close(this->s);
         }
 
@@ -112,7 +114,11 @@ int UdpReporter::Report()
     if (!this->initialized)
     {
         this->ReConnect();
-        return -1;
+
+        if (!this->initialized)
+        {
+            return -1;
+        }
     }
 
     auto data = this->valueFetcher();
@@ -128,14 +134,14 @@ int UdpReporter::Report()
         std::vector<int> d;
         d.assign(data.begin(), data.end());
 
-        Logger::Debug("Udp packet sent: {0}", String::Join<','>(d));
+        Logger::Debug("UdpReporter, Udp packet sent: {0}", String::Join<','>(d));
     }
 
     int ret = write(this->s, buffer, data.size());
     if (ret == -1)
     {
         Logger::Error(
-            "Error when sendto {0}, socket {1}, errno {2}",
+            "UdpReporter, Error when sendto {0}, socket {1}, errno {2}",
             this->uri,
             this->s,
             errno);
@@ -143,5 +149,5 @@ int UdpReporter::Report()
         this->initialized = false;
     }
 
-    return ret;
+    return 0;
 }

@@ -537,6 +537,11 @@ namespace hpc
                             "Fix the unknown node availability issue",
                         }
                     },
+                    { "2.1.3.0",
+                        {
+                            "Fix the node error issue when scheduler failover",
+                        }
+                    },
                 };
 
                 return versionHistory;
