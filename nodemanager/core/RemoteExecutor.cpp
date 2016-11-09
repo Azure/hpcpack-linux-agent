@@ -528,6 +528,12 @@ void RemoteExecutor::ReportTaskCompletion(
                     auto response = t.get();
                     Logger::Info(jobId, taskId, taskRequeueCount,
                         "Callback to {0} response code {1}", uri, response.status_code());
+
+                    if (response.status_code() != status_codes::OK)
+                    {
+                        this->jobTaskTable.RequestResync();
+                        NamingClient::InvalidateCache();
+                    }
                 }
                 catch (const std::exception& ex)
                 {

@@ -542,6 +542,11 @@ namespace hpc
                             "Fix the node error issue when scheduler failover",
                         }
                     },
+                    { "2.1.4.0",
+                        {
+                            "Fix a job stuck in running issue",
+                        }
+                    },
                 };
 
                 return versionHistory;
