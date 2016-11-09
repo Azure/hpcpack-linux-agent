@@ -21,8 +21,9 @@ namespace hpc
                     int hold,
                     int interval,
                     std::function<bool(http::http_request&)> requestHandler,
-                    std::function<bool(http::http_response&)> responseHandler)
-                : Reporter<void>(name, getReportUri, hold, interval, nullptr),
+                    std::function<bool(http::http_response&)> responseHandler,
+                    std::function<void()> onErrorFunc)
+                : Reporter<void>(name, getReportUri, hold, interval, nullptr, onErrorFunc),
                 requestHandler(requestHandler),
                 responseHandler(responseHandler)
                 {

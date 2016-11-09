@@ -33,7 +33,8 @@ RemoteExecutor::RemoteExecutor(const std::string& networkName)
                 []() { return NodeManagerConfig::ResolveRegisterUri(); },
                 3,
                 this->RegisterInterval,
-                [this]() { return this->monitor.GetRegisterInfo(); }));
+                [this]() { return this->monitor.GetRegisterInfo(); },
+                [this]() { this->ResyncAndInvalidateCache(); }));
 
     this->registerReporter->Start();
 
@@ -531,14 +532,12 @@ void RemoteExecutor::ReportTaskCompletion(
 
                     if (response.status_code() != status_codes::OK)
                     {
-                        this->jobTaskTable.RequestResync();
-                        NamingClient::InvalidateCache();
+                        this->ResyncAndInvalidateCache();
                     }
                 }
                 catch (const std::exception& ex)
                 {
-                    this->jobTaskTable.RequestResync();
-                    NamingClient::InvalidateCache();
+                    this->ResyncAndInvalidateCache();
                     Logger::Error(jobId, taskId, taskRequeueCount,
                         "Exception when sending back task result. {0}", ex.what());
                 }
@@ -547,8 +546,7 @@ void RemoteExecutor::ReportTaskCompletion(
     }
     catch (const std::exception& ex)
     {
-        this->jobTaskTable.RequestResync();
-        NamingClient::InvalidateCache();
+        this->ResyncAndInvalidateCache();
         Logger::Error(jobId, taskId, taskRequeueCount,
             "Exception when sending back task result. {0}", ex.what());
     }
@@ -565,7 +563,8 @@ void RemoteExecutor::StartHeartbeat()
                 []() { return NodeManagerConfig::ResolveHeartbeatUri(); },
                 0,
                 this->NodeInfoReportInterval,
-                [this]() { return this->jobTaskTable.ToJson(); }));
+                [this]() { return this->jobTaskTable.ToJson(); },
+                [this]() { this->ResyncAndInvalidateCache(); }));
 
     this->nodeInfoReporter->Start();
 }
@@ -636,7 +635,8 @@ void RemoteExecutor::StartMetric()
                     []() { return NodeManagerConfig::ResolveMetricUri(); },
                     0,
                     this->MetricReportInterval,
-                    [this]() { return this->monitor.GetMonitorPacketData(); }));
+                    [this]() { return this->monitor.GetMonitorPacketData(); },
+                    [this]() { NamingClient::InvalidateCache(); }));
 
         this->metricReporter->Start();
     }
@@ -714,3 +714,10 @@ const ProcessStatistics* RemoteExecutor::TerminateTask(
         return nullptr;
     }
 }
+
+void RemoteExecutor::ResyncAndInvalidateCache()
+{
+    this->jobTaskTable.RequestResync();
+    NamingClient::InvalidateCache();
+}
+

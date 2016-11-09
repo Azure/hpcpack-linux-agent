@@ -17,8 +17,8 @@ namespace hpc
         class Reporter
         {
             public:
-                Reporter(std::string reporterName, std::function<std::string()> getUri, int hold, int interval, std::function<ReportType()> fetcher)
-                    : name(reporterName), getReportUri(getUri), valueFetcher(fetcher), intervalSeconds(interval), holdSeconds(hold)
+                Reporter(std::string reporterName, std::function<std::string()> getUri, int hold, int interval, std::function<ReportType()> fetcher, std::function<void()> onErrorFunc)
+                    : name(reporterName), getReportUri(getUri), valueFetcher(fetcher), onError(onErrorFunc), intervalSeconds(interval), holdSeconds(hold)
                 {
                 }
 
@@ -53,6 +53,7 @@ namespace hpc
                 std::string name;
                 std::function<std::string()> getReportUri;
                 std::function<ReportType()> valueFetcher;
+                std::function<void()> onError;
                 int intervalSeconds;
 
             private:
@@ -72,7 +73,10 @@ namespace hpc
                             r->inRequest = true;
                             if ((needRetry = (0 != r->Report())))
                             {
-                                NamingClient::InvalidateCache();
+                                if (r->onError)
+                                {
+                                    r->onError();
+                                }
                             }
 
                             r->inRequest = false;

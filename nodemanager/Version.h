@@ -547,6 +547,11 @@ namespace hpc
                             "Fix a job stuck in running issue",
                         }
                     },
+                    { "2.1.5.0",
+                        {
+                            "Fix a resync failure issue, caused job stuck in running",
+                        }
+                    },
                 };
 
                 return versionHistory;

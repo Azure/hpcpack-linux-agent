@@ -38,6 +38,8 @@ namespace hpc
                 void StartMetric();
                 void StartHostsManager();
 
+                void ResyncAndInvalidateCache();
+
                 const hpc::data::ProcessStatistics* TerminateTask(
                     int jobId, int taskId, int requeueCount,
                     uint64_t processKey, int exitCode, bool forced);

@@ -21,8 +21,9 @@ namespace hpc
                     std::function<std::string()> getUri,
                     int hold,
                     int interval,
-                    std::function<json::value()> fetcher)
-                : Reporter<json::value>(reporterName, getUri, hold, interval, fetcher)
+                    std::function<json::value()> fetcher,
+                    std::function<void()> onErrorFunc)
+                : Reporter<json::value>(reporterName, getUri, hold, interval, fetcher, onErrorFunc)
                 {
                 }
 

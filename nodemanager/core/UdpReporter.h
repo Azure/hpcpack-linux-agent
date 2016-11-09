@@ -18,7 +18,8 @@ namespace hpc
                     std::function<std::string()> getReportUri,
                     int hold,
                     int interval,
-                    std::function<std::vector<unsigned char>()> fetcher);
+                    std::function<std::vector<unsigned char>()> fetcher,
+                    std::function<void()> onErrorFunc);
 
                 virtual ~UdpReporter();
 

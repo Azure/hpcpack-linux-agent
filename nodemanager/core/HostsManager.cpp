@@ -33,6 +33,10 @@ HostsManager::HostsManager(std::function<std::string()> getHostsUri, int fetchIn
                 [this](http_response& response)
                 {
                     return this->HostsResponseHandler(response);
+                },
+                []()
+                {
+                    NamingClient::InvalidateCache();
                 }));
 }
 
