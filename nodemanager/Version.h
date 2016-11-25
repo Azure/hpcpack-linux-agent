@@ -552,6 +552,11 @@ namespace hpc
                             "Fix a resync failure issue, caused job stuck in running",
                         }
                     },
+                    { "2.1.6.0",
+                        {
+                            "Fix the task process never start issue",
+                        }
+                    },
                 };
 
                 return versionHistory;

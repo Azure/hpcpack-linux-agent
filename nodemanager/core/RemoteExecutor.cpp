@@ -145,6 +145,7 @@ pplx::task<json::value> RemoteExecutor::StartTask(StartTaskArgs&& args, std::str
             auto jobUser = this->jobUsers.find(args.JobId);
             if (jobUser == this->jobUsers.end())
             {
+                this->jobTaskTable.RemoveJob(args.JobId);
                 throw std::runtime_error(String::Join(" ", "Job", args.JobId, "was not started on this node."));
             }
             else

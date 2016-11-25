@@ -51,7 +51,7 @@ std::string NamingClient::GetServiceLocation(const std::string& serviceName)
         }
     }
 
-    Logger::Debug("ResolveServiceLocation> Resolved serviceLocation {1} for {0}", location->second, serviceName);
+    Logger::Info("ResolveServiceLocation> Resolved serviceLocation {1} for {0}", location->second, serviceName);
     return location->second;
 }
 
