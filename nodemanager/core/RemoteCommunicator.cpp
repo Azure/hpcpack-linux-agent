@@ -21,7 +21,7 @@ using namespace web::http::experimental::listener;
 using namespace hpc::filters;
 
 RemoteCommunicator::RemoteCommunicator(IRemoteExecutor& exec, const http_listener_config& config, const std::string& uri) :
-    listeningUri(uri), isListening(false), executor(exec),
+    listeningUri(uri), isListening(false), localNodeName(System::GetNodeName()), executor(exec),
     listener(listeningUri, config)
 {
     this->listener.support(
@@ -138,9 +138,47 @@ void RemoteCommunicator::HandlePost(http_request request)
     }
 
     std::string callbackUri;
-    if (HttpHelper::FindHeader(request, CallbackUriKey, callbackUri))
+    if (HttpHelper::FindCallbackUri(request, callbackUri))
     {
         Logger::Debug("CallbackUri found {0}", callbackUri.c_str());
+    }
+
+    std::transform(nodeName.begin(), nodeName.end(), nodeName.begin(), ::toupper);
+
+    if (nodeName != this->localNodeName)
+    {
+        // proxy to other node.
+        request.extract_json().then(
+        [callbackUri, nodeName, this, request] (pplx::task<json::value> t)
+        {
+            auto j = t.get();
+
+            auto req = HttpHelper::GetHttpRequest(methods::POST, j, callbackUri);
+
+            uri_builder uriBuilder(this->listeningUri);
+            uriBuilder.set_path(request.relative_uri().to_string());
+            uriBuilder.set_host(nodeName);
+            auto newUri = uriBuilder.to_string();
+            auto cli = HttpHelper::GetHttpClient(newUri);
+            Logger::Info("Proxy to {0}", newUri);
+
+            cli->request(*req).then([request, newUri](pplx::task<http_response> responseTask)
+            {
+                try
+                {
+                    auto response = responseTask.get();
+                    Logger::Info("Proxy result from {0} response code {1}", newUri, response.status_code());
+                    request.reply(response).then([](auto t) { IsError(t); });
+                }
+                catch (const std::exception& ex)
+                {
+                    Logger::Error("Error when get response {0}", ex.what());
+                    request.reply(http::status_codes::InternalError, json::value(ex.what())).then([](auto t) { IsError(t); });
+                }
+            });
+        });
+
+        return;
     }
 
     auto processor = this->processors.find(methodName);
@@ -245,5 +283,4 @@ pplx::task<json::value> RemoteCommunicator::MetricConfig(json::value&& val, std:
 }
 
 const std::string RemoteCommunicator::ApiSpace = "api";
-const std::string RemoteCommunicator::CallbackUriKey = "CallbackURI";
 

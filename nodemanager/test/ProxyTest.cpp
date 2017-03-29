@@ -1,4 +1,4 @@
-#include "ExecutionFilterTest.h"
+#include "ProxyTest.h"
 
 #ifdef DEBUG
 
@@ -28,7 +28,7 @@ using namespace web;
 using namespace web::http::experimental::listener;
 using namespace web::http::client;
 
-bool ExecutionFilterTest::JobStart()
+bool ProxyTest::ProxyToLocal()
 {
     bool result = true;
     const std::string networkName = "";
@@ -40,12 +40,15 @@ bool ExecutionFilterTest::JobStart()
         HttpHelper::ConfigListenerSslContext(ctx);
     });
 
+    // listen to local host.
     RemoteCommunicator rc(executor, config, "http://localhost:40000");
     rc.Open();
 
+    // TODO: enable the proxy test, need another listener.
+    // request to localhost.
     http_client client(U("http://localhost:40000/"));
     auto nodeName = System::GetNodeName();
-    std::string uri = "/api/" + nodeName + "/startjobandtask";
+    std::string uri = "/api/localhost/startjobandtask";
     uri_builder builder(uri);
 
     std::string stdoutFile = "/tmp/JobStartFilterTest";

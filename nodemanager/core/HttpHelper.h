@@ -16,22 +16,33 @@ namespace hpc
         class HttpHelper
         {
             public:
-                static http::http_request GetHttpRequest(
+                static std::shared_ptr<http::http_request> GetHttpRequest(
                     const http::method& mtd)
                 {
-                    http::http_request msg(mtd);
-                    msg.set_request_uri("");
-                    msg.headers().add(AuthenticationHeaderKey, NodeManagerConfig::GetClusterAuthenticationKey());
+                    auto msg = std::make_shared<http::http_request>(mtd);
+                    msg->set_request_uri("");
+                    msg->headers().add(AuthenticationHeaderKey, NodeManagerConfig::GetClusterAuthenticationKey());
                     return msg;
                 }
 
                 template <typename T>
-                static http::http_request GetHttpRequest(
+                static std::shared_ptr<http::http_request> GetHttpRequest(
                     const http::method& mtd,
                     const T &body)
                 {
-                    http::http_request msg = GetHttpRequest(mtd);
-                    msg.set_body(body);
+                    auto msg = GetHttpRequest(mtd);
+                    msg->set_body(body);
+                    return msg;
+                }
+
+                template <typename T>
+                static std::shared_ptr<http::http_request> GetHttpRequest(
+                    const http::method& mtd,
+                    const T &body,
+                    const std::string& callback)
+                {
+                    auto msg = GetHttpRequest(mtd, body);
+                    msg->headers().add(CallbackUriKey, callback);
                     return msg;
                 }
 
@@ -56,7 +67,7 @@ namespace hpc
                     }
                 }
 
-                static http::client::http_client GetHttpClient(const std::string& uri)
+                static std::shared_ptr<http::client::http_client> GetHttpClient(const std::string& uri)
                 {
                     http::client::http_client_config config;
 
@@ -87,7 +98,12 @@ namespace hpc
                         "Create client to {0}, configure: timeout {1} seconds, chuck size {2}",
                         uri, config.timeout().count(), config.chunksize());
 
-                    return std::move(http::client::http_client(uri, config));
+                    return std::make_shared<http::client::http_client>(uri, config);
+                }
+
+                static bool FindCallbackUri(http::http_request& request, std::string& uri)
+                {
+                    return FindHeader(request, CallbackUriKey, uri);
                 }
 
                 template <typename T>
@@ -102,6 +118,8 @@ namespace hpc
 
                     return false;
                 }
+
+                static const std::string CallbackUriKey;
 
                 static const std::string AuthenticationHeaderKey;
             protected:

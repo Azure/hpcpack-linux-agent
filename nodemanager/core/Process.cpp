@@ -305,9 +305,9 @@ void Process::SendbackOutput(const std::string& uri, const std::string& output, 
             Logger::Debug(this->jobId, this->taskId, this->requeueCount,
                 "Callback to {0} with {1}", uri, jsonBody);
 
-            client::http_client client = HttpHelper::GetHttpClient(uri);
-            http_request request = HttpHelper::GetHttpRequest(methods::POST, jsonBody);
-            http_response response = client.request(request).get();
+            auto client = HttpHelper::GetHttpClient(uri);
+            auto request = HttpHelper::GetHttpRequest(methods::POST, jsonBody);
+            http_response response = client->request(*request).get();
 
             Logger::Info(this->jobId, this->taskId, this->requeueCount,
                 "Callback to {0} response code {1}", uri, response.status_code());

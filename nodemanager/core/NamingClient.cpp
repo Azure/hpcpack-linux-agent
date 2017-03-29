@@ -68,10 +68,10 @@ void NamingClient::RequestForServiceLocation(const std::string& serviceName, std
             selected %= this->namingServicesUri.size();
             uri = this->namingServicesUri[selected++] + serviceName;
             Logger::Debug("ResolveServiceLocation> Fetching from {0}", uri);
-            http_client client = HttpHelper::GetHttpClient(uri);
+            auto client = HttpHelper::GetHttpClient(uri);
 
-            http_request request = HttpHelper::GetHttpRequest(methods::GET);
-            http_response response = client.request(request, this->cts.get_token()).get();
+            auto request = HttpHelper::GetHttpRequest(methods::GET);
+            http_response response = client->request(*request, this->cts.get_token()).get();
             if (response.status_code() == http::status_codes::OK)
             {
                 serviceLocation = JsonHelper<std::string>::FromJson(response.extract_json().get());

@@ -13,20 +13,20 @@ int HttpFetcher::Report()
     try
     {
         uri = this->getReportUri();
-        http_client client = HttpHelper::GetHttpClient(uri);
+        auto client = HttpHelper::GetHttpClient(uri);
 
-        http_request request = HttpHelper::GetHttpRequest(methods::GET);
+        auto request = HttpHelper::GetHttpRequest(methods::GET);
 
         if (this->requestHandler)
         {
-            if (!this->requestHandler(request))
+            if (!this->requestHandler(*request))
             {
                 Logger::Warn("Skipped fetching from {0} because of failure in request handler", uri);
                 return -1;
             }
         }
 
-        http_response response = client.request(request, this->cts.get_token()).get();
+        http_response response = client->request(*request, this->cts.get_token()).get();
         Logger::Debug("---------> Fetched from {0} response code {1}", uri, response.status_code());
 
         if (this->responseHandler)

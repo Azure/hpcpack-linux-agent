@@ -64,10 +64,10 @@ namespace hpc
                 pplx::task<json::value> MetricConfig(json::value&& val, std::string&&);
 
                 static const std::string ApiSpace;
-                static const std::string CallbackUriKey;
                 const std::string listeningUri;
 
                 bool isListening;
+                std::string localNodeName;
 
                 std::map<std::string, std::function<pplx::task<json::value>(json::value&&, std::string&&)>> processors;
 

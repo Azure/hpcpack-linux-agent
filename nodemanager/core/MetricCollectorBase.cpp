@@ -15,12 +15,12 @@ void MetricCollectorBase::ApplyConfig(const MetricCounter& config)
 
             if (!instanceNames.empty())
             {
-                web::http::client::http_client client = HttpHelper::GetHttpClient(NodeManagerConfig::ResolveMetricInstanceIdsUri());
+                auto client = HttpHelper::GetHttpClient(NodeManagerConfig::ResolveMetricInstanceIdsUri());
 
                 json::value jsonBody = JsonHelper<std::vector<std::string>>::ToJson(instanceNames);
-                web::http::http_request request = HttpHelper::GetHttpRequest(web::http::methods::POST, jsonBody);
+                auto request = HttpHelper::GetHttpRequest(web::http::methods::POST, jsonBody);
 
-                client.request(request).then([instanceNames, this](pplx::task<web::http::http_response> t)
+                client->request(*request).then([instanceNames, this](pplx::task<web::http::http_response> t)
                 {
                     auto response = t.get().extract_json().then([instanceNames, this](pplx::task<json::value> t)
                     {

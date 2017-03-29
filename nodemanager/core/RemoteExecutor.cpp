@@ -520,10 +520,10 @@ void RemoteExecutor::ReportTaskCompletion(
             Logger::Debug(jobId, taskId, taskRequeueCount,
                 "Callback to {0} with {1}", uri, jsonBody);
 
-            client::http_client client = HttpHelper::GetHttpClient(uri);
-            http_request request = HttpHelper::GetHttpRequest(methods::POST, jsonBody);
+            auto client = HttpHelper::GetHttpClient(uri);
+            auto request = HttpHelper::GetHttpRequest(methods::POST, jsonBody);
 
-            client.request(request).then([=](pplx::task<http_response> t)
+            client->request(*request).then([jobId, taskId, taskRequeueCount, uri, this](pplx::task<http_response> t)
             {
                 try
                 {

@@ -752,7 +752,7 @@
 1464951683 source:/home/evanc/whpc-linux-communicator/nodemanager/core/NodeManagerConfig.cpp
 	"NodeManagerConfig.h"
 
-1476885702 /home/evanc/whpc-linux-communicator/nodemanager/core/NodeManagerConfig.h
+1477307478 /home/evanc/whpc-linux-communicator/nodemanager/core/NodeManagerConfig.h
 	"../utils/Configuration.h"
 	"NamingClient.h"
 
@@ -775,10 +775,10 @@
 	"MetricCounter.h"
 	"../utils/JsonHelper.h"
 
-1437645025 source:/home/evanc/whpc-linux-communicator/nodemanager/core/HttpHelper.cpp
+1490708923 source:/home/evanc/whpc-linux-communicator/nodemanager/core/HttpHelper.cpp
 	"HttpHelper.h"
 
-1464951683 /home/evanc/whpc-linux-communicator/nodemanager/core/HttpHelper.h
+1490779951 /home/evanc/whpc-linux-communicator/nodemanager/core/HttpHelper.h
 	<cpprest/http_client.h>
 	<boost/asio/ssl.hpp>
 	"NodeManagerConfig.h"
@@ -1278,7 +1278,7 @@
 	<utility>
 	<functional>
 
-1476884560 /home/evanc/whpc-linux-communicator/nodemanager/core/NamingClient.h
+1478196102 /home/evanc/whpc-linux-communicator/nodemanager/core/NamingClient.h
 	<cpprest/json.h>
 	<cpprest/http_client.h>
 	<functional>

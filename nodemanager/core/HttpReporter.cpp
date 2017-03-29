@@ -24,11 +24,11 @@ int HttpReporter::Report()
 
         Logger::Debug("---------> Report to {0} with {1}", uri, jsonBody);
 
-        http_client client = HttpHelper::GetHttpClient(uri);
+        auto client = HttpHelper::GetHttpClient(uri);
 
-        http_request request = HttpHelper::GetHttpRequest(methods::POST, jsonBody);
+        auto request = HttpHelper::GetHttpRequest(methods::POST, jsonBody);
 
-        http_response response = client.request(request, this->cts.get_token()).get();
+        http_response response = client->request(*request, this->cts.get_token()).get();
 
         auto str = response.extract_string().get();
         std::istringstream iss(str);
