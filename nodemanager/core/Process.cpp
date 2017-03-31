@@ -270,6 +270,7 @@ void* Process::ReadPipeThread(void* p)
         buffer[bytesRead] = '\0';
         auto readStr = String::Join("", buffer);
 
+        Logger::Debug("read {0} bytes, streamOutput {1}", bytesRead, process->streamOutput);
         if (process->streamOutput)
         {
             // send out readStr
@@ -281,6 +282,7 @@ void* Process::ReadPipeThread(void* p)
         }
     }
 
+    Logger::Debug("read end. treamOutput {0}", process->streamOutput);
     if (process->streamOutput)
     {
         process->SendbackOutput(uri, std::string(), order++);

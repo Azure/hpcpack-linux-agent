@@ -5,6 +5,7 @@
 #include "../utils/Logger.h"
 #include "ProcessTest.h"
 #include "ExecutionFilterTest.h"
+#include "ProxyTest.h"
 
 using namespace hpc::tests;
 using namespace hpc::utils;
@@ -16,6 +17,7 @@ TestRunner::TestRunner()
     this->tests["RemainingProcess"] = []() { return ProcessTest::RemainingProcess(); };
     this->tests["ClusRun"] = []() { return ProcessTest::ClusRun(); };
     this->tests["FilterJobStart"] = []() { return ExecutionFilterTest::JobStart(); };
+    this->tests["ProxyTest"] = []() { return ProxyTest::ProxyToLocal(); };
 }
 
 bool TestRunner::Run()

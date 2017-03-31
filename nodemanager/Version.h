@@ -557,6 +557,11 @@ namespace hpc
                             "Fix the task process never start issue",
                         }
                     },
+                    { "2.2.1.0",
+                        {
+                            "Added built-in proxy support",
+                        }
+                    },
                 };
 
                 return versionHistory;

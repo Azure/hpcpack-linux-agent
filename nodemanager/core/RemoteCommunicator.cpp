@@ -149,15 +149,26 @@ void RemoteCommunicator::HandlePost(http_request request)
     {
         // proxy to other node.
         request.extract_json().then(
-        [callbackUri, nodeName, this, request] (pplx::task<json::value> t)
+        [callbackUri, nodeName, this, request, apiSpace, methodName] (pplx::task<json::value> t)
         {
             auto j = t.get();
 
             auto req = HttpHelper::GetHttpRequest(methods::POST, j, callbackUri);
 
             uri_builder uriBuilder(this->listeningUri);
-            uriBuilder.set_path(request.relative_uri().to_string());
+
+            if (nodeName == "LOCALHOST")
+            {
+                // only for test purpose, redirect the localhost to the local node name.
+                uriBuilder.set_path(String::Join("", "/", apiSpace, "/", this->localNodeName, "/", methodName));
+            }
+            else
+            {
+                uriBuilder.set_path(request.relative_uri().to_string());
+            }
+
             uriBuilder.set_host(nodeName);
+
             auto newUri = uriBuilder.to_string();
             auto cli = HttpHelper::GetHttpClient(newUri);
             Logger::Info("Proxy to {0}", newUri);

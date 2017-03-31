@@ -48,6 +48,8 @@ bool ProxyTest::ProxyToLocal()
     // request to localhost.
     http_client client(U("http://localhost:40000/"));
     auto nodeName = System::GetNodeName();
+
+    // localhost will be redirected to local node name.
     std::string uri = "/api/localhost/startjobandtask";
     uri_builder builder(uri);
 
