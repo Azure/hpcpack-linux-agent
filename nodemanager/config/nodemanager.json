@@ -4,6 +4,7 @@
     "UseDefaultCA":false,
     "ClusterAuthenticationKey":"",
     "HeartbeatUri":"https://{0}:40001/api/evanclv9/computenodereported",
+    "TaskCompletionUri":"http://evanc7:1328/api/evanclv9/taskcompleted",
     "MetricInstanceIdsUri":"https://{0}:40001/api/evanclv9/getinstanceids",
     "MetricUri":"udp://EVANCV7.fareast.corp.microsoft.com:9894/api/4aed4836-c0c8-4e92-853d-cac4698582d1/metricreported",
     "RegisterUri":"https://{0}:40001/api/evanclv9/registerrequested",

@@ -111,6 +111,8 @@ int main(int argc, char* argv[])
     RemoteCommunicator rc(executor, config, NodeManagerConfig::GetListeningUri());
     rc.Open();
 
+    Logger::Info("Main: entering sleep loop.");
+
     while (true)
     {
         sleep(100);

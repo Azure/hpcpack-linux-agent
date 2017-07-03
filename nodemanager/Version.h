@@ -562,6 +562,11 @@ namespace hpc
                             "Added built-in proxy support",
                         }
                     },
+                    { "2.2.2.0",
+                        {
+                            "Added task completion uri configuration",
+                        }
+                    },
                 };
 
                 return versionHistory;

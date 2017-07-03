@@ -42,6 +42,7 @@ namespace hpc
                 AddConfigurationItem(std::vector<std::string>, NamingServiceUri);
                 AddConfigurationItem(std::string, MetricUri);
                 AddConfigurationItem(std::string, HeartbeatUri);
+                AddConfigurationItem(std::string, TaskCompletionUri);
 
                 static std::string ResolveRegisterUri()
                 {
@@ -75,7 +76,13 @@ namespace hpc
 
                 static std::string ResolveTaskCompletedUri(const std::string& uri)
                 {
-                    return ResolveUri(uri, [](std::shared_ptr<NamingClient> namingClient) { return namingClient->GetServiceLocation(NodeManagerConfig::GetDefaultServiceName()); });
+                    std::string configUri = NodeManagerConfig::GetTaskCompletionUri();
+                    if (configUri.empty())
+                    {
+                        configUri = uri;
+                    }
+
+                    return ResolveUri(configUri, [](std::shared_ptr<NamingClient> namingClient) { return namingClient->GetServiceLocation(NodeManagerConfig::GetDefaultServiceName()); });
                 }
 
             protected:
@@ -90,7 +97,16 @@ namespace hpc
                     size_t pos = u.find("{0}");
                     if (pos != std::string::npos)
                     {
-                        return u.replace(pos, 3, resolver(NamingClient::GetInstance(NodeManagerConfig::GetNamingServiceUri())));
+                        auto namingServiceUri = NodeManagerConfig::GetNamingServiceUri();
+                        if (namingServiceUri.size() > 0)
+                        {
+                            // only when naming service configured.
+                            return u.replace(pos, 3, resolver(NamingClient::GetInstance(NodeManagerConfig::GetNamingServiceUri())));
+                        }
+                        else
+                        {
+                            return "";
+                        }
                     }
 
                     return std::move(u);
