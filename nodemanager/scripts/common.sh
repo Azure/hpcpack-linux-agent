@@ -4,13 +4,39 @@ CGroupSubSys=cpuacct,cpuset,memory,freezer
 CGInstalled=false
 command -v cgexec > /dev/null 2>&1 && CGInstalled=true
 
+function GetContainerName
+{
+	local taskId=$1
+	echo "hpcTask_$taskId"
+}
+
+function GetCGroupNameOfDockerTask
+{
+	local taskId=$1
+	local containerId=$(docker ps -a -q --no-trunc -f name=^/$(GetContainerName $taskId)$)
+	local cgroupfsName="docker/$containerId"
+	local systemdName="system.slice/docker-$containerId.scope"
+	local testFile=$(GetCpusetTasksFile $cgroupfsName)
+	if [ -f $testFile ]; then
+		echo $cgroupfsName
+	else
+		echo $systemdName
+	fi
+}
+
+function GetContainerPlaceholder
+{
+	local taskFolder=$1
+	echo "$taskFolder/placeholder"
+}
+
 function GetCGroupName
 {
 	local taskId=$1
 	echo "nmgroup_$taskId"
 }
 
-function GetExistingCGroupNames
+function GetExistingTaskIdsInCGroup
 {
 	lscgroup | grep 'cpuset:/nmgroup_.*' | sed -e 's/.*nmgroup_\(.*\)/\1/' | uniq
 }
@@ -55,3 +81,11 @@ function GetFreezerStateFile
 	GetGroupFile "$groupName" freezer freezer.state
 }
 
+function CheckNotEmpty
+{
+	if [ ! -z $1 ]; then
+		echo 1
+	else
+		echo 0
+	fi
+}

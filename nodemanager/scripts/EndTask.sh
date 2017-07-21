@@ -11,9 +11,16 @@ taskId=$1
 processId=$2
 forced=$3
 
+taskFolder=$4
+isDockerTask=$(CheckNotEmpty $5)
+
 if $CGInstalled; then
-	groupName=$(GetCGroupName "$taskId")
-	group=$CGroupSubSys:$groupName
+	if [ "$isDockerTask" == "1" ]; then
+		groupName=$(GetCGroupNameOfDockerTask "$taskId")
+	else
+		groupName=$(GetCGroupName "$taskId")
+	fi
+
 	tasks=$(GetCpusetTasksFile "$groupName")
 	freezerState=$(GetFreezerStateFile "$groupName")
 	[ ! -f "$tasks" ] && echo "$tasks doesn't exist" && exit 200
@@ -28,6 +35,13 @@ if $CGInstalled; then
 		sleep .1
 		((maxLoop--))
 	done
+
+	if [ "$isDockerTask" == "1" ]; then
+		dockerTasks=$taskFolder/dockerTasks
+		containerPlaceholder=$(GetContainerPlaceholder $taskFolder)
+		cat $tasks | sed "/^$(cat $containerPlaceholder)$/d" > $dockerTasks
+		tasks=$dockerTasks
+	fi
 
 	# kill all tasks
 	while read pid || [ -n "$pid" ]

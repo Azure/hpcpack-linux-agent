@@ -7,6 +7,9 @@
 
 taskId=$1
 
+taskFolder=$2
+isDockerTask=$(CheckNotEmpty $3)
+
 userTime10Ms=0
 kernelTime10Ms=0
 processes=""
@@ -31,14 +34,26 @@ function GetMemoryMaxusageFile
 }
 
 if $CGInstalled; then
-	groupName=$(GetCGroupName "$taskId")
+	if [ "$isDockerTask" == "1" ]; then
+		groupName=$(GetCGroupNameOfDockerTask "$taskId")
+	else
+		groupName=$(GetCGroupName "$taskId")
+	fi
+	
 	statFile=$(GetCpuStatFile "$groupName")
 	tasksFile=$(GetCpuacctTasksFile "$groupName")
 	workingSetFile=$(GetMemoryMaxusageFile "$groupName")
 
 	cut -d" " -f2 "$statFile"
 	cat "$workingSetFile"
-	tr "\\n" " " < "$tasksFile"
+
+	if [ "$isDockerTask" == "1" ]; then
+		containerPlaceholder=$(GetContainerPlaceholder $taskFolder)
+		cat $tasksFile | sed "/^$(cat $containerPlaceholder)$/d" | tr "\\n" " " 
+	else
+		tr "\\n" " " < "$tasksFile"
+	fi
+
 	echo
 else
     echo $userTime10Ms

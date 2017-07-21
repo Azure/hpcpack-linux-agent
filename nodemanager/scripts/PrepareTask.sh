@@ -6,6 +6,35 @@
 [ -z "$2" ] && echo "affinity not specified" && exit 202
 
 taskId=$1
+affinity=$2
+
+# for docker command
+taskFolder=$3
+dockerImage=$4
+
+isDockerTask=$(CheckNotEmpty $dockerImage)
+
+if [ "$isDockerTask" == "1" ]; then
+	placeholderCommand="/bin/bash"
+	docker run -id --name $(GetContainerName $taskId) --cpuset-cpus $affinity -v $taskFolder:$taskFolder:z $dockerImage $placeholderCommand 2>&1
+	
+	ec=$?
+	if [ $ec -ne 0 ]
+	then
+		exit $ec
+	fi	
+
+	groupName=$(GetCGroupNameOfDockerTask $taskId)
+	tasks=$(GetCpusetTasksFile "$groupName")
+	cat $tasks > $(GetContainerPlaceholder $taskFolder)
+
+	ec=$?
+	if [ $ec -ne 0 ]
+	then
+		echo "Failed to set docker container placeholder $tasks"
+		exit $ec
+	fi	
+fi
 
 if $CGInstalled; then
 	groupName=$(GetCGroupName "$taskId")
