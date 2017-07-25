@@ -42,7 +42,7 @@ namespace hpc
 
                 const hpc::data::ProcessStatistics* TerminateTask(
                     int jobId, int taskId, int requeueCount,
-                    uint64_t processKey, int exitCode, bool forced);
+                    uint64_t processKey, int exitCode, bool forced, bool mpiDockerTask);
 
                 void ReportTaskCompletion(int jobId, int taskId, int taskRequeueCount, json::value jsonBody, const std::string& callbackUri);
 

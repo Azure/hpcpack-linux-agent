@@ -89,3 +89,41 @@ function CheckNotEmpty
 		echo 0
 	fi
 }
+
+function CheckUserSshKeyExistence
+{
+	local userName=$1
+	local userSshDir=$(GetUserSshDir $userName)
+	if [ -f $userSshDir/id_rsa ]; then
+		echo 1
+	else
+		echo 0
+	fi
+}
+
+function GetParentDir
+{
+	echo "$(echo $1 | sed 's/\/[^\/]*$//g')"
+}
+
+function GetUserSshDir
+{
+	local userName=$1
+	if [ "$userName" == "root" ]; then
+		echo "/root/.ssh"
+	else
+		echo "/home/$userName/.ssh"
+	fi
+}
+
+tmpSshDir="/tmp/hpcSshKey/.ssh"
+containerPlaceholderCommand="/bin/bash"
+
+function GetMpiContainerStartOption
+{
+	local userName=$1
+	local userSshDir=$(GetUserSshDir $userName)
+	local sshDirMountOption="-v $userSshDir:$tmpSshDir:ro"
+	local networkHostOption="--network host"
+	echo "$sshDirMountOption $networkHostOption"
+}

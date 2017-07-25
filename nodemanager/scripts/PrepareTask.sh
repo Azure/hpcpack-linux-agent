@@ -10,17 +10,31 @@ affinity=$2
 
 # for docker command
 taskFolder=$3
-dockerImage=$4
+userName=$4
+dockerImage=$5
+nodeNum=$6
 
 isDockerTask=$(CheckNotEmpty $dockerImage)
+isMpiPrimaryTask=[]
 
 if [ "$isDockerTask" == "1" ]; then
-	placeholderCommand="/bin/bash"
-	docker run -id --name $(GetContainerName $taskId) --cpuset-cpus $affinity -v $taskFolder:$taskFolder:z $dockerImage $placeholderCommand 2>&1
+	containerName=$(GetContainerName $taskId)
+	if [ "$nodeNum" -gt 1 ]; then
+		mpiContainerStartOption=$(GetMpiContainerStartOption $userName)
+	fi
+
+	docker run -id \
+			--name $containerName \
+			--cpuset-cpus $affinity \
+			--env-file $taskFolder/environments \
+			-v $taskFolder:$taskFolder:z \
+			$mpiContainerStartOption \
+			$dockerImage $containerPlaceholderCommand 2>&1
 	
 	ec=$?
 	if [ $ec -ne 0 ]
 	then
+		echo "Failed to start docker container"
 		exit $ec
 	fi	
 
@@ -34,6 +48,14 @@ if [ "$isDockerTask" == "1" ]; then
 		echo "Failed to set docker container placeholder $tasks"
 		exit $ec
 	fi	
+
+	docker exec $containerName useradd -m $userName
+	docker exec $containerName chown $userName $taskFolder
+	if [ "$nodeNum" -gt 1 ]; then
+		/bin/bash MpiContainerPreparation.sh $containerName $userName
+	fi
+
+	exit
 fi
 
 if $CGInstalled; then

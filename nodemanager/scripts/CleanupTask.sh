@@ -13,6 +13,7 @@ isDockerTask=$(CheckNotEmpty $3)
 
 if [ "$isDockerTask" == "1" ]; then
 	docker rm -f $(GetContainerName $taskId)
+	/etc/init.d/ssh start
 	exit
 fi
 

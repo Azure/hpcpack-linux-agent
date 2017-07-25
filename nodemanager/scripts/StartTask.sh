@@ -12,10 +12,12 @@ userName=$3
 
 dockerImage=$4
 isDockerTask=$(CheckNotEmpty $dockerImage)
+runDir=$(GetParentDir $runPath)
+cp {TestMutualTrust.sh,WaitForTrust.sh} $runDir
 
 if [ "$isDockerTask" == "1" ]; then
     containerName=$(GetContainerName $taskId)
-    docker exec $containerName useradd $userName 2> /dev/null
+    docker exec $containerName /bin/bash -c "$runDir/TestMutualTrust.sh $taskId $runDir $userName" &&\
     docker exec -u $userName $containerName /bin/bash $runPath
     exit
 fi
@@ -23,8 +25,9 @@ fi
 if $CGInstalled; then
     groupName=$(GetCGroupName "$taskId")
     group=$CGroupSubSys:$groupName
-    cgexec -g "$group" /bin/bash RunTask.sh "$@"
+    cgexec -g "$group" /bin/bash $runDir/TestMutualTrust.sh "$taskId" "$runDir" "$userName" &&\
+    cgexec -g "$group" /bin/bash $runPath
 else
-    /bin/bash RunTask.sh "$@"
+    /bin/bash $runDir/TestMutualTrust.sh "$taskId" "$runDir" "$userName" &&\
+    /bin/bash $runPath
 fi
-

@@ -145,6 +145,7 @@ void* Process::ForkThread(void* arg)
 {
     Process* const p = static_cast<Process* const>(arg);
     std::string path;
+    std::string nodesNum;
 
 Start:
     int ret = p->CreateTaskFolder();
@@ -182,9 +183,16 @@ Start:
             Logger::Error(p->jobId, p->taskId, p->requeueCount, "Failed to create environment file for docker task.");
             goto Final;
         }
+
+        auto it = p->environments.find(std::string("CCP_NODES"));
+        if (it != p->environments.end())
+        {
+            std::string ccp_nodes = it->second;
+            nodesNum = ccp_nodes.substr(0, ccp_nodes.find(' '));
+        }
     }
 
-    if (0 != p->ExecuteCommand("/bin/bash", "PrepareTask.sh", p->taskExecutionId, p->GetAffinity(), p->taskFolder, p->userName, p->dockerImage))
+    if (0 != p->ExecuteCommand("/bin/bash", "PrepareTask.sh", p->taskExecutionId, p->GetAffinity(), p->taskFolder, p->userName, p->dockerImage, nodesNum))
     {
         goto Final;
     }

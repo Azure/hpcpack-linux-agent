@@ -5,7 +5,7 @@
 docker version > /dev/nul
 if [ $? -eq 0 ]; then
 	echo "Cleaning up docker containers..."
-	docker rm -f $(docker ps -a -q -f name=^/$(GetContainerName))
+	docker rm -f $(docker ps -a -q -f name=^/$(GetContainerName)) 2>/dev/nul
 fi
 
 if $CGInstalled; then
