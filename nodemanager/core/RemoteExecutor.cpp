@@ -147,7 +147,7 @@ pplx::task<json::value> RemoteExecutor::StartTask(StartTaskArgs&& args, std::str
     if (args.StartInfo.CommandLine.empty())
     {
         Logger::Info(args.JobId, args.TaskId, args.StartInfo.TaskRequeueCount, "MPI non-master task found, skip creating the process.");
-        std::string dockerImage = args.StartInfo.EnvironmentVariables["CCP_DOCKERIMAGE"];
+        std::string dockerImage = args.StartInfo.EnvironmentVariables["CCP_DOCKER_IMAGE"];
         if (!dockerImage.empty())
         {
             taskInfo->IsPrimaryTask = false;
@@ -411,7 +411,7 @@ pplx::task<json::value> RemoteExecutor::EndTask(hpc::arguments::EndTaskArgs&& ar
             args.JobId, args.TaskId, taskInfo->GetTaskRequeueCount(),
             taskInfo->ProcessKey,
             (int)ErrorCodes::EndTaskExitCode,
-            args.TaskCancelGracePeriodSeconds == 0
+            args.TaskCancelGracePeriodSeconds == 0,
             taskInfo->IsPrimaryTask == false);
 
         taskInfo->ExitCode = (int)ErrorCodes::EndTaskExitCode;

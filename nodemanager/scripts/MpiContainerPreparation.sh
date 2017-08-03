@@ -2,22 +2,23 @@
 
 . common.sh
 
-containerName=$1
+container=$1
 userName=$2
 
 userSshDir=$(GetUserSshDir $userName)
 
-docker exec $containerName /bin/cp -r $tmpSshDir $userSshDir 2>&1
+docker exec $container cp -r $TmpSshDir $userSshDir 2>&1
 ec1=$?
-docker exec $containerName /bin/chown -R $userName $userSshDir 2>&1
+docker exec $container chown -R $userName $userSshDir 2>&1
 ec2=$?
+docker exec $container rm $userSshDir/known_hosts
 if [ $ec1 -ne 0 ] || [ $ec2 -ne 0 ]
 then
     echo "Failed to set container ssh key"
     exit $ec
 fi
 
-/etc/init.d/ssh stop
+$(GetSshStopCommand)
 ec=$?
 if [ $ec -ne 0 ]
 then
@@ -25,10 +26,13 @@ then
     exit $ec
 fi		
 
-docker exec $containerName /etc/init.d/ssh start
+# need to change along with various linux images
+docker exec $container /etc/init.d/ssh start
 ec=$?
 if [ $ec -ne 0 ]
 then
     echo "Failed to start container ssh server"
     exit $ec
 fi	
+
+docker exec $container mount -a

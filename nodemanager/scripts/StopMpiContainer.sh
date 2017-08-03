@@ -6,7 +6,7 @@
 
 taskId=$1
 
-containerName=$(GetContainerName "MPI_$taskId")
+containerName=$(GetContainerName "$taskId_$MpiContainerSuffix")
 
 docker rm -f $containerName
-/etc/init.d/ssh start
+$(GetSshStartCommand)

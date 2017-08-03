@@ -4,11 +4,12 @@
 . common.sh
 
 [ -z "$1" ] && echo "task id not specified" && exit 202
+[ -z "$2" ] && echo "task folder not specified" && exit 202
 
 taskId=$1
-
 taskFolder=$2
-isDockerTask=$(CheckNotEmpty $3)
+
+isDockerTask=$(CheckDockerEnvFileExist $taskFolder)
 
 userTime10Ms=0
 kernelTime10Ms=0
@@ -35,7 +36,8 @@ function GetMemoryMaxusageFile
 
 if $CGInstalled; then
 	if [ "$isDockerTask" == "1" ]; then
-		groupName=$(GetCGroupNameOfDockerTask "$taskId")
+		containerId=$(GetContainerId $taskFolder)
+		groupName=$(GetCGroupNameOfDockerTask $containerId)
 	else
 		groupName=$(GetCGroupName "$taskId")
 	fi

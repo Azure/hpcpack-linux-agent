@@ -6,17 +6,18 @@
 [ -z "$1" ] && echo "task id not specified" && exit 202
 [ -z "$2" ] && echo "process id not specified" && exit 202
 [ -z "$3" ] && echo "forced not specified" && exit 202
+[ -z "$4" ] && echo "task folder not specified" && exit 202
 
 taskId=$1
 processId=$2
 forced=$3
-
 taskFolder=$4
-isDockerTask=$(CheckNotEmpty $5)
 
+isDockerTask=$(CheckDockerEnvFileExist $taskFolder)
 if $CGInstalled; then
 	if [ "$isDockerTask" == "1" ]; then
-		groupName=$(GetCGroupNameOfDockerTask "$taskId")
+		containerId=$(GetContainerId $taskFolder)
+		groupName=$(GetCGroupNameOfDockerTask $containerId)
 	else
 		groupName=$(GetCGroupName "$taskId")
 	fi

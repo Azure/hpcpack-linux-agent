@@ -10,13 +10,13 @@ taskId=$1
 userName=$2
 dockerImage=$3
 
-containerName=$(GetContainerName "MPI_$taskId")
+containerName=$(GetContainerName "$taskId_$MpiContainerSuffix")
 mpiContainerStartOption=$(GetMpiContainerStartOption $userName)
 
 docker run -id \
         --name $containerName \
         $mpiContainerStartOption \
-        $dockerImage $containerPlaceholderCommand 2>&1
+        $dockerImage $ContainerPlaceholderCommand 2>&1
 
 if [ $? -ne 0 ]
 then

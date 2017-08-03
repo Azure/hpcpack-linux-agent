@@ -4,32 +4,42 @@
 
 [ -z "$1" ] && echo "task id not specified" && exit 202
 [ -z "$2" ] && echo "affinity not specified" && exit 202
+[ -z "$3" ] && echo "task folder not specified" && exit 202
+[ -z "$4" ] && echo "user name not specified" && exit 202
 
 taskId=$1
 affinity=$2
-
-# for docker command
 taskFolder=$3
 userName=$4
-dockerImage=$5
-nodeNum=$6
 
-isDockerTask=$(CheckNotEmpty $dockerImage)
-isMpiPrimaryTask=[]
-
+isDockerTask=$(CheckDockerEnvFileExist $taskFolder)
 if [ "$isDockerTask" == "1" ]; then
-	containerName=$(GetContainerName $taskId)
-	if [ "$nodeNum" -gt 1 ]; then
+	isMpiTask=$(CheckMpiTask $taskFolder)
+	if [ "$isMpiTask" == "1" ]; then
 		mpiContainerStartOption=$(GetMpiContainerStartOption $userName)
 	fi
 
+	isDebugMode=$(CheckDockerDebugMode $taskFolder)
+	if [ "$isDebugMode" == "1" ]; then
+		taskId=${taskId}_${DebugContainerSuffix}
+	fi
+
+	containerName=$(GetContainerName $taskId)
+	dockerImage=$(GetDockerImageName $taskFolder)
+	volumeOption=$(GetDockerVolumeOption $taskFolder)
+	additionalOption=$(GetDockerAdditionalOption $taskFolder)
+	envFile=$(GetDockerTaskEnvFile $taskFolder)
+	containerIdFile=$(GetContainerIdFile $taskFolder)
 	docker run -id \
 			--name $containerName \
 			--cpuset-cpus $affinity \
-			--env-file $taskFolder/environments \
+			--env-file $envFile \
+			--cidfile $containerIdFile \
 			-v $taskFolder:$taskFolder:z \
+			$volumeOption \
 			$mpiContainerStartOption \
-			$dockerImage $containerPlaceholderCommand 2>&1
+			$additionalOption \
+			$dockerImage $ContainerPlaceholderCommand 2>&1
 	
 	ec=$?
 	if [ $ec -ne 0 ]
@@ -38,7 +48,8 @@ if [ "$isDockerTask" == "1" ]; then
 		exit $ec
 	fi	
 
-	groupName=$(GetCGroupNameOfDockerTask $taskId)
+	containerId=$(GetContainerId $taskFolder)
+	groupName=$(GetCGroupNameOfDockerTask $containerId)
 	tasks=$(GetCpusetTasksFile "$groupName")
 	cat $tasks > $(GetContainerPlaceholder $taskFolder)
 
@@ -49,10 +60,10 @@ if [ "$isDockerTask" == "1" ]; then
 		exit $ec
 	fi	
 
-	docker exec $containerName useradd -m $userName
-	docker exec $containerName chown $userName $taskFolder
-	if [ "$nodeNum" -gt 1 ]; then
-		/bin/bash MpiContainerPreparation.sh $containerName $userName
+	docker exec $containerId useradd -m $userName
+    docker exec $containerId chown $userName $taskFolder
+	if [ "$isMpiTask" == "1" ]; then
+		/bin/bash MpiContainerPreparation.sh $containerId $userName
 	fi
 
 	exit

@@ -4,7 +4,6 @@
 [ -z "$2" ] && echo "run directory not specified" && exit 202
 [ -z "$3" ] && echo "user name not specified" && exit 202
 
-# use parent directory of run.sh as run directory
 runDir="$2"
 trustLogFile="${runDir}/${1}_trust.txt"
 failedTrustLogFile="${runDir}/failed_${1}_trust.txt"
