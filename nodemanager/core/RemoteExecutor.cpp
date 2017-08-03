@@ -148,11 +148,12 @@ pplx::task<json::value> RemoteExecutor::StartTask(StartTaskArgs&& args, std::str
     {
         Logger::Info(args.JobId, args.TaskId, args.StartInfo.TaskRequeueCount, "MPI non-master task found, skip creating the process.");
         std::string dockerImage = args.StartInfo.EnvironmentVariables["CCP_DOCKER_IMAGE"];
+        std::string isNvidiaDocker = args.StartInfo.EnvironmentVariables["CCP_DOCKER_NVIDIA"];
         if (!dockerImage.empty())
         {
             taskInfo->IsPrimaryTask = false;
             std::string output;
-            if (0 != System::ExecuteCommandOut(output, "/bin/bash", "StartMpiContainer.sh", taskInfo->TaskId, userName, dockerImage))
+            if (0 != System::ExecuteCommandOut(output, "/bin/bash", "StartMpiContainer.sh", taskInfo->TaskId, userName, dockerImage, isNvidiaDocker))
             {
                 Logger::Info(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetTaskRequeueCount(), "Start MPI container successfully.");
             }

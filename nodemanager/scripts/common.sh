@@ -154,6 +154,22 @@ function CheckDockerDebugMode
 	fi	
 }
 
+function GetDockerEngine
+{
+	local nvidiaOption=$1
+	if [ -z $nvidiaOption ] || [ "$nvidiaOption" == "0" ]; then
+		echo "docker"
+	else
+		local taskFolder=$1
+		local nvidiaOption=$(cat $(GetDockerTaskEnvFile $taskFolder) | grep "CCP_DOCKER_NVIDIA=" | cut -d '=' -f 2)
+		if [ -z $nvidiaOption ] || [ "$nvidiaOption" == "0" ]; then
+			echo "docker"
+		else
+			echo "nvidia-docker"
+		fi
+	fi	
+}
+
 function GetDockerImageName
 {
 	local taskFolder=$1

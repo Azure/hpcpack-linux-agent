@@ -9,14 +9,16 @@
 taskId=$1
 userName=$2
 dockerImage=$3
+nvidiaOption=$4
 
 containerName=$(GetContainerName "$taskId_$MpiContainerSuffix")
 mpiContainerStartOption=$(GetMpiContainerStartOption $userName)
+dockerEngine=$(GetDockerEngine $nvidiaOption)
 
-docker run -id \
-        --name $containerName \
-        $mpiContainerStartOption \
-        $dockerImage $ContainerPlaceholderCommand 2>&1
+$dockerEngine run -id \
+            --name $containerName \
+            $mpiContainerStartOption \
+            $dockerImage $ContainerPlaceholderCommand 2>&1
 
 if [ $? -ne 0 ]
 then

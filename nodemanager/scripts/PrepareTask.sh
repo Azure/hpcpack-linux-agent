@@ -30,16 +30,17 @@ if [ "$isDockerTask" == "1" ]; then
 	additionalOption=$(GetDockerAdditionalOption $taskFolder)
 	envFile=$(GetDockerTaskEnvFile $taskFolder)
 	containerIdFile=$(GetContainerIdFile $taskFolder)
-	docker run -id \
-			--name $containerName \
-			--cpuset-cpus $affinity \
-			--env-file $envFile \
-			--cidfile $containerIdFile \
-			-v $taskFolder:$taskFolder:z \
-			$volumeOption \
-			$mpiContainerStartOption \
-			$additionalOption \
-			$dockerImage $ContainerPlaceholderCommand 2>&1
+	dockerEngine=$(GetDockerEngine $taskFolder)
+	$dockerEngine run -id \
+				--name $containerName \
+				--cpuset-cpus $affinity \
+				--env-file $envFile \
+				--cidfile $containerIdFile \
+				-v $taskFolder:$taskFolder:z \
+				$volumeOption \
+				$mpiContainerStartOption \
+				$additionalOption \
+				$dockerImage $ContainerPlaceholderCommand 2>&1
 	
 	ec=$?
 	if [ $ec -ne 0 ]
