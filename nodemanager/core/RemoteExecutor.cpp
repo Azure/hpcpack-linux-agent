@@ -153,7 +153,7 @@ pplx::task<json::value> RemoteExecutor::StartTask(StartTaskArgs&& args, std::str
         {
             taskInfo->IsPrimaryTask = false;
             std::string output;
-            if (0 != System::ExecuteCommandOut(output, "/bin/bash", "StartMpiContainer.sh", taskInfo->TaskId, userName, dockerImage, isNvidiaDocker))
+            if (0 == System::ExecuteCommandOut(output, "2>&1 /bin/bash", "StartMpiContainer.sh", taskInfo->TaskId, userName, dockerImage, isNvidiaDocker))
             {
                 Logger::Info(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetTaskRequeueCount(), "Start MPI container successfully.");
             }
@@ -692,7 +692,7 @@ const ProcessStatistics* RemoteExecutor::TerminateTask(
     if (mpiDockerTask)
     {
         std::string output;
-        if (0 != System::ExecuteCommandOut(output, "/bin/bash", "StopMpiContainer.sh", taskId))
+        if (0 == System::ExecuteCommandOut(output, "2>&1 /bin/bash", "StopMpiContainer.sh", taskId))
         {
             Logger::Info(jobId, taskId, requeueCount, "Stop MPI container successfully.");
         }
