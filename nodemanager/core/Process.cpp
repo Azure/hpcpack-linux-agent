@@ -543,8 +543,13 @@ std::string Process::BuildScript()
     fs << " || exit $?";
     fs << std::endl << std::endl;
 
-    if (this->stdOutFile.empty()) this->stdOutFile = this->taskFolder + "/stdout.txt";
-    if (this->stdErrFile.empty()) this->stdErrFile = this->taskFolder + "/stderr.txt";
+    if (!this->streamOutput)
+    {
+        if (this->stdOutFile.empty()) this->stdOutFile = this->taskFolder + "/stdout.txt";
+        if (this->stdErrFile.empty()) this->stdErrFile = this->taskFolder + "/stderr.txt";
+        if (!boost::algorithm::starts_with(this->stdOutFile, "/")) this->stdOutFile = this->taskFolder + "/" + this->stdOutFile;
+        if (!boost::algorithm::starts_with(this->stdErrFile, "/")) this->stdErrFile = this->taskFolder + "/" + this->stdErrFile;
+    }
 
     // before
     fs << "echo before >" << this->taskFolder << "/before1.txt 2>" << this->taskFolder << "/before2.txt";
@@ -629,4 +634,29 @@ std::unique_ptr<const char* []> Process::PrepareEnvironment()
     envi[p] = nullptr;
 
     return std::move(envi);
+}
+
+std::string Process::PeekOutput()
+{
+    int ret = 0;
+    std::string stdout;
+    ret = System::ExecuteCommandOut(stdout, "2>&1 tail -c 5000", this->stdOutFile);
+    if (ret != 0)
+    {
+        stdout = "Reading " + this->stdOutFile + " failed: " + stdout;
+    }
+
+    if (this->stdOutFile == this->stdErrFile)
+    {
+        return stdout;
+    }
+
+    std::string stderr;
+    ret = System::ExecuteCommandOut(stderr, "2>&1 tail -c 5000", this->stdErrFile);
+    if (ret != 0)
+    {
+        stderr = "Reading " + this->stdErrFile + " failed: " + stderr;
+    }
+
+    return "STDOUT:\n" + stdout + "\nSTDERR:\n" + stderr;
 }

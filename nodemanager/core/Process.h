@@ -66,6 +66,8 @@ namespace hpc
                 void SetSelfPtr(std::shared_ptr<Process> self) { this->selfPtr.swap(self); }
                 void ResetSelfPtr() { this->selfPtr.reset(); }
 
+                std::string PeekOutput();
+
             protected:
             private:
                 void SetExitCode(int exitCode)

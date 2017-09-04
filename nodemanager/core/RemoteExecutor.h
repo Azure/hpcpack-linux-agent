@@ -30,6 +30,8 @@ namespace hpc
                 virtual pplx::task<web::json::value> Ping(std::string&& callbackUri);
                 virtual pplx::task<web::json::value> Metric(std::string&& callbackUri);
                 virtual pplx::task<web::json::value> MetricConfig(hpc::arguments::MetricCountersConfig&& config, std::string&& callbackUri);
+                virtual pplx::task<web::json::value> PeekTaskOutput(hpc::arguments::PeekTaskOutputArgs&& args);
+
             protected:
             private:
                 static void* GracePeriodElapsed(void* data);

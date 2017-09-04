@@ -62,6 +62,7 @@ namespace hpc
                 pplx::task<json::value> Ping(json::value&& val, std::string&&);
                 pplx::task<json::value> Metric(json::value&& val, std::string&&);
                 pplx::task<json::value> MetricConfig(json::value&& val, std::string&&);
+                pplx::task<json::value> PeekTaskOutput(json::value&& val, std::string&&);
 
                 static const std::string ApiSpace;
                 const std::string listeningUri;
