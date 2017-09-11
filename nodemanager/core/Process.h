@@ -70,6 +70,11 @@ namespace hpc
 
             protected:
             private:
+                static bool StartWithHttpOrHttps(const std::string& path)
+                {
+                    return boost::algorithm::starts_with(path, "http://") || boost::algorithm::starts_with(path, "https://");
+                }
+
                 void SetExitCode(int exitCode)
                 {
                     this->exitCode = exitCode;

@@ -39,8 +39,7 @@ Process::Process(
     workDirectory(workDir), userName(user.empty() ? "root" : user), dumpStdout(dumpStdoutToExecutionMessage),
     affinity(cpuAffinity), environments(envi), callback(completed), processId(0)
 {
-    this->streamOutput = boost::algorithm::starts_with(stdOutFile, "http://") ||
-        boost::algorithm::starts_with(stdOutFile, "https://");
+    this->streamOutput = StartWithHttpOrHttps(stdOutFile);
 
     Logger::Debug(this->jobId, this->taskId, this->requeueCount, "{0}, stream ? {1}", stdOutFile, this->streamOutput);
 }
@@ -362,7 +361,7 @@ void Process::Monitor()
         if (!this->streamOutput)
         {
             std::string output;
-
+        
             int ret = 0;
             if (this->dumpStdout)
             {
@@ -527,29 +526,16 @@ std::string Process::BuildScript()
 
     std::ofstream fs(runDirInOut, std::ios::trunc);
     fs << "#!/bin/bash" << std::endl << std::endl;
-
-    fs << "cd ";
-
+    
     Logger::Debug("{0}, {1}", this->taskFolder, this->workDirectory);
-    if (this->workDirectory.empty())
-    {
-        fs << this->taskFolder;
-    }
-    else
-    {
-        fs << this->workDirectory;
-    }
 
-    fs << " || exit $?";
-    fs << std::endl << std::endl;
+    std::string workDirectory = this->workDirectory.empty() ? this->taskFolder : this->workDirectory;
+    fs << "cd " << workDirectory << " || exit $?" << std::endl << std::endl;
 
-    if (!this->streamOutput)
-    {
-        if (this->stdOutFile.empty()) this->stdOutFile = this->taskFolder + "/stdout.txt";
-        if (this->stdErrFile.empty()) this->stdErrFile = this->taskFolder + "/stderr.txt";
-        if (!boost::algorithm::starts_with(this->stdOutFile, "/")) this->stdOutFile = this->taskFolder + "/" + this->stdOutFile;
-        if (!boost::algorithm::starts_with(this->stdErrFile, "/")) this->stdErrFile = this->taskFolder + "/" + this->stdErrFile;
-    }
+    if (this->stdOutFile.empty()) this->stdOutFile = this->taskFolder + "/stdout.txt";
+    else if (!boost::algorithm::starts_with(this->stdOutFile, "/") && !StartWithHttpOrHttps(this->stdOutFile)) this->stdOutFile = workDirectory + "/" + this->stdOutFile;
+    if (this->stdErrFile.empty()) this->stdErrFile = this->taskFolder + "/stderr.txt";
+    else if (!boost::algorithm::starts_with(this->stdErrFile, "/") && !StartWithHttpOrHttps(this->stdErrFile)) this->stdErrFile = workDirectory + "/" + this->stdErrFile;
 
     // before
     fs << "echo before >" << this->taskFolder << "/before1.txt 2>" << this->taskFolder << "/before2.txt";
@@ -638,25 +624,33 @@ std::unique_ptr<const char* []> Process::PrepareEnvironment()
 
 std::string Process::PeekOutput()
 {
+    std::string output;
+
     int ret = 0;
     std::string stdout;
-    ret = System::ExecuteCommandOut(stdout, "2>&1 tail -c 5000", this->stdOutFile);
+    ret = System::ExecuteCommandOut(stdout, "tail -c 5000 2>&1", this->stdOutFile);
     if (ret != 0)
     {
-        stdout = "Reading " + this->stdOutFile + " failed: " + stdout;
+        std::ostringstream stream;
+        stream << "Reading " << this->stdOutFile << " failed with exitcode " << ret << ": " << stdout;
+        stdout = stream.str();
     }
 
-    if (this->stdOutFile == this->stdErrFile)
+    output = stdout;
+
+    if (this->stdOutFile != this->stdErrFile)
     {
-        return stdout;
+        std::string stderr;
+        ret = System::ExecuteCommandOut(stderr, "tail -c 5000 2>&1", this->stdErrFile);
+        if (ret != 0)
+        {
+            std::ostringstream stream;
+            stream << "Reading " << this->stdErrFile << " failed with exitcode " << ret << ": " << stderr;
+            stderr = stream.str();
+        }
+
+        output = String::Join("\n", "STDOUT:", stdout, "STDERR:", stderr);
     }
 
-    std::string stderr;
-    ret = System::ExecuteCommandOut(stderr, "2>&1 tail -c 5000", this->stdErrFile);
-    if (ret != 0)
-    {
-        stderr = "Reading " + this->stdErrFile + " failed: " + stderr;
-    }
-
-    return "STDOUT:\n" + stdout + "\nSTDERR:\n" + stderr;
+    return output;
 }

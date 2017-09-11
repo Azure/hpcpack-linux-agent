@@ -733,8 +733,8 @@ pplx::task<json::value> RemoteExecutor::PeekTaskOutput(hpc::arguments::PeekTaskO
         if (taskInfo)
         {
             Logger::Debug(args.JobId, args.TaskId, taskInfo->GetTaskRequeueCount(),
-            "PeekTaskOutput for ProcessKey {0}, processes count {1}",
-            taskInfo->ProcessKey, this->processes.size());
+                "PeekTaskOutput for ProcessKey {0}, processes count {1}",
+                taskInfo->ProcessKey, this->processes.size());
 
             auto p = this->processes.find(taskInfo->ProcessKey);
             if (p != this->processes.end())
@@ -746,7 +746,7 @@ pplx::task<json::value> RemoteExecutor::PeekTaskOutput(hpc::arguments::PeekTaskO
     catch (const std::exception& ex)
     {
         Logger::Warn(args.JobId, args.TaskId, this->UnknowId, "Exception when peeking task output: {0}", ex.what());
-        output = "Failed to get the output.";
+        output = "NodeManager: Failed to get the output.";
     }
 
     return pplx::task_from_result(json::value::string(output));
