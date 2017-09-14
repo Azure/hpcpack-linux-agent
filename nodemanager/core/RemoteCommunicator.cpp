@@ -42,6 +42,7 @@ RemoteCommunicator::RemoteCommunicator(IRemoteExecutor& exec, const http_listene
     this->processors["ping"] = [this] (auto&& j, auto&& c) { return this->Ping(std::move(j), std::move(c)); };
     this->processors["metric"] = [this] (auto&& j, auto&& c) { return this->Metric(std::move(j), std::move(c)); };
     this->processors["metricconfig"] = [this] (auto&& j, auto&& c) { return this->MetricConfig(std::move(j), std::move(c)); };
+    this->processors["peektaskoutput"] = [this] (auto&& j, auto&& c) { return this->PeekTaskOutput(std::move(j), std::move(c)); };
 }
 
 RemoteCommunicator::~RemoteCommunicator()
@@ -291,6 +292,12 @@ pplx::task<json::value> RemoteCommunicator::MetricConfig(json::value&& val, std:
 {
     auto args = MetricCountersConfig::FromJson(val);
     return this->executor.MetricConfig(std::move(args), std::move(callbackUri));
+}
+
+pplx::task<json::value> RemoteCommunicator::PeekTaskOutput(json::value&& val, std::string&& callbackUri)
+{
+    auto args = PeekTaskOutputArgs::FromJson(val);
+    return this->executor.PeekTaskOutput(std::move(args));
 }
 
 const std::string RemoteCommunicator::ApiSpace = "api";

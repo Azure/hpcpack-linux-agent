@@ -722,3 +722,32 @@ void RemoteExecutor::ResyncAndInvalidateCache()
     NamingClient::InvalidateCache();
 }
 
+pplx::task<json::value> RemoteExecutor::PeekTaskOutput(hpc::arguments::PeekTaskOutputArgs&& args)
+{
+    Logger::Info(args.JobId, args.TaskId, this->UnknowId, "Peeking task output.");
+
+    std::string output;
+    try
+    {
+        auto taskInfo = this->jobTaskTable.GetTask(args.JobId, args.TaskId);
+        if (taskInfo)
+        {
+            Logger::Debug(args.JobId, args.TaskId, taskInfo->GetTaskRequeueCount(),
+                "PeekTaskOutput for ProcessKey {0}, processes count {1}",
+                taskInfo->ProcessKey, this->processes.size());
+
+            auto p = this->processes.find(taskInfo->ProcessKey);
+            if (p != this->processes.end())
+            {
+                output = p->second->PeekOutput();
+            }
+        }
+    }
+    catch (const std::exception& ex)
+    {
+        Logger::Warn(args.JobId, args.TaskId, this->UnknowId, "Exception when peeking task output: {0}", ex.what());
+        output = "NodeManager: Failed to get the output.";
+    }
+
+    return pplx::task_from_result(json::value::string(output));
+}

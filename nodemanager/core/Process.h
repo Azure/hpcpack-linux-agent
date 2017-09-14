@@ -66,8 +66,15 @@ namespace hpc
                 void SetSelfPtr(std::shared_ptr<Process> self) { this->selfPtr.swap(self); }
                 void ResetSelfPtr() { this->selfPtr.reset(); }
 
+                std::string PeekOutput();
+
             protected:
             private:
+                static bool StartWithHttpOrHttps(const std::string& path)
+                {
+                    return boost::algorithm::starts_with(path, "http://") || boost::algorithm::starts_with(path, "https://");
+                }
+
                 void SetExitCode(int exitCode)
                 {
                     this->exitCode = exitCode;
