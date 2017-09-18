@@ -4,8 +4,71 @@
 
 [ -z "$1" ] && echo "task id not specified" && exit 202
 [ -z "$2" ] && echo "affinity not specified" && exit 202
+[ -z "$3" ] && echo "task folder not specified" && exit 202
+[ -z "$4" ] && echo "user name not specified" && exit 202
 
 taskId=$1
+affinity=$2
+taskFolder=$3
+userName=$4
+
+isDockerTask=$(CheckDockerEnvFileExist $taskFolder)
+if [ "$isDockerTask" == "1" ]; then
+	isMpiTask=$(CheckMpiTask $taskFolder)
+	if [ "$isMpiTask" == "1" ]; then
+		mpiContainerStartOption=$(GetMpiContainerStartOption $userName)
+	fi
+
+	isDebugMode=$(CheckDockerDebugMode $taskFolder)
+	if [ "$isDebugMode" == "1" ]; then
+		taskId=${taskId}_${DebugContainerSuffix}
+	fi
+
+	containerName=$(GetContainerName $taskId)
+	dockerImage=$(GetDockerImageName $taskFolder)
+	volumeOption=$(GetDockerVolumeOption $taskFolder)
+	additionalOption=$(GetDockerAdditionalOption $taskFolder)
+	envFile=$(GetDockerTaskEnvFile $taskFolder)
+	containerIdFile=$(GetContainerIdFile $taskFolder)
+	dockerEngine=$(GetDockerEngine $taskFolder)
+	$dockerEngine run -id \
+				--name $containerName \
+				--cpuset-cpus $affinity \
+				--env-file $envFile \
+				--cidfile $containerIdFile \
+				-v $taskFolder:$taskFolder:z \
+				$volumeOption \
+				$mpiContainerStartOption \
+				$additionalOption \
+				$dockerImage $ContainerPlaceholderCommand 2>&1
+	
+	ec=$?
+	if [ $ec -ne 0 ]
+	then
+		echo "Failed to start docker container"
+		exit $ec
+	fi	
+
+	containerId=$(GetContainerId $taskFolder)
+	groupName=$(GetCGroupNameOfDockerTask $containerId)
+	tasks=$(GetCpusetTasksFile "$groupName")
+	cat $tasks > $(GetContainerPlaceholder $taskFolder)
+
+	ec=$?
+	if [ $ec -ne 0 ]
+	then
+		echo "Failed to set docker container placeholder $tasks"
+		exit $ec
+	fi	
+
+	docker exec $containerId useradd -m $userName
+    docker exec $containerId chown $userName $taskFolder
+	if [ "$isMpiTask" == "1" ]; then
+		/bin/bash MpiContainerPreparation.sh $containerId $userName
+	fi
+
+	exit
+fi
 
 if $CGInstalled; then
 	groupName=$(GetCGroupName "$taskId")

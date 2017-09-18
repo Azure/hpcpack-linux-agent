@@ -6,14 +6,22 @@
 [ -z "$1" ] && echo "task id not specified" && exit 202
 [ -z "$2" ] && echo "process id not specified" && exit 202
 [ -z "$3" ] && echo "forced not specified" && exit 202
+[ -z "$4" ] && echo "task folder not specified" && exit 202
 
 taskId=$1
 processId=$2
 forced=$3
+taskFolder=$4
 
+isDockerTask=$(CheckDockerEnvFileExist $taskFolder)
 if $CGInstalled; then
-	groupName=$(GetCGroupName "$taskId")
-	group=$CGroupSubSys:$groupName
+	if [ "$isDockerTask" == "1" ]; then
+		containerId=$(GetContainerId $taskFolder)
+		groupName=$(GetCGroupNameOfDockerTask $containerId)
+	else
+		groupName=$(GetCGroupName "$taskId")
+	fi
+
 	tasks=$(GetCpusetTasksFile "$groupName")
 	freezerState=$(GetFreezerStateFile "$groupName")
 	[ ! -f "$tasks" ] && echo "$tasks doesn't exist" && exit 200
@@ -28,6 +36,13 @@ if $CGInstalled; then
 		sleep .1
 		((maxLoop--))
 	done
+
+	if [ "$isDockerTask" == "1" ]; then
+		dockerTasks=$taskFolder/dockerTasks
+		containerPlaceholder=$(GetContainerPlaceholder $taskFolder)
+		cat $tasks | sed "/^$(cat $containerPlaceholder)$/d" > $dockerTasks
+		tasks=$dockerTasks
+	fi
 
 	# kill all tasks
 	while read pid || [ -n "$pid" ]

@@ -2,12 +2,25 @@
 
 . common.sh
 
+docker version > /dev/nul
+if [ $? -eq 0 ]; then
+	echo "Cleaning up docker containers..."
+	containers=$(docker ps -a -q -f name=^/$(GetContainerName))
+	[ -z "$containers" ] || docker rm -f $containers
+	ec=$?
+	if [ $ec -ne 0 ]
+	then
+		echo "Failed to cleanup docker containers. Exitcode: $ec"
+	fi	
+fi
+
 if $CGInstalled; then
-	groupNames=$(GetExistingCGroupNames)
-	for gn in $groupNames;
+	echo "Cleaning up tasks in CGroup..."
+	taskIds=$(GetExistingTaskIdsInCGroup)
+	for taskId in $taskIds;
 	do
-		echo "Cleaning up $gn"
-		/bin/bash ./CleanupTask.sh "$gn" "0"
+		echo "$taskId"
+		/bin/bash ./CleanupTask.sh "$taskId" "0"
 	done
 	exit 0
 fi

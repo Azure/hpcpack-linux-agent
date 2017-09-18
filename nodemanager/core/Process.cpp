@@ -36,7 +36,7 @@ Process::Process(
     const std::function<Callback> completed) :
     jobId(jobId), taskId(taskId), requeueCount(requeueCount), taskExecutionId(String::Join("_", taskExecutionName, taskId, requeueCount)),
     commandLine(cmdLine), stdOutFile(standardOut), stdErrFile(standardErr), stdInFile(standardIn),
-    workDirectory(workDir), userName(user.empty() ? "root" : user), dumpStdout(dumpStdoutToExecutionMessage),
+    workDirectory(workDir), userName(user.empty() ? "root" : user), dockerImage(envi["CCP_DOCKER_IMAGE"]), dumpStdout(dumpStdoutToExecutionMessage),
     affinity(cpuAffinity), environments(envi), callback(completed), processId(0)
 {
     this->streamOutput = StartWithHttpOrHttps(stdOutFile);
@@ -79,14 +79,14 @@ void Process::Kill(int forcedExitCode, bool forced)
 
     if (!this->ended)
     {
-        this->ExecuteCommand("/bin/bash", "EndTask.sh", this->taskExecutionId, this->processId, forced ? "1" : "0");
+        this->ExecuteCommand("/bin/bash", "EndTask.sh", this->taskExecutionId, this->processId, forced ? "1" : "0", this->taskFolder);
     }
 }
 
 const ProcessStatistics& Process::GetStatisticsFromCGroup()
 {
     std::string stat;
-    System::ExecuteCommandOut(stat, "/bin/bash", "Statistics.sh", this->taskExecutionId);
+    System::ExecuteCommandOut(stat, "/bin/bash", "Statistics.sh", this->taskExecutionId, this->taskFolder);
 
     Logger::Debug(this->jobId, this->taskId, this->requeueCount, "Statistics: {0}", stat);
 
@@ -167,7 +167,24 @@ Start:
         goto Final;
     }
 
-    if (0 != p->ExecuteCommand("/bin/bash", "PrepareTask.sh", p->taskExecutionId, p->GetAffinity()))
+    if (!p->dockerImage.empty())
+    {
+        std::ostringstream envs;
+        for (auto it : p->environments)
+        {
+            envs << it.first << "=" << it.second << "\n";
+        }        
+
+        std::string envFile = p->taskFolder + "/environments"; 
+        int ret = System::WriteStringToFile(envFile, envs.str());
+        if (ret != 0)
+        {
+            Logger::Error(p->jobId, p->taskId, p->requeueCount, "Failed to create environment file for docker task. Exitcode: {0}", ret);
+            goto Final;
+        }
+    }
+
+    if (0 != p->ExecuteCommand("/bin/bash", "PrepareTask.sh", p->taskExecutionId, p->GetAffinity(), p->taskFolder, p->userName))
     {
         goto Final;
     }
@@ -209,10 +226,10 @@ Start:
     }
 
 Final:
-    p->ExecuteCommandNoCapture("/bin/bash", "EndTask.sh", p->taskExecutionId, p->processId, "1");
+    p->ExecuteCommandNoCapture("/bin/bash", "EndTask.sh", p->taskExecutionId, p->processId, "1", p->taskFolder);
     p->GetStatisticsFromCGroup();
 
-    ret = p->ExecuteCommandNoCapture("/bin/bash", "CleanupTask.sh", p->taskExecutionId, p->processId);
+    ret = p->ExecuteCommandNoCapture("/bin/bash", "CleanupTask.sh", p->taskExecutionId, p->processId, p->taskFolder);
 
     // Only clean up the folder when success.
     if (p->exitCode == 0)
@@ -433,6 +450,7 @@ void Process::Run(const std::string& path)
         const_cast<char* const>(this->taskExecutionId.c_str()),
         &pathBuffer[0],
         const_cast<char* const>(this->userName.c_str()),
+        const_cast<char* const>(this->taskFolder.c_str()),
         nullptr
     };
 
@@ -575,6 +593,11 @@ std::string Process::BuildScript()
     fs << " || ([ \"$?\" = \"1\" ] && exit 253)" << std::endl;
 
     fs.close();
+
+    if (!this->dockerImage.empty())
+    {
+        return std::move(runDirInOut);
+    }
 
     std::string runUser = this->taskFolder + "/run_user.sh";
     std::ofstream fsRunUser(runUser, std::ios::trunc);

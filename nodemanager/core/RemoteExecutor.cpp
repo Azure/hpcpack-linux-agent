@@ -132,27 +132,43 @@ pplx::task<json::value> RemoteExecutor::StartTask(StartTaskArgs&& args, std::str
     taskInfo->Affinity = args.StartInfo.Affinity;
     taskInfo->SetTaskRequeueCount(args.StartInfo.TaskRequeueCount);
 
+    std::string userName = "root";
+    auto jobUser = this->jobUsers.find(args.JobId);
+    if (jobUser == this->jobUsers.end())
+    {
+        this->jobTaskTable.RemoveJob(args.JobId);
+        throw std::runtime_error(String::Join(" ", "Job", args.JobId, "was not started on this node."));
+    }
+    else
+    {
+        userName = std::get<0>(jobUser->second);
+    }
+
     if (args.StartInfo.CommandLine.empty())
     {
         Logger::Info(args.JobId, args.TaskId, args.StartInfo.TaskRequeueCount, "MPI non-master task found, skip creating the process.");
+        std::string dockerImage = args.StartInfo.EnvironmentVariables["CCP_DOCKER_IMAGE"];
+        std::string isNvidiaDocker = args.StartInfo.EnvironmentVariables["CCP_DOCKER_NVIDIA"];
+        if (!dockerImage.empty())
+        {
+            taskInfo->IsPrimaryTask = false;
+            std::string output;
+            int ret = System::ExecuteCommandOut(output, "/bin/bash 2>&1", "StartMpiContainer.sh", taskInfo->TaskId, userName, dockerImage, isNvidiaDocker);
+            if (ret == 0)
+            {
+                Logger::Info(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetTaskRequeueCount(), "Start MPI container successfully.");
+            }
+            else
+            {
+                Logger::Error(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetTaskRequeueCount(), "Start MPI container failed with exitcode {0}. {1}", ret, output);
+            }
+        }
     }
     else
     {
         if (this->processes.find(taskInfo->ProcessKey) == this->processes.end() &&
             isNewEntry)
         {
-            std::string userName = "root";
-            auto jobUser = this->jobUsers.find(args.JobId);
-            if (jobUser == this->jobUsers.end())
-            {
-                this->jobTaskTable.RemoveJob(args.JobId);
-                throw std::runtime_error(String::Join(" ", "Job", args.JobId, "was not started on this node."));
-            }
-            else
-            {
-                userName = std::get<0>(jobUser->second);
-            }
-
             auto process = std::shared_ptr<Process>(new Process(
                 taskInfo->JobId,
                 taskInfo->TaskId,
@@ -264,7 +280,7 @@ pplx::task<json::value> RemoteExecutor::EndJob(hpc::arguments::EndJobArgs&& args
             {
                 const auto* stat = this->TerminateTask(
                     args.JobId, taskPair.first, taskInfo->GetTaskRequeueCount(),
-                    taskInfo->ProcessKey, (int)ErrorCodes::EndJobExitCode, true);
+                    taskInfo->ProcessKey, (int)ErrorCodes::EndJobExitCode, true, !taskInfo->IsPrimaryTask);
                 Logger::Debug(args.JobId, taskPair.first, taskInfo->GetTaskRequeueCount(), "EndJob: Terminating task");
                 if (stat != nullptr)
                 {
@@ -397,7 +413,8 @@ pplx::task<json::value> RemoteExecutor::EndTask(hpc::arguments::EndTaskArgs&& ar
             args.JobId, args.TaskId, taskInfo->GetTaskRequeueCount(),
             taskInfo->ProcessKey,
             (int)ErrorCodes::EndTaskExitCode,
-            args.TaskCancelGracePeriodSeconds == 0);
+            args.TaskCancelGracePeriodSeconds == 0,
+            !taskInfo->IsPrimaryTask);
 
         taskInfo->ExitCode = (int)ErrorCodes::EndTaskExitCode;
 
@@ -466,7 +483,8 @@ void* RemoteExecutor::GracePeriodElapsed(void* data)
             jobId, taskId, requeueCount,
             processKey,
             (int)ErrorCodes::EndTaskExitCode,
-            true);
+            true,
+            false);
 
         if (stat != nullptr)
         {
@@ -670,8 +688,24 @@ pplx::task<json::value> RemoteExecutor::MetricConfig(
 
 const ProcessStatistics* RemoteExecutor::TerminateTask(
     int jobId, int taskId, int requeueCount,
-    uint64_t processKey, int exitCode, bool forced)
+    uint64_t processKey, int exitCode, bool forced, bool mpiDockerTask)
 {
+    if (mpiDockerTask)
+    {
+        std::string output;
+        int ret = System::ExecuteCommandOut(output, "2>&1 /bin/bash", "StopMpiContainer.sh", taskId);
+        if (ret == 0)
+        {
+            Logger::Info(jobId, taskId, requeueCount, "Stop MPI container successfully.");
+        }
+        else
+        {
+            Logger::Error(jobId, taskId, requeueCount, "Stop MPI container failed with exitcode {0}. {1}", ret, output);
+        }
+
+        return nullptr;
+    }
+
     auto p = this->processes.find(processKey);
 //    Logger::Debug(
 //        jobId, taskId, requeueCount,
