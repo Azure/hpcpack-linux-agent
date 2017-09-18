@@ -5,7 +5,13 @@
 docker version > /dev/nul
 if [ $? -eq 0 ]; then
 	echo "Cleaning up docker containers..."
-	docker rm -f $(docker ps -a -q -f name=^/$(GetContainerName)) 2>/dev/nul
+	containers=$(docker ps -a -q -f name=^/$(GetContainerName))
+	[ -z "$containers" ] || docker rm -f $containers
+	ec=$?
+	if [ $ec -ne 0 ]
+	then
+		echo "Failed to cleanup docker containers. Exitcode: $ec"
+	fi	
 fi
 
 if $CGInstalled; then

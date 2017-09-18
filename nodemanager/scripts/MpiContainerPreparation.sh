@@ -14,8 +14,8 @@ ec2=$?
 docker exec $container rm $userSshDir/known_hosts
 if [ $ec1 -ne 0 ] || [ $ec2 -ne 0 ]
 then
-    echo "Failed to set container ssh key"
-    exit $ec
+    echo "Failed to set container ssh key. $ec1, $ec2"
+    exit 210
 fi
 
 $(GetSshStopCommand)

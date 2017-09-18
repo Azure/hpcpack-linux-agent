@@ -170,16 +170,17 @@ Start:
 
     if (!p->dockerImage.empty())
     {
-        std::string envs;
+        std::ostringstream envs;
         for (auto it : p->environments)
         {
-            envs.append(it.first).append("=").append(it.second).append("\n");
+            envs << it.first << "=" << it.second << "\n";
         }        
 
         std::string envFile = p->taskFolder + "/environments"; 
-        if (0 != System::WriteStringToFile(envFile, envs))
+        int ret = System::WriteStringToFile(envFile, envs.str());
+        if (ret != 0)
         {
-            Logger::Error(p->jobId, p->taskId, p->requeueCount, "Failed to create environment file for docker task.");
+            Logger::Error(p->jobId, p->taskId, p->requeueCount, "Failed to create environment file for docker task. Exitcode: {0}", ret);
             goto Final;
         }
     }

@@ -153,13 +153,14 @@ pplx::task<json::value> RemoteExecutor::StartTask(StartTaskArgs&& args, std::str
         {
             taskInfo->IsPrimaryTask = false;
             std::string output;
-            if (0 == System::ExecuteCommandOut(output, "2>&1 /bin/bash", "StartMpiContainer.sh", taskInfo->TaskId, userName, dockerImage, isNvidiaDocker))
+            int ret = System::ExecuteCommandOut(output, "/bin/bash 2>&1", "StartMpiContainer.sh", taskInfo->TaskId, userName, dockerImage, isNvidiaDocker);
+            if (ret == 0)
             {
                 Logger::Info(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetTaskRequeueCount(), "Start MPI container successfully.");
             }
             else
             {
-                Logger::Error(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetTaskRequeueCount(), "Start MPI container failed. {0}", output);
+                Logger::Error(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetTaskRequeueCount(), "Start MPI container failed with exitcode {0}. {1}", ret, output);
             }
         }
     }
@@ -279,7 +280,7 @@ pplx::task<json::value> RemoteExecutor::EndJob(hpc::arguments::EndJobArgs&& args
             {
                 const auto* stat = this->TerminateTask(
                     args.JobId, taskPair.first, taskInfo->GetTaskRequeueCount(),
-                    taskInfo->ProcessKey, (int)ErrorCodes::EndJobExitCode, true, taskInfo->IsPrimaryTask == false);
+                    taskInfo->ProcessKey, (int)ErrorCodes::EndJobExitCode, true, !taskInfo->IsPrimaryTask);
                 Logger::Debug(args.JobId, taskPair.first, taskInfo->GetTaskRequeueCount(), "EndJob: Terminating task");
                 if (stat != nullptr)
                 {
@@ -413,7 +414,7 @@ pplx::task<json::value> RemoteExecutor::EndTask(hpc::arguments::EndTaskArgs&& ar
             taskInfo->ProcessKey,
             (int)ErrorCodes::EndTaskExitCode,
             args.TaskCancelGracePeriodSeconds == 0,
-            taskInfo->IsPrimaryTask == false);
+            !taskInfo->IsPrimaryTask);
 
         taskInfo->ExitCode = (int)ErrorCodes::EndTaskExitCode;
 
@@ -692,13 +693,14 @@ const ProcessStatistics* RemoteExecutor::TerminateTask(
     if (mpiDockerTask)
     {
         std::string output;
-        if (0 == System::ExecuteCommandOut(output, "2>&1 /bin/bash", "StopMpiContainer.sh", taskId))
+        int ret = System::ExecuteCommandOut(output, "2>&1 /bin/bash", "StopMpiContainer.sh", taskId);
+        if (ret == 0)
         {
             Logger::Info(jobId, taskId, requeueCount, "Stop MPI container successfully.");
         }
         else
         {
-            Logger::Error(jobId, taskId, requeueCount, "Stop MPI container failed. {0}", output);
+            Logger::Error(jobId, taskId, requeueCount, "Stop MPI container failed with exitcode {0}. {1}", ret, output);
         }
 
         return nullptr;
