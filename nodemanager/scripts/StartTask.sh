@@ -26,8 +26,8 @@ if $CGInstalled; then
     groupName=$(GetCGroupName "$taskId")
     group=$CGroupSubSys:$groupName
     cgexec -g "$group" /bin/bash $taskFolder/TestMutualTrust.sh "$taskId" "$taskFolder" "$userName" &&\
-    cgexec -g "$group" /bin/bash $runPath
+    cgexec -g "$group" sudo -H -E -u $userName env "PATH=$PATH" /bin/bash $runPath
 else
     /bin/bash $taskFolder/TestMutualTrust.sh "$taskId" "$taskFolder" "$userName" &&\
-    /bin/bash $runPath
+    /bin/bash sudo -H -E -u $userName env "PATH=$PATH" /bin/bash $runPath
 fi

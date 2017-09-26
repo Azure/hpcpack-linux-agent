@@ -169,14 +169,15 @@ Start:
 
     if (!p->dockerImage.empty())
     {
-        std::ostringstream envs;
-        for (auto it : p->environments)
-        {
-            envs << it.first << "=" << it.second << "\n";
-        }        
-
+        p -> environmentsBuffer.clear();
+        std::transform(
+            p->environments.cbegin(),
+            p->environments.cend(),
+            std::back_inserter(p->environmentsBuffer),
+            [](const auto& v) { return String::Join("=", v.first, v.second); });
+    
         std::string envFile = p->taskFolder + "/environments"; 
-        int ret = System::WriteStringToFile(envFile, envs.str());
+        int ret = System::WriteStringToFile(envFile, String::Join<'\n'>(p->environmentsBuffer));
         if (ret != 0)
         {
             Logger::Error(p->jobId, p->taskId, p->requeueCount, "Failed to create environment file for docker task. Exitcode: {0}", ret);
@@ -594,25 +595,7 @@ std::string Process::BuildScript()
 
     fs.close();
 
-    if (!this->dockerImage.empty())
-    {
-        return std::move(runDirInOut);
-    }
-
-    std::string runUser = this->taskFolder + "/run_user.sh";
-    std::ofstream fsRunUser(runUser, std::ios::trunc);
-    fsRunUser << "#!/bin/bash" << std::endl << std::endl;
-
-    if (!this->userName.empty())
-    {
-        fsRunUser << "sudo -H -E -u " << this->userName << " env \"PATH=$PATH\" ";
-    }
-
-    fsRunUser << "/bin/bash " << runDirInOut << std::endl;
-
-    fsRunUser.close();
-
-    return std::move(runUser);
+    return std::move(runDirInOut);
 }
 
 std::unique_ptr<const char* []> Process::PrepareEnvironment()
@@ -654,9 +637,7 @@ std::string Process::PeekOutput()
     ret = System::ExecuteCommandOut(stdout, "tail -c 5000 2>&1", this->stdOutFile);
     if (ret != 0)
     {
-        std::ostringstream stream;
-        stream << "Reading " << this->stdOutFile << " failed with exitcode " << ret << ": " << stdout;
-        stdout = stream.str();
+        stdout = String::Join(" ", "Reading", this->stdOutFile, "failed with exitcode", ret, ":", stdout);
     }
 
     output = stdout;
@@ -667,9 +648,7 @@ std::string Process::PeekOutput()
         ret = System::ExecuteCommandOut(stderr, "tail -c 5000 2>&1", this->stdErrFile);
         if (ret != 0)
         {
-            std::ostringstream stream;
-            stream << "Reading " << this->stdErrFile << " failed with exitcode " << ret << ": " << stderr;
-            stderr = stream.str();
+            stderr = String::Join(" ", "Reading", this->stdErrFile, "failed with exitcode", ret, ":", stderr);
         }
 
         output = String::Join("\n", "STDOUT:", stdout, "STDERR:", stderr);

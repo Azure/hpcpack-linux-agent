@@ -22,6 +22,12 @@ if [ "$isDockerTask" == "1" ]; then
 	isMpiTask=$(CheckMpiTask $taskFolder)
 	if [ "$isMpiTask" == "1" ]; then
 		$(GetSshStartCommand)
+		ec=$?
+		if [ $ec -ne 0 ]
+		then
+			echo "Failed to start host ssh service."
+			exit $ec
+		fi	
 	fi
 	
 	exit
