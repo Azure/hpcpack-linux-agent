@@ -27,7 +27,7 @@ namespace hpc
 
                 MetricCollectorBase() = default;
 
-                void ApplyConfig(const MetricCounter& config);
+                void ApplyConfig(const MetricCounter& config, pplx::cancellation_token token);
 
                 void Reset()
                 {

@@ -333,6 +333,7 @@ Monitor::~Monitor()
 {
     if (this->threadId != 0)
     {
+        // todo: graceful exit the thread.
         pthread_cancel(this->threadId);
         pthread_join(this->threadId, nullptr);
     }
@@ -345,7 +346,7 @@ void Monitor::SetNodeUuid(const uuid& id)
     this->packet.Uuid.AssignFrom(id);
 }
 
-void Monitor::ApplyMetricConfig(MetricCountersConfig&& config)
+void Monitor::ApplyMetricConfig(MetricCountersConfig&& config, pplx::cancellation_token token)
 {
     WriterLock writerLock(&this->lock);
 
@@ -353,7 +354,7 @@ void Monitor::ApplyMetricConfig(MetricCountersConfig&& config)
 
     for (auto& counter : config.MetricCounters)
     {
-        if (!this->EnableMetricCounter(counter))
+        if (!this->EnableMetricCounter(counter, token))
         {
             Logger::Debug("Disabled counter MetricId {0}, InstanceId {1}, InstanceName {2} Path {3}", counter.MetricId, counter.InstanceId, counter.InstanceName, counter.Path);
         }
@@ -364,12 +365,12 @@ void Monitor::ApplyMetricConfig(MetricCountersConfig&& config)
     }
 }
 
-bool Monitor::EnableMetricCounter(const MetricCounter& counterConfig)
+bool Monitor::EnableMetricCounter(const MetricCounter& counterConfig, pplx::cancellation_token token)
 {
     auto collector = this->collectors.find(counterConfig.Path);
     if (collector != this->collectors.end())
     {
-        collector->second->ApplyConfig(counterConfig);
+        collector->second->ApplyConfig(counterConfig, token);
         return true;
     }
 

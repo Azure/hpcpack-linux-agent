@@ -567,6 +567,13 @@ namespace hpc
                             "Added task completion uri configuration",
                         }
                     },
+                    { "2.3.1.0",
+                        {
+                            "Added docker support",
+                            "Added support to peek the task output",
+                            "Fixed the unit test failure",
+                        }
+                    },
                 };
 
                 return versionHistory;

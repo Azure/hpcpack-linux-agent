@@ -18,7 +18,7 @@ namespace hpc
             public:
                 HttpReporter(
                     const std::string& reporterName,
-                    std::function<std::string()> getUri,
+                    std::function<std::string(pplx::cancellation_token)> getUri,
                     int hold,
                     int interval,
                     std::function<json::value()> fetcher,
@@ -37,7 +37,6 @@ namespace hpc
 
             protected:
             private:
-                pplx::cancellation_token_source cts;
         };
     }
 }

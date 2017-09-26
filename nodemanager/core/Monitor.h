@@ -32,11 +32,11 @@ namespace hpc
                 json::value GetRegisterInfo();
 
                 void SetNodeUuid(const uuid& id);
-                void ApplyMetricConfig(hpc::arguments::MetricCountersConfig&& config);
+                void ApplyMetricConfig(hpc::arguments::MetricCountersConfig&& config, pplx::cancellation_token token);
 
             protected:
             private:
-                bool EnableMetricCounter(const hpc::arguments::MetricCounter& counterConfig);
+                bool EnableMetricCounter(const hpc::arguments::MetricCounter& counterConfig, pplx::cancellation_token token);
                 void Run();
 
                 static void* MonitoringThread(void* arg);

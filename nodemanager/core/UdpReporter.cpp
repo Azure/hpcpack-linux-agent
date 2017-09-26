@@ -12,7 +12,7 @@ using namespace hpc::utils;
 
 UdpReporter::UdpReporter(
     const std::string& name,
-    std::function<std::string()> getReportUri,
+    std::function<std::string(pplx::cancellation_token)> getReportUri,
     int hold,
     int interval,
     std::function<std::vector<unsigned char>()> fetcher,
@@ -32,7 +32,7 @@ void UdpReporter::ReConnect()
 
     try
     {
-        uri = this->getReportUri();
+        uri = this->getReportUri(this->cts.get_token());
     }
     catch (const http::http_exception& httpEx)
     {

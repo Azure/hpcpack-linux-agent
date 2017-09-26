@@ -13,8 +13,9 @@ int HttpReporter::Report()
 
     try
     {
-        uri = this->getReportUri();
+        uri = this->getReportUri(this->cts.get_token());
 
+        if (this->cts.get_token().is_canceled()) return -1;
         auto jsonBody = this->valueFetcher();
         if (jsonBody.is_null())
         {

@@ -2,7 +2,7 @@
 
 using namespace hpc::core;
 
-void MetricCollectorBase::ApplyConfig(const MetricCounter& config)
+void MetricCollectorBase::ApplyConfig(const MetricCounter& config, pplx::cancellation_token token)
 {
     this->metricId = config.MetricId;
 
@@ -15,7 +15,7 @@ void MetricCollectorBase::ApplyConfig(const MetricCounter& config)
 
             if (!instanceNames.empty())
             {
-                auto client = HttpHelper::GetHttpClient(NodeManagerConfig::ResolveMetricInstanceIdsUri());
+                auto client = HttpHelper::GetHttpClient(NodeManagerConfig::ResolveMetricInstanceIdsUri(token));
 
                 json::value jsonBody = JsonHelper<std::vector<std::string>>::ToJson(instanceNames);
                 auto request = HttpHelper::GetHttpRequest(web::http::methods::POST, jsonBody);

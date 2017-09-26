@@ -17,7 +17,7 @@ namespace hpc
         class Reporter
         {
             public:
-                Reporter(std::string reporterName, std::function<std::string()> getUri, int hold, int interval, std::function<ReportType()> fetcher, std::function<void()> onErrorFunc)
+                Reporter(std::string reporterName, std::function<std::string(pplx::cancellation_token)> getUri, int hold, int interval, std::function<ReportType()> fetcher, std::function<void()> onErrorFunc)
                     : name(reporterName), getReportUri(getUri), valueFetcher(fetcher), onError(onErrorFunc), intervalSeconds(interval), holdSeconds(hold)
                 {
                 }
@@ -32,36 +32,35 @@ namespace hpc
 
                 void Stop()
                 {
+                    Logger::Debug("Stopping the thread of Reporter {0}", this->name);
                     this->isRunning = false;
+                    this->cts.cancel();
                     if (this->threadId != 0)
                     {
                         while (this->inRequest) usleep(1);
-                        pthread_cancel(this->threadId);
                         pthread_join(this->threadId, nullptr);
-                        Logger::Debug("Destructed Reporter {0}", this->name);
+                        Logger::Debug("Stopped the thread of Reporter {0}", this->name);
                     }
                 }
 
                 virtual ~Reporter()
                 {
-                    Logger::Debug("Destruct Reporter {0}", this->name);
+                    Logger::Debug("Destructed Reporter {0}", this->name);
                 }
 
                 virtual int Report() = 0;
 
             protected:
                 std::string name;
-                std::function<std::string()> getReportUri;
+                std::function<std::string(pplx::cancellation_token)> getReportUri;
                 std::function<ReportType()> valueFetcher;
                 std::function<void()> onError;
                 int intervalSeconds;
+                pplx::cancellation_token_source cts;
 
             private:
                 static void* ReportingThread(void* arg)
                 {
-                    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, nullptr);
-                    pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, nullptr);
-
                     Reporter* r = static_cast<Reporter*>(arg);
                     sleep(r->holdSeconds);
 
@@ -82,10 +81,10 @@ namespace hpc
                             r->inRequest = false;
                         }
 
-                        sleep(needRetry ? r->ErrorRetrySeconds : r->intervalSeconds);
+                        if (r->isRunning) sleep(needRetry ? r->ErrorRetrySeconds : r->intervalSeconds);
                     }
 
-                    pthread_exit(nullptr);
+                    return nullptr;
                 }
 
                 const int ErrorRetrySeconds = 2;

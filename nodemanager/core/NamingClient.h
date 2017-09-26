@@ -35,12 +35,12 @@ namespace hpc
                     return instance;
                 }
 
-                std::string GetServiceLocation(const std::string& serviceName);
+                std::string GetServiceLocation(const std::string& serviceName, pplx::cancellation_token token);
 
                 static void InvalidateCache();
 
             private:
-                void RequestForServiceLocation(const std::string& serviceName, std::string& serviceLocation);
+                void RequestForServiceLocation(const std::string& serviceName, std::string& serviceLocation, pplx::cancellation_token token);
 
                 int intervalSeconds;
                 std::map<std::string, std::string> serviceLocations;

@@ -12,7 +12,7 @@ using namespace hpc::data;
 using namespace web::http;
 using namespace hpc::core;
 
-HostsManager::HostsManager(std::function<std::string()> getHostsUri, int fetchInterval)
+HostsManager::HostsManager(std::function<std::string(pplx::cancellation_token)> getHostsUri, int fetchInterval)
 {
     this->hostsFetcher =
         std::unique_ptr<HttpFetcher>(

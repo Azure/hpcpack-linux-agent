@@ -12,7 +12,7 @@ int HttpFetcher::Report()
     std::string uri;
     try
     {
-        uri = this->getReportUri();
+        uri = this->getReportUri(this->cts.get_token());
         auto client = HttpHelper::GetHttpClient(uri);
 
         auto request = HttpHelper::GetHttpRequest(methods::GET);

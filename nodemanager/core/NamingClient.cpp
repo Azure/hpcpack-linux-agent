@@ -23,7 +23,7 @@ void NamingClient::InvalidateCache()
     }
 }
 
-std::string NamingClient::GetServiceLocation(const std::string& serviceName)
+std::string NamingClient::GetServiceLocation(const std::string& serviceName, pplx::cancellation_token token)
 {
     std::map<std::string, std::string>::iterator location;
 
@@ -34,20 +34,28 @@ std::string NamingClient::GetServiceLocation(const std::string& serviceName)
 
     if (location == this->serviceLocations.end())
     {
-        WriterLock writerLock(&this->lock);
-        Logger::Debug("ResolveServiceLocation> there is no entry for {0}", serviceName);
-        for (auto kvp : this->serviceLocations)
         {
-            Logger::Debug("ResolveServiceLocation> entry {0} = {1}", kvp.first, kvp.second);
+            ReaderLock readerLock(&this->lock);
+            Logger::Debug("ResolveServiceLocation> there is no entry for {0}", serviceName);
+            for (auto kvp : this->serviceLocations)
+            {
+                Logger::Debug("ResolveServiceLocation> entry {0} = {1}", kvp.first, kvp.second);
+            }
+
+            location = this->serviceLocations.find(serviceName);
         }
 
-        location = this->serviceLocations.find(serviceName);
         if (location == this->serviceLocations.end())
         {
             std::string temp;
-            this->RequestForServiceLocation(serviceName, temp);
-            this->serviceLocations[serviceName] = temp;
-            location = this->serviceLocations.find(serviceName);
+            this->RequestForServiceLocation(serviceName, temp, token);
+
+            {
+                WriterLock writerLock(&this->lock);
+
+                this->serviceLocations[serviceName] = temp;
+                location = this->serviceLocations.find(serviceName);
+            }
         }
     }
 
@@ -55,13 +63,13 @@ std::string NamingClient::GetServiceLocation(const std::string& serviceName)
     return location->second;
 }
 
-void NamingClient::RequestForServiceLocation(const std::string& serviceName, std::string& serviceLocation)
+void NamingClient::RequestForServiceLocation(const std::string& serviceName, std::string& serviceLocation, pplx::cancellation_token token)
 {
     int selected = rand() % this->namingServicesUri.size();
     std::string uri;
     int interval = this->intervalSeconds;
 
-    while (true)
+    while (!token.is_canceled())
     {
         try
         {
@@ -71,7 +79,7 @@ void NamingClient::RequestForServiceLocation(const std::string& serviceName, std
             auto client = HttpHelper::GetHttpClient(uri);
 
             auto request = HttpHelper::GetHttpRequest(methods::GET);
-            http_response response = client->request(*request, this->cts.get_token()).get();
+            http_response response = client->request(*request, token).get();
             if (response.status_code() == http::status_codes::OK)
             {
                 serviceLocation = JsonHelper<std::string>::FromJson(response.extract_json().get());
@@ -95,6 +103,8 @@ void NamingClient::RequestForServiceLocation(const std::string& serviceName, std
         {
             Logger::Error("ResolveServiceLocation> Unknown error occurred when fetching from {0}", uri);
         }
+
+        if (token.is_canceled()) break;
 
         sleep(interval);
         interval *= 2;

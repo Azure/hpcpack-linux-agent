@@ -15,7 +15,7 @@ namespace hpc
             public:
                 UdpReporter(
                     const std::string& name,
-                    std::function<std::string()> getReportUri,
+                    std::function<std::string(pplx::cancellation_token)> getReportUri,
                     int hold,
                     int interval,
                     std::function<std::vector<unsigned char>()> fetcher,

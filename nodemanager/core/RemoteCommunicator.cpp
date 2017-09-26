@@ -76,7 +76,10 @@ void RemoteCommunicator::Close()
     {
         try
         {
+            Logger::Info("Closing the communicator {0}", this->listener.uri().to_string().c_str());
             this->listener.close().wait();
+            Logger::Info("Closed the communicator {0}", this->listener.uri().to_string().c_str());
+
             this->isListening = false;
         }
         catch (const std::exception& ex)
@@ -210,6 +213,7 @@ void RemoteCommunicator::HandlePost(http_request request)
         {
             try
             {
+                Logger::Info("Replied with content {0}", t.get());
                 request.reply(status_codes::OK, t.get()).then([](auto t) { IsError(t); });
             }
             catch (const web::http::http_exception& httpEx)

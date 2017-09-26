@@ -43,38 +43,39 @@ namespace hpc
                 AddConfigurationItem(std::string, MetricUri);
                 AddConfigurationItem(std::string, HeartbeatUri);
                 AddConfigurationItem(std::string, TaskCompletionUri);
+                AddConfigurationItem(std::string, HostsFileUri);
 
-                static std::string ResolveRegisterUri()
+                static std::string ResolveRegisterUri(pplx::cancellation_token token)
                 {
                     std::string uri = NodeManagerConfig::GetRegisterUri();
-                    return ResolveUri(uri, [](std::shared_ptr<NamingClient> namingClient) { return namingClient->GetServiceLocation(NodeManagerConfig::GetDefaultServiceName()); });
+                    return ResolveUri(uri, [token](std::shared_ptr<NamingClient> namingClient) { return namingClient->GetServiceLocation(NodeManagerConfig::GetDefaultServiceName(), token); });
                 }
 
-                static std::string ResolveHeartbeatUri()
+                static std::string ResolveHeartbeatUri(pplx::cancellation_token token)
                 {
                     std::string uri = NodeManagerConfig::GetHeartbeatUri();
-                    return ResolveUri(uri, [](std::shared_ptr<NamingClient> namingClient) { return namingClient->GetServiceLocation(NodeManagerConfig::GetDefaultServiceName()); });
+                    return ResolveUri(uri, [token](std::shared_ptr<NamingClient> namingClient) { return namingClient->GetServiceLocation(NodeManagerConfig::GetDefaultServiceName(), token); });
                 }
 
-                static std::string ResolveMetricUri()
+                static std::string ResolveMetricUri(pplx::cancellation_token token)
                 {
                     std::string uri = NodeManagerConfig::GetMetricUri();
-                    return ResolveUri(uri, [](std::shared_ptr<NamingClient> namingClient) { return namingClient->GetServiceLocation(NodeManagerConfig::GetUdpMetricServiceName()); });
+                    return ResolveUri(uri, [token](std::shared_ptr<NamingClient> namingClient) { return namingClient->GetServiceLocation(NodeManagerConfig::GetUdpMetricServiceName(), token); });
                 }
 
-                static std::string ResolveHostsFileUri()
+                static std::string ResolveHostsFileUri(pplx::cancellation_token token)
                 {
                     std::string uri = NodeManagerConfig::GetHostsFileUri();
-                    return ResolveUri(uri, [](std::shared_ptr<NamingClient> namingClient) { return namingClient->GetServiceLocation(NodeManagerConfig::GetDefaultServiceName()); });
+                    return ResolveUri(uri, [token](std::shared_ptr<NamingClient> namingClient) { return namingClient->GetServiceLocation(NodeManagerConfig::GetDefaultServiceName(), token); });
                 }
 
-                static std::string ResolveMetricInstanceIdsUri()
+                static std::string ResolveMetricInstanceIdsUri(pplx::cancellation_token token)
                 {
                     std::string uri = NodeManagerConfig::GetMetricInstanceIdsUri();
-                    return ResolveUri(uri, [](std::shared_ptr<NamingClient> namingClient) { return namingClient->GetServiceLocation(NodeManagerConfig::GetDefaultServiceName()); });
+                    return ResolveUri(uri, [token](std::shared_ptr<NamingClient> namingClient) { return namingClient->GetServiceLocation(NodeManagerConfig::GetDefaultServiceName(), token); });
                 }
 
-                static std::string ResolveTaskCompletedUri(const std::string& uri)
+                static std::string ResolveTaskCompletedUri(const std::string& uri, pplx::cancellation_token token)
                 {
                     std::string configUri = NodeManagerConfig::GetTaskCompletionUri();
                     if (configUri.empty())
@@ -82,13 +83,12 @@ namespace hpc
                         configUri = uri;
                     }
 
-                    return ResolveUri(configUri, [](std::shared_ptr<NamingClient> namingClient) { return namingClient->GetServiceLocation(NodeManagerConfig::GetDefaultServiceName()); });
+                    return ResolveUri(configUri, [token](std::shared_ptr<NamingClient> namingClient) { return namingClient->GetServiceLocation(NodeManagerConfig::GetDefaultServiceName(), token); });
                 }
 
             protected:
             private:
                 AddConfigurationItem(std::string, RegisterUri);
-                AddConfigurationItem(std::string, HostsFileUri);
                 AddConfigurationItem(std::string, MetricInstanceIdsUri);
 
                 static std::string ResolveUri(const std::string& uri, std::function<std::string(std::shared_ptr<NamingClient>)> resolver)

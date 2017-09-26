@@ -17,7 +17,7 @@ namespace hpc
             public:
                 HttpFetcher(
                     const std::string& name,
-                    std::function<std::string()> getReportUri,
+                    std::function<std::string(pplx::cancellation_token)> getReportUri,
                     int hold,
                     int interval,
                     std::function<bool(http::http_request&)> requestHandler,
@@ -40,7 +40,6 @@ namespace hpc
             private:
                 std::function<bool(http::http_request&)> requestHandler;
                 std::function<bool(http::http_response&)> responseHandler;
-                pplx::cancellation_token_source cts;
         };
     }
 }

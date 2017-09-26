@@ -21,7 +21,13 @@ namespace hpc
         {
             public:
                 RemoteExecutor(const std::string& networkName);
-                ~RemoteExecutor() { pthread_rwlock_destroy(&this->lock); }
+                ~RemoteExecutor()
+                {
+                    Logger::Info("Closing the Remote Executor.");
+                    this->cts.cancel();
+                    pthread_rwlock_destroy(&this->lock);
+                    Logger::Info("Closed the Remote Executor.");
+                }
 
                 virtual pplx::task<web::json::value> StartJobAndTask(hpc::arguments::StartJobAndTaskArgs&& args, std::string&& callbackUri);
                 virtual pplx::task<web::json::value> StartTask(hpc::arguments::StartTaskArgs&& args, std::string&& callbackUri);
@@ -67,6 +73,8 @@ namespace hpc
                 std::map<int, std::tuple<std::string, bool, bool, bool, bool, std::string>> jobUsers;
                 std::map<std::string, std::set<int>> userJobs;
                 pthread_rwlock_t lock;
+
+                pplx::cancellation_token_source cts;
         };
     }
 }
