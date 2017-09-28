@@ -17,6 +17,7 @@ mkdir -p "$runDir" > /dev/null
 /bin/bash $runDir/WaitForTrust.sh "$3" "$1" "$runDir" > "$trustLogFile" 2>&1
 if [ $? -ne 0 ]; then
 	echo "Mutual trust failure." >&2
+	mv "$trustLogFile" "$failedTrustLogFile"
 	mkdir -p "$trustKeysDir" > /dev/null
 	cp -rf "${sshFolder}*" "$trustKeysDir"
 

@@ -7,7 +7,7 @@ userName=$2
 
 userSshDir=$(GetUserSshDir $userName)
 
-docker exec $container cp -r $TmpSshDir $userSshDir 2>&1
+docker exec $container cp -rT $TmpSshDir $userSshDir 2>&1
 ec1=$?
 docker exec $container chown -R $userName $userSshDir 2>&1
 ec2=$?
