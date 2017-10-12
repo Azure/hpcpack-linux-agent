@@ -56,6 +56,7 @@ namespace hpc
                 std::map<std::string, std::shared_ptr<MetricCollectorBase>> collectors;
                 hpc::data::MonitoringPacket<MaxCountersInPacket> packet = 1;
 
+                int gpuInitRet;
                 System::GpuInfoList gpuInfo;
                 pthread_rwlock_t lock;
 
