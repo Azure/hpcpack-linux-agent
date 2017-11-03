@@ -56,7 +56,7 @@ pplx::task<json::value> ExecutionFilter::ExecuteFilter(const std::string& filter
 //    Logger::Debug(">>>>>>>>>>>>>>>>>>>>>>>>>>>>> {0}", tt);
 
     char folder[256];
-    sprintf(folder, "/tmp/nodemanager_executionfilter_%d_%d_%d.XXXXXX", jobId, taskId, requeueCount);
+    sprintf(folder, "/dev/shm/nodemanager_executionfilter_%d_%d_%d.XXXXXX", jobId, taskId, requeueCount);
     int ret = System::CreateTempFolder(folder, "root");
 
     if (ret != 0)
@@ -96,6 +96,7 @@ pplx::task<json::value> ExecutionFilter::ExecuteFilter(const std::string& filter
         int ret = p->GetExitCode();
         std::string executionMessage = p->GetExecutionMessage();
         t.get();
+        std::exception ex;
 
         if (0 == ret)
         {
@@ -109,18 +110,27 @@ pplx::task<json::value> ExecutionFilter::ExecuteFilter(const std::string& filter
                 output = json::value::parse(content);
                 fsStdout.close();
 
-                // Only clean up the folder when success.
+                // In Debug build, only clean up the folder when success.
                 std::string temp;
                 System::ExecuteCommandOut(temp, "rm -rf", folderString);
                 return output;
             }
             else
             {
-                throw std::runtime_error(String::Join("", filterType, " ", filterFile, ": Unable to read stdout file ", stdoutFile, ", exit code ", (int)ErrorCodes::ReadFileError));
+                ex = std::runtime_error(String::Join("", filterType, " ", filterFile, ": Unable to read stdout file ", stdoutFile, ", exit code ", (int)ErrorCodes::ReadFileError));
             }
         }
+        else
+        {
+            ex = FilterException(ret, String::Join("", filterType, " ", filterFile, ": Filter returned exit code ", ret, ", execution message ", executionMessage));            
+        }
 
-        throw FilterException(ret, String::Join("", filterType, " ", filterFile, ": Filter returned exit code ", ret, ", execution message ", executionMessage));
+#ifndef DEBUG        
+        std::string temp;
+        System::ExecuteCommandOut(temp, "rm -rf", folderString);
+#endif // DEBUG
+
+        throw ex;
     })
     .then([=] (pplx::task<json::value> t) mutable -> json::value { p.reset(); return t.get(); } );
 }
