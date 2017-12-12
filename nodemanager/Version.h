@@ -574,6 +574,14 @@ namespace hpc
                             "Fixed the unit test failure",
                         }
                     },
+                    { "2.3.2.0",
+                        {
+                            "Removed the requirement of public key in extended data of user credential",
+                            "Removed unnecessary warning log of GPU monitors",
+                            "Fixed the issue that user credential information may be left on disk when using execution filter",
+                            "Fixed a bug that root user may fail in mutual trust in mpi docker task",
+                        }
+                    },
                 };
 
                 return versionHistory;

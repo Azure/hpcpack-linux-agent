@@ -78,6 +78,15 @@ pplx::task<json::value> RemoteExecutor::StartJobAndTask(StartJobAndTaskArgs&& ar
             std::string privateKeyFile;
             bool privateKeyAdded = 0 == System::AddSshKey(userName, args.PrivateKey, "id_rsa", "600", privateKeyFile);
 
+            if (privateKeyAdded && args.PublicKey.empty())
+            {
+                int ret = System::ExecuteCommandOut(args.PublicKey, "ssh-keygen -y -f ", privateKeyFile);
+                if (ret != 0)
+                {
+                    Logger::Error(args.JobId, args.TaskId, this->UnknowId, "Retrieve public key failed with exitcode {0}.", ret);
+                }
+            }
+
             std::string publicKeyFile;
             bool publicKeyAdded = privateKeyAdded && (0 == System::AddSshKey(userName, args.PublicKey, "id_rsa.pub", "644", publicKeyFile));
 
