@@ -582,6 +582,11 @@ namespace hpc
                             "Fixed a bug that root user may fail in mutual trust in mpi docker task",
                         }
                     },
+                    { "2.3.3.0",
+                        {
+                            "Modified user mapping logic",
+                        }
+                    },
                 };
 
                 return versionHistory;

@@ -414,22 +414,13 @@ int System::QueryGpuInfo(System::GpuInfoList& gpuInfo)
 
 int System::CreateUser(
     const std::string& userName,
-    const std::string& password)
+    const std::string& password,
+    bool isAdmin)
 {
     std::string output;
 
     int ret = System::ExecuteCommandOut(output, "useradd", userName, "-m", "-s /bin/bash");
-    if (ret != 0)
-    {
-        Logger::Warn("useradd {0} -m error code {1}", userName, ret);
-
-        if (ret != 9) // exist
-        {
-            return ret;
-        }
-    }
-
-    if (ret != 9)
+    if (ret == 0)
     {
         std::string input = String::Join("", password, "\n", password, "\n");
         ret = System::ExecuteCommandIn(input, "passwd", userName);
@@ -438,6 +429,24 @@ int System::CreateUser(
             Logger::Error("passwd {0} error code {1}", userName, ret);
             return ret;
         }
+
+        if (isAdmin)
+        {
+            ret = System::ExecuteCommandOut(output, "usermod", "-aG sudo", userName); // add user to group sudo on Ubuntu
+            if (ret == 6) // group sudo does not exist
+            {
+                ret = System::ExecuteCommandOut(output, "usermod", "-aG wheel", userName); // add user to group wheel on CentOS/Redhat/Suse
+            }
+
+            if (ret != 0)
+            {
+                Logger::Error("Add user {0} to group sudo/wheel failed. Command usermod, error code {1}", userName, ret);
+            }
+        }
+    }
+    else
+    {
+        Logger::Warn("useradd {0} -m error code {1}", userName, ret);
     }
 
     return ret;

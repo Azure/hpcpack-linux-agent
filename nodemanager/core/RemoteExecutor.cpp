@@ -2,6 +2,7 @@
 #include <memory>
 #include <boost/uuid/string_generator.hpp>
 #include <boost/uuid/uuid_io.hpp>
+#include <boost/algorithm/string.hpp>
 
 #include "RemoteExecutor.h"
 #include "HttpReporter.h"
@@ -51,32 +52,55 @@ pplx::task<json::value> RemoteExecutor::StartJobAndTask(StartJobAndTaskArgs&& ar
         const auto& envi = args.StartInfo.EnvironmentVariables;
         auto isAdminIt = envi.find("CCP_ISADMIN");
         bool isAdmin = isAdminIt != envi.end() && isAdminIt->second == "1";
-
         auto mapAdminUserIt = envi.find("CCP_MAP_ADMIN_USER");
         bool mapAdminUser = mapAdminUserIt != envi.end() && mapAdminUserIt->second == "1";
+        
+        const std::string WindowsSystemUser = "NT AUTHORITY\\SYSTEM";
+        bool mapAdminToRoot = isAdmin && !mapAdminUser;
+        bool mapAdminToUser = isAdmin && mapAdminUser;
+        bool isWindowsSystemAccount = boost::iequals(args.UserName, WindowsSystemUser);
 
-        // If is admin, we won't create the user, default to root.
-        // If username is empty, this is the old image, we use root.
-        if ((mapAdminUser || !isAdmin) && !args.UserName.empty())
+        std::string userName;
+        bool existed;
+
+        // Use root user in 3 scenarios:
+        // 1. This is old image, username is empty, we use root.
+        // 2. User is Windows or HPC Administrator and CCP_MAP_ADMIN_USER is not set
+        // 3. User is Windows local system account, which is mapped to Linux root user.
+        if (args.UserName.empty() || mapAdminToRoot || isWindowsSystemAccount)
+        {
+            userName = "root";
+            existed = true;
+        }
+        else
         {
             auto preserveDomainIt = envi.find("CCP_PRESERVE_DOMAIN");
             bool preserveDomain = preserveDomainIt != envi.end() && preserveDomainIt->second == "1";
-
-            std::string userName = preserveDomain ? args.UserName : String::GetUserName(args.UserName);
+            userName = preserveDomain ? args.UserName : String::GetUserName(args.UserName);
             if (userName == "root") { userName = "hpc_faked_root"; }
-
-            int ret = System::CreateUser(userName, args.Password);
-
-            bool existed = ret == 9;
-
+            int ret = System::CreateUser(userName, args.Password, isAdmin);
+            existed = ret == 9;
             if (ret != 0 && ret != 9)
             {
                 throw std::runtime_error(
                     String::Join(" ", "Create user", userName, "failed with error code", ret));
             }
 
+            Logger::Debug(args.JobId, args.TaskId, this->UnknowId, "Create user {0} return code: {1}.", userName, ret);
+        }
+
+        bool privateKeyAdded = false;
+        bool publicKeyAdded = false;
+        bool authKeyAdded = false;
+
+        // Set SSH keys in 3 scenarios:
+        // 1. User is not a Windows or HPC Administrator.
+        // 2. User is Windows or HPC Administrator and it is mapped to non-root user in Linux.
+        // 3. User is Windows local system account, which is mapped to Linux root user.
+        if (!isAdmin || mapAdminToUser || isWindowsSystemAccount)
+        {
             std::string privateKeyFile;
-            bool privateKeyAdded = 0 == System::AddSshKey(userName, args.PrivateKey, "id_rsa", "600", privateKeyFile);
+            privateKeyAdded = 0 == System::AddSshKey(userName, args.PrivateKey, "id_rsa", "600", privateKeyFile);
 
             if (privateKeyAdded && args.PublicKey.empty())
             {
@@ -88,43 +112,34 @@ pplx::task<json::value> RemoteExecutor::StartJobAndTask(StartJobAndTaskArgs&& ar
             }
 
             std::string publicKeyFile;
-            bool publicKeyAdded = privateKeyAdded && (0 == System::AddSshKey(userName, args.PublicKey, "id_rsa.pub", "644", publicKeyFile));
+            publicKeyAdded = privateKeyAdded && (0 == System::AddSshKey(userName, args.PublicKey, "id_rsa.pub", "644", publicKeyFile));
 
             std::string userAuthKeyFile;
-            bool authKeyAdded = privateKeyAdded && publicKeyAdded && (0 == System::AddAuthorizedKey(userName, args.PublicKey, "600", userAuthKeyFile));
+            authKeyAdded = privateKeyAdded && publicKeyAdded && (0 == System::AddAuthorizedKey(userName, args.PublicKey, "600", userAuthKeyFile));
 
             Logger::Debug(args.JobId, args.TaskId, this->UnknowId,
-                "Create user {0} result: ret {1}, private {2}, public {3}, auth {4}",
-                userName, ret, privateKeyAdded, publicKeyAdded, authKeyAdded);
+                "Add ssh key for user {0} result: private {1}, public {2}, auth {3}",
+                userName, privateKeyAdded, publicKeyAdded, authKeyAdded);
+        }
 
-            if (this->jobUsers.find(args.JobId) == this->jobUsers.end())
-            {
-                Logger::Debug(args.JobId, args.TaskId, this->UnknowId,
-                    "Create user: jobUsers entry added.");
+        if (this->jobUsers.find(args.JobId) == this->jobUsers.end())
+        {
+            Logger::Debug(args.JobId, args.TaskId, this->UnknowId,
+                "Create user: jobUsers entry added.");
 
-                this->jobUsers[args.JobId] =
-                    std::tuple<std::string, bool, bool, bool, bool, std::string>(userName, existed, privateKeyAdded, publicKeyAdded, authKeyAdded, args.PublicKey);
-            }
+            this->jobUsers[args.JobId] =
+                std::tuple<std::string, bool, bool, bool, bool, std::string>(userName, existed, privateKeyAdded, publicKeyAdded, authKeyAdded, args.PublicKey);
+        }
 
-            auto it = this->userJobs.find(userName);
+        auto it = this->userJobs.find(userName);
 
-            if (it != this->userJobs.end())
-            {
-                it->second.insert(args.JobId);
-            }
-            else
-            {
-                this->userJobs[userName] = { args.JobId };
-            }
+        if (it != this->userJobs.end())
+        {
+            it->second.insert(args.JobId);
         }
         else
         {
-            // run as root
-            Logger::Debug(args.JobId, args.TaskId, this->UnknowId,
-                "Run the job as root.");
-
-            this->jobUsers[args.JobId] =
-                std::tuple<std::string, bool, bool, bool, bool, std::string>("root", true, false, false, false, "");
+            this->userJobs[userName] = { args.JobId };
         }
     }
 
