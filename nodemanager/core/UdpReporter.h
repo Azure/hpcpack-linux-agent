@@ -14,18 +14,23 @@ namespace hpc
         {
             public:
                 UdpReporter(
-                    const std::string& uri,
+                    const std::string& name,
+                    std::function<std::string(pplx::cancellation_token)> getReportUri,
                     int hold,
                     int interval,
-                    std::function<std::vector<unsigned char>()> fetcher);
+                    std::function<std::vector<unsigned char>()> fetcher,
+                    std::function<void()> onErrorFunc);
 
                 virtual ~UdpReporter();
 
-                virtual void Report();
+                virtual int Report();
 
             protected:
             private:
-                int s;
+                void ReConnect();
+
+                std::string uri;
+                int s = 0;
                 bool initialized = false;
         };
     }

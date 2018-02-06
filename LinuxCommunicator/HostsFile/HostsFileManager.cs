@@ -110,13 +110,13 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.HostsFile
                 FileInfo fileInfo = new FileInfo(this.filepath);
                 if (!fileInfo.Exists)
                 {
-                    LinuxCommunicator.Instance.Tracer.TraceInfo("[HostsFileManager] The hosts file doesn't exists: {0}", this.filepath);
+                    LinuxCommunicator.Instance?.Tracer?.TraceInfo("[HostsFileManager] The hosts file doesn't exists: {0}", this.filepath);
                     return;
                 }
 
                 if (fileInfo.LastWriteTimeUtc <= this.lastModified)
                 {
-                    LinuxCommunicator.Instance.Tracer.TraceInfo("[HostsFileManager] The hosts file isn't changed since last load");
+                    LinuxCommunicator.Instance?.Tracer?.TraceInfo("[HostsFileManager] The hosts file isn't changed since last load");
                     return;
                 }
 
@@ -160,16 +160,16 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.HostsFile
                         newHostList.AddRange(newEntries.Values.Where(entry => entry.Name.Contains('.')));
                         this.ManagedEntries = newHostList;
                         this.UpdateId = Guid.NewGuid();
-                        LinuxCommunicator.Instance.Tracer.TraceInfo("[HostsFileManager] The managed host entries updated, current update Id is {0}", this.UpdateId);
+                        LinuxCommunicator.Instance?.Tracer?.TraceInfo("[HostsFileManager] The managed host entries updated, current update Id is {0}", this.UpdateId);
                     }
                     else
                     {
-                        LinuxCommunicator.Instance.Tracer.TraceInfo("[HostsFileManager] No update to HPC managed host entries, current update Id is {0}", this.UpdateId);
+                        LinuxCommunicator.Instance?.Tracer?.TraceInfo("[HostsFileManager] No update to HPC managed host entries, current update Id is {0}", this.UpdateId);
                     }
                 }
                 else
                 {
-                    LinuxCommunicator.Instance.Tracer.TraceWarning("[HostsFileManager] Hosts file was not managed by HPC");
+                    LinuxCommunicator.Instance?.Tracer?.TraceWarning("[HostsFileManager] Hosts file was not managed by HPC");
                     this.ManagedEntries.Clear();
                 }
 
@@ -178,7 +178,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.HostsFile
             }
             catch (Exception e)
             {
-                LinuxCommunicator.Instance.Tracer.TraceWarning("[HostsFileManager] Failed to reload host file: {0}", e);
+                LinuxCommunicator.Instance?.Tracer?.TraceWarning("[HostsFileManager] Failed to reload host file: {0}", e);
             }
             finally
             {
@@ -188,7 +188,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.HostsFile
                 }
                 catch (Exception te)
                 {
-                    LinuxCommunicator.Instance.Tracer.TraceWarning("[HostsFileManager] Failed to restart reload timer: {0}", te);
+                    LinuxCommunicator.Instance?.Tracer?.TraceWarning("[HostsFileManager] Failed to restart reload timer: {0}", te);
                 }
             }
         }

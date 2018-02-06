@@ -17,11 +17,13 @@ namespace hpc
         {
             public:
                 HttpReporter(
-                    const std::string& uri,
+                    const std::string& reporterName,
+                    std::function<std::string(pplx::cancellation_token)> getUri,
                     int hold,
                     int interval,
-                    std::function<json::value()> fetcher)
-                : Reporter<json::value>(uri, hold, interval, fetcher)
+                    std::function<json::value()> fetcher,
+                    std::function<void()> onErrorFunc)
+                : Reporter<json::value>(reporterName, getUri, hold, interval, fetcher, onErrorFunc)
                 {
                 }
 
@@ -31,11 +33,10 @@ namespace hpc
                     this->Stop();
                 }
 
-                virtual void Report();
+                virtual int Report();
 
             protected:
             private:
-                pplx::cancellation_token_source cts;
         };
     }
 }

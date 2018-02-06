@@ -25,7 +25,7 @@ namespace hpc
 
                 web::json::value ToJson();
 
-                NodeAvailability Availability;
+                NodeAvailability Availability = NodeAvailability::AlwaysOn;
                 bool JustStarted = true;
                 std::string MacAddress;
                 std::string Name;

@@ -29,15 +29,17 @@ RemoteExecutor::RemoteExecutor(const std::string& networkName)
     this->registerReporter =
         std::unique_ptr<Reporter<json::value>>(
             new HttpReporter(
-                NodeManagerConfig::GetRegisterUri(),
+                "RegisterReporter",
+                [](pplx::cancellation_token token) { return NodeManagerConfig::ResolveRegisterUri(token); },
                 3,
                 this->RegisterInterval,
-                [this]() { return this->monitor.GetRegisterInfo(); }));
+                [this]() { return this->monitor.GetRegisterInfo(); },
+                [this]() { this->ResyncAndInvalidateCache(); }));
 
     this->registerReporter->Start();
 
-    this->StartHeartbeat(NodeManagerConfig::GetHeartbeatUri());
-    this->StartMetric(NodeManagerConfig::GetMetricUri());
+    this->StartHeartbeat();
+    this->StartMetric();
     this->StartHostsManager();
 }
 
@@ -75,6 +77,15 @@ pplx::task<json::value> RemoteExecutor::StartJobAndTask(StartJobAndTaskArgs&& ar
 
             std::string privateKeyFile;
             bool privateKeyAdded = 0 == System::AddSshKey(userName, args.PrivateKey, "id_rsa", "600", privateKeyFile);
+
+            if (privateKeyAdded && args.PublicKey.empty())
+            {
+                int ret = System::ExecuteCommandOut(args.PublicKey, "ssh-keygen -y -f ", privateKeyFile);
+                if (ret != 0)
+                {
+                    Logger::Error(args.JobId, args.TaskId, this->UnknowId, "Retrieve public key failed with exitcode {0}.", ret);
+                }
+            }
 
             std::string publicKeyFile;
             bool publicKeyAdded = privateKeyAdded && (0 == System::AddSshKey(userName, args.PublicKey, "id_rsa.pub", "644", publicKeyFile));
@@ -130,30 +141,48 @@ pplx::task<json::value> RemoteExecutor::StartTask(StartTaskArgs&& args, std::str
     taskInfo->Affinity = args.StartInfo.Affinity;
     taskInfo->SetTaskRequeueCount(args.StartInfo.TaskRequeueCount);
 
+    std::string userName = "root";
+    auto jobUser = this->jobUsers.find(args.JobId);
+    if (jobUser == this->jobUsers.end())
+    {
+        this->jobTaskTable.RemoveJob(args.JobId);
+        throw std::runtime_error(String::Join(" ", "Job", args.JobId, "was not started on this node."));
+    }
+    else
+    {
+        userName = std::get<0>(jobUser->second);
+    }
+
     if (args.StartInfo.CommandLine.empty())
     {
         Logger::Info(args.JobId, args.TaskId, args.StartInfo.TaskRequeueCount, "MPI non-master task found, skip creating the process.");
+        std::string dockerImage = args.StartInfo.EnvironmentVariables["CCP_DOCKER_IMAGE"];
+        std::string isNvidiaDocker = args.StartInfo.EnvironmentVariables["CCP_DOCKER_NVIDIA"];
+        if (!dockerImage.empty())
+        {
+            taskInfo->IsPrimaryTask = false;
+            std::string output;
+            int ret = System::ExecuteCommandOut(output, "/bin/bash 2>&1", "StartMpiContainer.sh", taskInfo->TaskId, userName, dockerImage, isNvidiaDocker);
+            if (ret == 0)
+            {
+                Logger::Info(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetTaskRequeueCount(), "Start MPI container successfully.");
+            }
+            else
+            {
+                Logger::Error(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetTaskRequeueCount(), "Start MPI container failed with exitcode {0}. {1}", ret, output);
+            }
+        }
     }
     else
     {
         if (this->processes.find(taskInfo->ProcessKey) == this->processes.end() &&
             isNewEntry)
         {
-            std::string userName = "root";
-            auto jobUser = this->jobUsers.find(args.JobId);
-            if (jobUser == this->jobUsers.end())
-            {
-                throw std::runtime_error(String::Join(" ", "Job", args.JobId, "was not started on this node."));
-            }
-            else
-            {
-                userName = std::get<0>(jobUser->second);
-            }
-
             auto process = std::shared_ptr<Process>(new Process(
                 taskInfo->JobId,
                 taskInfo->TaskId,
                 taskInfo->GetTaskRequeueCount(),
+                "Task",
                 std::move(args.StartInfo.CommandLine),
                 std::move(args.StartInfo.StdOutFile),
                 std::move(args.StartInfo.StdErrFile),
@@ -260,7 +289,7 @@ pplx::task<json::value> RemoteExecutor::EndJob(hpc::arguments::EndJobArgs&& args
             {
                 const auto* stat = this->TerminateTask(
                     args.JobId, taskPair.first, taskInfo->GetTaskRequeueCount(),
-                    taskInfo->ProcessKey, (int)ErrorCodes::EndJobExitCode, true);
+                    taskInfo->ProcessKey, (int)ErrorCodes::EndJobExitCode, true, !taskInfo->IsPrimaryTask);
                 Logger::Debug(args.JobId, taskPair.first, taskInfo->GetTaskRequeueCount(), "EndJob: Terminating task");
                 if (stat != nullptr)
                 {
@@ -393,7 +422,8 @@ pplx::task<json::value> RemoteExecutor::EndTask(hpc::arguments::EndTaskArgs&& ar
             args.JobId, args.TaskId, taskInfo->GetTaskRequeueCount(),
             taskInfo->ProcessKey,
             (int)ErrorCodes::EndTaskExitCode,
-            args.TaskCancelGracePeriodSeconds == 0);
+            args.TaskCancelGracePeriodSeconds == 0,
+            !taskInfo->IsPrimaryTask);
 
         taskInfo->ExitCode = (int)ErrorCodes::EndTaskExitCode;
 
@@ -462,17 +492,36 @@ void* RemoteExecutor::GracePeriodElapsed(void* data)
             jobId, taskId, requeueCount,
             processKey,
             (int)ErrorCodes::EndTaskExitCode,
-            true);
+            true,
+            false);
 
         if (stat != nullptr)
         {
+            Logger::Debug(jobId, taskId, requeueCount, "remaining pids size {0}", stat->ProcessIds.size());
+
+            if (NodeManagerConfig::GetDebug())
+            {
+                for (int pid : stat->ProcessIds)
+                {
+                    std::string process;
+                    std::string groupFile = "/sys/fs/cgroup/cpu,cpuacct/nmgroup_";
+                    groupFile = String::Join("", groupFile, "Task_", taskId, "_", requeueCount, "/tasks");
+                    System::ExecuteCommandOut(process, "ps -p", pid);
+                    Logger::Debug(jobId, taskId, requeueCount, "undead process {1}, {0}", process, pid);
+                    System::ExecuteCommandOut(process, "cat", groupFile);
+                    Logger::Debug(jobId, taskId, requeueCount, "tasks file {0}", process);
+                }
+            }
+
             // stat == nullptr means the processKey is already removed from the map
             // which means the main task has exited already.
             taskInfo->Exited = true;
             taskInfo->ExitCode = (int)ErrorCodes::EndTaskExitCode;
+            taskInfo->AssignFromStat(*stat);
+            taskInfo->ProcessIds.clear();
+
             e->jobTaskTable.RemoveTask(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetAttemptId());
 
-            taskInfo->AssignFromStat(*stat);
             json::value jsonBody = taskInfo->ToCompletionEventArgJson();
             Logger::Info(jobId, taskId, e->UnknowId, "EndTask: ended {0}", jsonBody);
             e->ReportTaskCompletion(jobId, taskId, requeueCount, jsonBody, callbackUri);
@@ -494,36 +543,56 @@ void RemoteExecutor::ReportTaskCompletion(
     {
         if (!jsonBody.is_null())
         {
+            std::string uri = NodeManagerConfig::ResolveTaskCompletedUri(callbackUri, this->cts.get_token());
             Logger::Debug(jobId, taskId, taskRequeueCount,
-                "Callback to {0} with {1}", callbackUri, jsonBody);
+                "Callback to {0} with {1}", uri, jsonBody);
 
-            client::http_client client = HttpHelper::GetHttpClient(callbackUri);
-            http_request request = HttpHelper::GetHttpRequest(methods::POST, jsonBody);
-            http_response response = client.request(request).get();
+            auto client = HttpHelper::GetHttpClient(uri);
+            auto request = HttpHelper::GetHttpRequest(methods::POST, jsonBody);
 
-            Logger::Info(jobId, taskId, taskRequeueCount,
-                "Callback to {0} response code {1}", callbackUri, response.status_code());
+            client->request(*request).then([jobId, taskId, taskRequeueCount, uri, this](pplx::task<http_response> t)
+            {
+                try
+                {
+                    auto response = t.get();
+                    Logger::Info(jobId, taskId, taskRequeueCount,
+                        "Callback to {0} response code {1}", uri, response.status_code());
+
+                    if (response.status_code() != status_codes::OK)
+                    {
+                        this->ResyncAndInvalidateCache();
+                    }
+                }
+                catch (const std::exception& ex)
+                {
+                    this->ResyncAndInvalidateCache();
+                    Logger::Error(jobId, taskId, taskRequeueCount,
+                        "Exception when sending back task result. {0}", ex.what());
+                }
+            });
         }
     }
     catch (const std::exception& ex)
     {
-        this->jobTaskTable.RequestResync();
+        this->ResyncAndInvalidateCache();
         Logger::Error(jobId, taskId, taskRequeueCount,
             "Exception when sending back task result. {0}", ex.what());
     }
 }
 
-void RemoteExecutor::StartHeartbeat(std::string&& callbackUri)
+void RemoteExecutor::StartHeartbeat()
 {
     WriterLock writerLock(&this->lock);
 
     this->nodeInfoReporter =
         std::unique_ptr<Reporter<json::value>>(
             new HttpReporter(
-                callbackUri,
+                "HeartbeatReporter",
+                [](pplx::cancellation_token token) { return NodeManagerConfig::ResolveHeartbeatUri(token); },
                 0,
                 this->NodeInfoReportInterval,
-                [this]() { return this->jobTaskTable.ToJson(); }));
+                [this]() { return this->jobTaskTable.ToJson(); },
+                [this]() { this->ResyncAndInvalidateCache(); }));
 
     this->nodeInfoReporter->Start();
 }
@@ -553,7 +622,7 @@ void RemoteExecutor::StartHostsManager()
 
         WriterLock writerLock(&this->lock);
 
-        this->hostsManager = std::unique_ptr<HostsManager>(new HostsManager(hostsUri, interval));
+        this->hostsManager = std::unique_ptr<HostsManager>(new HostsManager([](pplx::cancellation_token token) { return NodeManagerConfig::ResolveHostsFileUri(token); }, interval));
         this->hostsManager->Start();
     }
     else
@@ -569,19 +638,20 @@ pplx::task<json::value> RemoteExecutor::Ping(std::string&& callbackUri)
     if (uri != callbackUri)
     {
         NodeManagerConfig::SaveHeartbeatUri(callbackUri);
-        this->StartHeartbeat(std::move(callbackUri));
+        this->StartHeartbeat();
     }
 
     return pplx::task_from_result(json::value());
 }
 
-void RemoteExecutor::StartMetric(std::string&& callbackUri)
+void RemoteExecutor::StartMetric()
 {
     WriterLock writerLock(&this->lock);
 
-    if (!callbackUri.empty())
+    std::string uri = NodeManagerConfig::GetMetricUri();
+    if (!uri.empty())
     {
-        auto tokens = String::Split(callbackUri, '/');
+        auto tokens = String::Split(uri, '/');
         uuid id = string_generator()(tokens[4]);
 
         this->monitor.SetNodeUuid(id);
@@ -589,10 +659,12 @@ void RemoteExecutor::StartMetric(std::string&& callbackUri)
         this->metricReporter =
             std::unique_ptr<Reporter<std::vector<unsigned char>>>(
                 new UdpReporter(
-                    callbackUri,
+                    "MetricReporter",
+                    [](pplx::cancellation_token token) { return NodeManagerConfig::ResolveMetricUri(token); },
                     0,
                     this->MetricReportInterval,
-                    [this]() { return this->monitor.GetMonitorPacketData(); }));
+                    [this]() { return this->monitor.GetMonitorPacketData(); },
+                    [this]() { NamingClient::InvalidateCache(); }));
 
         this->metricReporter->Start();
     }
@@ -606,7 +678,7 @@ pplx::task<json::value> RemoteExecutor::Metric(std::string&& callbackUri)
         NodeManagerConfig::SaveMetricUri(callbackUri);
 
         // callbackUri is like udp://server:port/api/nodeguid/metricreported
-        this->StartMetric(std::move(callbackUri));
+        this->StartMetric();
     }
 
     return pplx::task_from_result(json::value());
@@ -618,15 +690,31 @@ pplx::task<json::value> RemoteExecutor::MetricConfig(
 {
     this->Metric(std::move(callbackUri));
 
-    this->monitor.ApplyMetricConfig(std::move(config));
+    this->monitor.ApplyMetricConfig(std::move(config), this->cts.get_token());
 
     return pplx::task_from_result(json::value());
 }
 
 const ProcessStatistics* RemoteExecutor::TerminateTask(
     int jobId, int taskId, int requeueCount,
-    uint64_t processKey, int exitCode, bool forced)
+    uint64_t processKey, int exitCode, bool forced, bool mpiDockerTask)
 {
+    if (mpiDockerTask)
+    {
+        std::string output;
+        int ret = System::ExecuteCommandOut(output, "2>&1 /bin/bash", "StopMpiContainer.sh", taskId);
+        if (ret == 0)
+        {
+            Logger::Info(jobId, taskId, requeueCount, "Stop MPI container successfully.");
+        }
+        else
+        {
+            Logger::Error(jobId, taskId, requeueCount, "Stop MPI container failed with exitcode {0}. {1}", ret, output);
+        }
+
+        return nullptr;
+    }
+
     auto p = this->processes.find(processKey);
 //    Logger::Debug(
 //        jobId, taskId, requeueCount,
@@ -669,4 +757,40 @@ const ProcessStatistics* RemoteExecutor::TerminateTask(
         Logger::Warn(jobId, taskId, requeueCount, "No process object found.");
         return nullptr;
     }
+}
+
+void RemoteExecutor::ResyncAndInvalidateCache()
+{
+    this->jobTaskTable.RequestResync();
+    NamingClient::InvalidateCache();
+}
+
+pplx::task<json::value> RemoteExecutor::PeekTaskOutput(hpc::arguments::PeekTaskOutputArgs&& args)
+{
+    Logger::Info(args.JobId, args.TaskId, this->UnknowId, "Peeking task output.");
+
+    std::string output;
+    try
+    {
+        auto taskInfo = this->jobTaskTable.GetTask(args.JobId, args.TaskId);
+        if (taskInfo)
+        {
+            Logger::Debug(args.JobId, args.TaskId, taskInfo->GetTaskRequeueCount(),
+                "PeekTaskOutput for ProcessKey {0}, processes count {1}",
+                taskInfo->ProcessKey, this->processes.size());
+
+            auto p = this->processes.find(taskInfo->ProcessKey);
+            if (p != this->processes.end())
+            {
+                output = p->second->PeekOutput();
+            }
+        }
+    }
+    catch (const std::exception& ex)
+    {
+        Logger::Warn(args.JobId, args.TaskId, this->UnknowId, "Exception when peeking task output: {0}", ex.what());
+        output = "NodeManager: Failed to get the output.";
+    }
+
+    return pplx::task_from_result(json::value::string(output));
 }

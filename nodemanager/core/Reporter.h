@@ -5,6 +5,7 @@
 #include <functional>
 
 #include "../utils/Logger.h"
+#include "NamingClient.h"
 
 using namespace hpc::utils;
 
@@ -16,14 +17,14 @@ namespace hpc
         class Reporter
         {
             public:
-                Reporter(const std::string& uri, int hold, int interval, std::function<ReportType()> fetcher)
-                    : reportUri(uri), valueFetcher(fetcher), intervalSeconds(interval), holdSeconds(hold)
+                Reporter(std::string reporterName, std::function<std::string(pplx::cancellation_token)> getUri, int hold, int interval, std::function<ReportType()> fetcher, std::function<void()> onErrorFunc)
+                    : name(reporterName), getReportUri(getUri), valueFetcher(fetcher), onError(onErrorFunc), intervalSeconds(interval), holdSeconds(hold)
                 {
                 }
 
                 void Start()
                 {
-                    if (!this->reportUri.empty())
+                    if (this->getReportUri)
                     {
                         pthread_create(&this->threadId, nullptr, ReportingThread, this);
                     }
@@ -31,51 +32,62 @@ namespace hpc
 
                 void Stop()
                 {
+                    Logger::Debug("Stopping the thread of Reporter {0}", this->name);
                     this->isRunning = false;
+                    this->cts.cancel();
                     if (this->threadId != 0)
                     {
                         while (this->inRequest) usleep(1);
-                        pthread_cancel(this->threadId);
                         pthread_join(this->threadId, nullptr);
-                        Logger::Debug("Destructed Reporter {0}", this->reportUri);
+                        Logger::Debug("Stopped the thread of Reporter {0}", this->name);
                     }
                 }
 
                 virtual ~Reporter()
                 {
-                    Logger::Debug("Destruct Reporter {0}", this->reportUri);
+                    Logger::Debug("Destructed Reporter {0}", this->name);
                 }
 
-                virtual void Report() = 0;
+                virtual int Report() = 0;
 
             protected:
-                const std::string reportUri;
+                std::string name;
+                std::function<std::string(pplx::cancellation_token)> getReportUri;
                 std::function<ReportType()> valueFetcher;
+                std::function<void()> onError;
                 int intervalSeconds;
+                pplx::cancellation_token_source cts;
 
             private:
                 static void* ReportingThread(void* arg)
                 {
-                    pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, nullptr);
-                    pthread_setcanceltype(PTHREAD_CANCEL_ASYNCHRONOUS, nullptr);
-
                     Reporter* r = static_cast<Reporter*>(arg);
                     sleep(r->holdSeconds);
 
                     while (r->isRunning)
                     {
-                        if (!r->reportUri.empty())
+                        bool needRetry = false;
+                        if (r->getReportUri)
                         {
                             r->inRequest = true;
-                            r->Report();
+                            if ((needRetry = (0 != r->Report())))
+                            {
+                                if (r->onError)
+                                {
+                                    r->onError();
+                                }
+                            }
+
                             r->inRequest = false;
                         }
 
-                        sleep(r->intervalSeconds);
+                        if (r->isRunning) sleep(needRetry ? r->ErrorRetrySeconds : r->intervalSeconds);
                     }
 
-                    pthread_exit(nullptr);
+                    return nullptr;
                 }
+
+                const int ErrorRetrySeconds = 2;
 
                 int holdSeconds;
 

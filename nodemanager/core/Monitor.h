@@ -32,11 +32,11 @@ namespace hpc
                 json::value GetRegisterInfo();
 
                 void SetNodeUuid(const uuid& id);
-                void ApplyMetricConfig(hpc::arguments::MetricCountersConfig&& config);
+                void ApplyMetricConfig(hpc::arguments::MetricCountersConfig&& config, pplx::cancellation_token token);
 
             protected:
             private:
-                bool EnableMetricCounter(const hpc::arguments::MetricCounter& counterConfig);
+                bool EnableMetricCounter(const hpc::arguments::MetricCounter& counterConfig, pplx::cancellation_token token);
                 void Run();
 
                 static void* MonitoringThread(void* arg);
@@ -55,10 +55,18 @@ namespace hpc
                 std::vector<hpc::utils::System::NetInfo> networkInfo;
                 std::map<std::string, std::shared_ptr<MetricCollectorBase>> collectors;
                 hpc::data::MonitoringPacket<MaxCountersInPacket> packet = 1;
+
+                int gpuInitRet;
+                System::GpuInfoList gpuInfo;
                 pthread_rwlock_t lock;
 
                 int intervalSeconds;
                 bool isCollected;
+                float freeSpacePercent = 0.0f;
+                float queueLength = 0.0f;
+                float pagesPerSec = 0.0f;
+                float contextSwitchesPerSec = 0.0f;
+                float bytesPerSecond = 0.0f;
                 pthread_t threadId = 0;
         };
     }

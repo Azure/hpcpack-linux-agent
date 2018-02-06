@@ -497,6 +497,91 @@ namespace hpc
                             "Cleanup the execution filter folder",
                         }
                     },
+                    { "1.7.7.0",
+                        {
+                            "Retry the heartbeat when failed to minimize heartbeat lost",
+                            "Isolate the filter execution from task execution",
+                            "Refine the folder name of filter execution directory",
+                        }
+                    },
+                    { "1.7.8.0",
+                        {
+                            "Report instance level GPU metrics",
+                            "Register with GPU information",
+                        }
+                    },
+                    { "1.7.9.0",
+                        {
+                            "Fix a metric packet count issue",
+                        }
+                    },
+                    { "1.7.10.0",
+                        {
+                            "Fix a bug of total memory data in metrics",
+                        }
+                    },
+                    { "1.7.11.0",
+                        {
+                            "Fix a crash issue when cancelling a job",
+                            "Fix a process statistics issue when cancelling a job which results in the job stuck in cancelling state",
+                        }
+                    },
+                    { "2.1.1.0",
+                        {
+                            "Hpc Pack 2016 head node support",
+                            "Dynamically resolve the Uris of the head node services",
+                        }
+                    },
+                    { "2.1.2.0",
+                        {
+                            "Fix the unknown node availability issue",
+                        }
+                    },
+                    { "2.1.3.0",
+                        {
+                            "Fix the node error issue when scheduler failover",
+                        }
+                    },
+                    { "2.1.4.0",
+                        {
+                            "Fix a job stuck in running issue",
+                        }
+                    },
+                    { "2.1.5.0",
+                        {
+                            "Fix a resync failure issue, caused job stuck in running",
+                        }
+                    },
+                    { "2.1.6.0",
+                        {
+                            "Fix the task process never start issue",
+                        }
+                    },
+                    { "2.2.1.0",
+                        {
+                            "Added built-in proxy support",
+                        }
+                    },
+                    { "2.2.2.0",
+                        {
+                            "Added task completion uri configuration",
+                        }
+                    },
+                    { "2.3.1.0",
+                        {
+                            "Added docker support",
+                            "Added support to peek the task output",
+                            "Fixed the unit test failure",
+                        }
+                    },
+                    { "2.3.2.0",
+                        {
+                            "Removed the requirement of public key in extended data of user credential",
+                            "Removed unnecessary warning log of GPU monitors",
+                            "Fixed the issue that user credential information may be left on disk when using execution filter",
+                            "Fixed a bug that root user may fail in mutual trust in mpi docker task",
+                        }
+                    },
                 };
 
                 return versionHistory;

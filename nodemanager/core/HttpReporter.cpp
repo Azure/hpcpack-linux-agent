@@ -7,26 +7,29 @@ using namespace web::http::client;
 using namespace hpc::core;
 using namespace hpc::utils;
 
-void HttpReporter::Report()
+int HttpReporter::Report()
 {
+    std::string uri;
+
     try
     {
-        const std::string& uri = this->reportUri;
+        uri = this->getReportUri(this->cts.get_token());
 
+        if (this->cts.get_token().is_canceled()) return -1;
         auto jsonBody = this->valueFetcher();
         if (jsonBody.is_null())
         {
             Logger::Error("Skipped reporting to {0} because json is null", uri);
-            return;
+            return -1;
         }
 
         Logger::Debug("---------> Report to {0} with {1}", uri, jsonBody);
 
-        http_client client = HttpHelper::GetHttpClient(uri);
+        auto client = HttpHelper::GetHttpClient(uri);
 
-        http_request request = HttpHelper::GetHttpRequest(methods::POST, jsonBody);
+        auto request = HttpHelper::GetHttpRequest(methods::POST, jsonBody);
 
-        http_response response = client.request(request, this->cts.get_token()).get();
+        http_response response = client->request(*request, this->cts.get_token()).get();
 
         auto str = response.extract_string().get();
         std::istringstream iss(str);
@@ -39,17 +42,28 @@ void HttpReporter::Report()
         }
 
         Logger::Debug("---------> Reported to {0} response code {1}, value {2}, interval {3}", uri, response.status_code(), milliseconds, this->intervalSeconds);
+
+        if (response.status_code() == http::status_codes::OK)
+        {
+            return 0;
+        }
+        else
+        {
+            return -1;
+        }
     }
     catch (const http_exception& httpEx)
     {
-        Logger::Warn("HttpException occurred when report to {0}, ex {1}", this->reportUri, httpEx.what());
+        Logger::Warn("HttpException occurred when {2} report to {0}, ex {1}", uri, httpEx.what(), this->name);
     }
     catch (const std::exception& ex)
     {
-        Logger::Error("Exception occurred when report to {0}, ex {1}", this->reportUri, ex.what());
+        Logger::Error("Exception occurred when {2} report to {0}, ex {1}", uri, ex.what(), this->name);
     }
     catch (...)
     {
-        Logger::Error("Unknown error occurred when report to {0}", this->reportUri);
+        Logger::Error("Unknown error occurred when {1} report to {0}", uri, this->name);
     }
+
+    return -1;
 }

@@ -21,7 +21,13 @@ namespace hpc
         {
             public:
                 RemoteExecutor(const std::string& networkName);
-                ~RemoteExecutor() { pthread_rwlock_destroy(&this->lock); }
+                ~RemoteExecutor()
+                {
+                    Logger::Info("Closing the Remote Executor.");
+                    this->cts.cancel();
+                    pthread_rwlock_destroy(&this->lock);
+                    Logger::Info("Closed the Remote Executor.");
+                }
 
                 virtual pplx::task<web::json::value> StartJobAndTask(hpc::arguments::StartJobAndTaskArgs&& args, std::string&& callbackUri);
                 virtual pplx::task<web::json::value> StartTask(hpc::arguments::StartTaskArgs&& args, std::string&& callbackUri);
@@ -30,17 +36,21 @@ namespace hpc
                 virtual pplx::task<web::json::value> Ping(std::string&& callbackUri);
                 virtual pplx::task<web::json::value> Metric(std::string&& callbackUri);
                 virtual pplx::task<web::json::value> MetricConfig(hpc::arguments::MetricCountersConfig&& config, std::string&& callbackUri);
+                virtual pplx::task<web::json::value> PeekTaskOutput(hpc::arguments::PeekTaskOutputArgs&& args);
+
             protected:
             private:
                 static void* GracePeriodElapsed(void* data);
 
-                void StartHeartbeat(std::string&& callbackUri);
-                void StartMetric(std::string&& callbackUri);
+                void StartHeartbeat();
+                void StartMetric();
                 void StartHostsManager();
+
+                void ResyncAndInvalidateCache();
 
                 const hpc::data::ProcessStatistics* TerminateTask(
                     int jobId, int taskId, int requeueCount,
-                    uint64_t processKey, int exitCode, bool forced);
+                    uint64_t processKey, int exitCode, bool forced, bool mpiDockerTask);
 
                 void ReportTaskCompletion(int jobId, int taskId, int taskRequeueCount, json::value jsonBody, const std::string& callbackUri);
 
@@ -63,6 +73,8 @@ namespace hpc
                 std::map<int, std::tuple<std::string, bool, bool, bool, bool, std::string>> jobUsers;
                 std::map<std::string, std::set<int>> userJobs;
                 pthread_rwlock_t lock;
+
+                pplx::cancellation_token_source cts;
         };
     }
 }

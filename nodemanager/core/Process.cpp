@@ -23,6 +23,7 @@ Process::Process(
     int jobId,
     int taskId,
     int requeueCount,
+    const std::string& taskExecutionName,
     const std::string& cmdLine,
     const std::string& standardOut,
     const std::string& standardErr,
@@ -33,13 +34,12 @@ Process::Process(
     std::vector<uint64_t>&& cpuAffinity,
     std::map<std::string, std::string>&& envi,
     const std::function<Callback> completed) :
-    jobId(jobId), taskId(taskId), requeueCount(requeueCount), taskExecutionId(String::Join("_", taskId, requeueCount)),
+    jobId(jobId), taskId(taskId), requeueCount(requeueCount), taskExecutionId(String::Join("_", taskExecutionName, taskId, requeueCount)),
     commandLine(cmdLine), stdOutFile(standardOut), stdErrFile(standardErr), stdInFile(standardIn),
-    workDirectory(workDir), userName(user.empty() ? "root" : user), dumpStdout(dumpStdoutToExecutionMessage),
+    workDirectory(workDir), userName(user.empty() ? "root" : user), dockerImage(envi["CCP_DOCKER_IMAGE"]), dumpStdout(dumpStdoutToExecutionMessage),
     affinity(cpuAffinity), environments(envi), callback(completed), processId(0)
 {
-    this->streamOutput = boost::algorithm::starts_with(stdOutFile, "http://") ||
-        boost::algorithm::starts_with(stdOutFile, "https://");
+    this->streamOutput = StartWithHttpOrHttps(stdOutFile);
 
     Logger::Debug(this->jobId, this->taskId, this->requeueCount, "{0}, stream ? {1}", stdOutFile, this->streamOutput);
 }
@@ -79,14 +79,14 @@ void Process::Kill(int forcedExitCode, bool forced)
 
     if (!this->ended)
     {
-        this->ExecuteCommand("/bin/bash", "EndTask.sh", this->taskExecutionId, this->processId, forced ? "1" : "0");
+        this->ExecuteCommand("/bin/bash", "EndTask.sh", this->taskExecutionId, this->processId, forced ? "1" : "0", this->taskFolder);
     }
 }
 
 const ProcessStatistics& Process::GetStatisticsFromCGroup()
 {
     std::string stat;
-    System::ExecuteCommandOut(stat, "/bin/bash", "Statistics.sh", this->taskExecutionId);
+    System::ExecuteCommandOut(stat, "/bin/bash", "Statistics.sh", this->taskExecutionId, this->taskFolder);
 
     Logger::Debug(this->jobId, this->taskId, this->requeueCount, "Statistics: {0}", stat);
 
@@ -167,7 +167,25 @@ Start:
         goto Final;
     }
 
-    if (0 != p->ExecuteCommand("/bin/bash", "PrepareTask.sh", p->taskExecutionId, p->GetAffinity()))
+    if (!p->dockerImage.empty())
+    {
+        p -> environmentsBuffer.clear();
+        std::transform(
+            p->environments.cbegin(),
+            p->environments.cend(),
+            std::back_inserter(p->environmentsBuffer),
+            [](const auto& v) { return String::Join("=", v.first, v.second); });
+    
+        std::string envFile = p->taskFolder + "/environments"; 
+        int ret = System::WriteStringToFile(envFile, String::Join<'\n'>(p->environmentsBuffer));
+        if (ret != 0)
+        {
+            Logger::Error(p->jobId, p->taskId, p->requeueCount, "Failed to create environment file for docker task. Exitcode: {0}", ret);
+            goto Final;
+        }
+    }
+
+    if (0 != p->ExecuteCommand("/bin/bash", "PrepareTask.sh", p->taskExecutionId, p->GetAffinity(), p->taskFolder, p->userName))
     {
         goto Final;
     }
@@ -209,10 +227,10 @@ Start:
     }
 
 Final:
-    p->ExecuteCommandNoCapture("/bin/bash", "EndTask.sh", p->taskExecutionId, p->processId, "1");
+    p->ExecuteCommandNoCapture("/bin/bash", "EndTask.sh", p->taskExecutionId, p->processId, "1", p->taskFolder);
     p->GetStatisticsFromCGroup();
 
-    ret = p->ExecuteCommandNoCapture("/bin/bash", "CleanupTask.sh", p->taskExecutionId, p->processId);
+    ret = p->ExecuteCommandNoCapture("/bin/bash", "CleanupTask.sh", p->taskExecutionId, p->processId, p->taskFolder);
 
     // Only clean up the folder when success.
     if (p->exitCode == 0)
@@ -269,6 +287,7 @@ void* Process::ReadPipeThread(void* p)
         buffer[bytesRead] = '\0';
         auto readStr = String::Join("", buffer);
 
+        Logger::Debug("read {0} bytes, streamOutput {1}", bytesRead, process->streamOutput);
         if (process->streamOutput)
         {
             // send out readStr
@@ -280,6 +299,7 @@ void* Process::ReadPipeThread(void* p)
         }
     }
 
+    Logger::Debug("read end. treamOutput {0}", process->streamOutput);
     if (process->streamOutput)
     {
         process->SendbackOutput(uri, std::string(), order++);
@@ -304,9 +324,9 @@ void Process::SendbackOutput(const std::string& uri, const std::string& output, 
             Logger::Debug(this->jobId, this->taskId, this->requeueCount,
                 "Callback to {0} with {1}", uri, jsonBody);
 
-            client::http_client client = HttpHelper::GetHttpClient(uri);
-            http_request request = HttpHelper::GetHttpRequest(methods::POST, jsonBody);
-            http_response response = client.request(request).get();
+            auto client = HttpHelper::GetHttpClient(uri);
+            auto request = HttpHelper::GetHttpRequest(methods::POST, jsonBody);
+            http_response response = client->request(*request).get();
 
             Logger::Info(this->jobId, this->taskId, this->requeueCount,
                 "Callback to {0} response code {1}", uri, response.status_code());
@@ -359,7 +379,7 @@ void Process::Monitor()
         if (!this->streamOutput)
         {
             std::string output;
-
+        
             int ret = 0;
             if (this->dumpStdout)
             {
@@ -431,6 +451,7 @@ void Process::Run(const std::string& path)
         const_cast<char* const>(this->taskExecutionId.c_str()),
         &pathBuffer[0],
         const_cast<char* const>(this->userName.c_str()),
+        const_cast<char* const>(this->taskFolder.c_str()),
         nullptr
     };
 
@@ -524,24 +545,16 @@ std::string Process::BuildScript()
 
     std::ofstream fs(runDirInOut, std::ios::trunc);
     fs << "#!/bin/bash" << std::endl << std::endl;
-
-    fs << "cd ";
-
+    
     Logger::Debug("{0}, {1}", this->taskFolder, this->workDirectory);
-    if (this->workDirectory.empty())
-    {
-        fs << this->taskFolder;
-    }
-    else
-    {
-        fs << this->workDirectory;
-    }
 
-    fs << " || exit $?";
-    fs << std::endl << std::endl;
+    std::string workDirectory = this->workDirectory.empty() ? this->taskFolder : this->workDirectory;
+    fs << "cd " << workDirectory << " || exit $?" << std::endl << std::endl;
 
     if (this->stdOutFile.empty()) this->stdOutFile = this->taskFolder + "/stdout.txt";
+    else if (!boost::algorithm::starts_with(this->stdOutFile, "/") && !StartWithHttpOrHttps(this->stdOutFile)) this->stdOutFile = workDirectory + "/" + this->stdOutFile;
     if (this->stdErrFile.empty()) this->stdErrFile = this->taskFolder + "/stderr.txt";
+    else if (!boost::algorithm::starts_with(this->stdErrFile, "/") && !StartWithHttpOrHttps(this->stdErrFile)) this->stdErrFile = workDirectory + "/" + this->stdErrFile;
 
     // before
     fs << "echo before >" << this->taskFolder << "/before1.txt 2>" << this->taskFolder << "/before2.txt";
@@ -582,20 +595,7 @@ std::string Process::BuildScript()
 
     fs.close();
 
-    std::string runUser = this->taskFolder + "/run_user.sh";
-    std::ofstream fsRunUser(runUser, std::ios::trunc);
-    fsRunUser << "#!/bin/bash" << std::endl << std::endl;
-
-    if (!this->userName.empty())
-    {
-        fsRunUser << "sudo -H -E -u " << this->userName << " env \"PATH=$PATH\" ";
-    }
-
-    fsRunUser << "/bin/bash " << runDirInOut << std::endl;
-
-    fsRunUser.close();
-
-    return std::move(runUser);
+    return std::move(runDirInOut);
 }
 
 std::unique_ptr<const char* []> Process::PrepareEnvironment()
@@ -626,4 +626,33 @@ std::unique_ptr<const char* []> Process::PrepareEnvironment()
     envi[p] = nullptr;
 
     return std::move(envi);
+}
+
+std::string Process::PeekOutput()
+{
+    std::string output;
+
+    int ret = 0;
+    std::string stdout;
+    ret = System::ExecuteCommandOut(stdout, "tail -c 5000 2>&1", this->stdOutFile);
+    if (ret != 0)
+    {
+        stdout = String::Join(" ", "Reading", this->stdOutFile, "failed with exitcode", ret, ":", stdout);
+    }
+
+    output = stdout;
+
+    if (this->stdOutFile != this->stdErrFile)
+    {
+        std::string stderr;
+        ret = System::ExecuteCommandOut(stderr, "tail -c 5000 2>&1", this->stdErrFile);
+        if (ret != 0)
+        {
+            stderr = String::Join(" ", "Reading", this->stdErrFile, "failed with exitcode", ret, ":", stderr);
+        }
+
+        output = String::Join("\n", "STDOUT:", stdout, "STDERR:", stderr);
+    }
+
+    return output;
 }

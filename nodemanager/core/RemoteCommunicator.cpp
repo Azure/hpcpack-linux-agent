@@ -20,8 +20,8 @@ using namespace hpc::common;
 using namespace web::http::experimental::listener;
 using namespace hpc::filters;
 
-RemoteCommunicator::RemoteCommunicator(IRemoteExecutor& exec, const http_listener_config& config) :
-    listeningUri(NodeManagerConfig::GetListeningUri()), isListening(false), executor(exec),
+RemoteCommunicator::RemoteCommunicator(IRemoteExecutor& exec, const http_listener_config& config, const std::string& uri) :
+    listeningUri(uri), isListening(false), localNodeName(System::GetNodeName()), executor(exec),
     listener(listeningUri, config)
 {
     this->listener.support(
@@ -42,6 +42,7 @@ RemoteCommunicator::RemoteCommunicator(IRemoteExecutor& exec, const http_listene
     this->processors["ping"] = [this] (auto&& j, auto&& c) { return this->Ping(std::move(j), std::move(c)); };
     this->processors["metric"] = [this] (auto&& j, auto&& c) { return this->Metric(std::move(j), std::move(c)); };
     this->processors["metricconfig"] = [this] (auto&& j, auto&& c) { return this->MetricConfig(std::move(j), std::move(c)); };
+    this->processors["peektaskoutput"] = [this] (auto&& j, auto&& c) { return this->PeekTaskOutput(std::move(j), std::move(c)); };
 }
 
 RemoteCommunicator::~RemoteCommunicator()
@@ -75,7 +76,10 @@ void RemoteCommunicator::Close()
     {
         try
         {
+            Logger::Info("Closing the communicator {0}", this->listener.uri().to_string().c_str());
             this->listener.close().wait();
+            Logger::Info("Closed the communicator {0}", this->listener.uri().to_string().c_str());
+
             this->isListening = false;
         }
         catch (const std::exception& ex)
@@ -138,9 +142,58 @@ void RemoteCommunicator::HandlePost(http_request request)
     }
 
     std::string callbackUri;
-    if (HttpHelper::FindHeader(request, CallbackUriKey, callbackUri))
+    if (HttpHelper::FindCallbackUri(request, callbackUri))
     {
         Logger::Debug("CallbackUri found {0}", callbackUri.c_str());
+    }
+
+    std::transform(nodeName.begin(), nodeName.end(), nodeName.begin(), ::toupper);
+
+    if (nodeName != this->localNodeName)
+    {
+        // proxy to other node.
+        request.extract_json().then(
+        [callbackUri, nodeName, this, request, apiSpace, methodName] (pplx::task<json::value> t)
+        {
+            auto j = t.get();
+
+            auto req = HttpHelper::GetHttpRequest(methods::POST, j, callbackUri);
+
+            uri_builder uriBuilder(this->listeningUri);
+
+            if (nodeName == "LOCALHOST")
+            {
+                // only for test purpose, redirect the localhost to the local node name.
+                uriBuilder.set_path(String::Join("", "/", apiSpace, "/", this->localNodeName, "/", methodName));
+            }
+            else
+            {
+                uriBuilder.set_path(request.relative_uri().to_string());
+            }
+
+            uriBuilder.set_host(nodeName);
+
+            auto newUri = uriBuilder.to_string();
+            auto cli = HttpHelper::GetHttpClient(newUri);
+            Logger::Info("Proxy to {0}", newUri);
+
+            cli->request(*req).then([request, newUri](pplx::task<http_response> responseTask)
+            {
+                try
+                {
+                    auto response = responseTask.get();
+                    Logger::Info("Proxy result from {0} response code {1}", newUri, response.status_code());
+                    request.reply(response).then([](auto t) { IsError(t); });
+                }
+                catch (const std::exception& ex)
+                {
+                    Logger::Error("Error when get response {0}", ex.what());
+                    request.reply(http::status_codes::InternalError, json::value(ex.what())).then([](auto t) { IsError(t); });
+                }
+            });
+        });
+
+        return;
     }
 
     auto processor = this->processors.find(methodName);
@@ -160,6 +213,7 @@ void RemoteCommunicator::HandlePost(http_request request)
         {
             try
             {
+                Logger::Info("Replied with content {0}", t.get());
                 request.reply(status_codes::OK, t.get()).then([](auto t) { IsError(t); });
             }
             catch (const web::http::http_exception& httpEx)
@@ -244,6 +298,11 @@ pplx::task<json::value> RemoteCommunicator::MetricConfig(json::value&& val, std:
     return this->executor.MetricConfig(std::move(args), std::move(callbackUri));
 }
 
+pplx::task<json::value> RemoteCommunicator::PeekTaskOutput(json::value&& val, std::string&& callbackUri)
+{
+    auto args = PeekTaskOutputArgs::FromJson(val);
+    return this->executor.PeekTaskOutput(std::move(args));
+}
+
 const std::string RemoteCommunicator::ApiSpace = "api";
-const std::string RemoteCommunicator::CallbackUriKey = "CallbackURI";
 

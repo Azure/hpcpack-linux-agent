@@ -36,6 +36,7 @@ namespace hpc
                     int jobId,
                     int taskId,
                     int requeueCount,
+                    const std::string& taskExecutionName,
                     const std::string& cmdLine,
                     const std::string& standardOut,
                     const std::string& standardErr,
@@ -65,8 +66,15 @@ namespace hpc
                 void SetSelfPtr(std::shared_ptr<Process> self) { this->selfPtr.swap(self); }
                 void ResetSelfPtr() { this->selfPtr.reset(); }
 
+                std::string PeekOutput();
+
             protected:
             private:
+                static bool StartWithHttpOrHttps(const std::string& path)
+                {
+                    return boost::algorithm::starts_with(path, "http://") || boost::algorithm::starts_with(path, "https://");
+                }
+
                 void SetExitCode(int exitCode)
                 {
                     this->exitCode = exitCode;
@@ -144,6 +152,7 @@ namespace hpc
                 const std::string stdInFile;
                 const std::string workDirectory;
                 const std::string userName;
+                const std::string dockerImage;
                 bool dumpStdout = false;
                 const std::vector<uint64_t> affinity;
                 const std::map<std::string, std::string> environments;

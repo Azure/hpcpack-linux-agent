@@ -15,6 +15,7 @@ nodes=()
 testpids=()
 userName=$1
 taskExecutionId=$2
+rootLogFolder=$3
 totalWaitTime=90
 singleTryWaitTime=45
 
@@ -36,7 +37,7 @@ fi
 
 for node in "${nodes[@]}"
 do
-	nodeLogFile=logs/ssh_${taskExecutionId}_${node}.log
+	nodeLogFile=$rootLogFolder/ssh_${taskExecutionId}_${node}.log
 	touch "$nodeLogFile"
 	chown "$userName" "$nodeLogFile"
 	echo >> "$nodeLogFile"
@@ -66,7 +67,7 @@ do
 
 		if [ $exitcode != 0 ]; then
 			finished=false
-			nodeLogFile=logs/ssh_${taskExecutionId}_${nodes[$i]}.log
+			nodeLogFile=$rootLogFolder/ssh_${taskExecutionId}_${nodes[$i]}.log
 			echo >> "$nodeLogFile"
 			echo ">> SECONDS=$SECONDS" >> "$nodeLogFile"
 			sync
@@ -95,7 +96,6 @@ else
 	echo "not all trusted task=$taskExecutionId. If you pre-configured any ssh keys, make sure they are working for establishing trust relationship between nodes." > /dev/stderr
 	echo
 	echo "Saving logs"
-	rootLogFolder=/opt/hpcnodemanager/logs
 	trustKeysDir=${rootLogFolder}/${taskExecutionId}_${userName}/
 	sshFolder=/home/${userName}/.ssh/
 	if [ "$userName" = "root" ]; then

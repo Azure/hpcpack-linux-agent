@@ -59,8 +59,6 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
             instance = this;
             this.headNodeFqdn = new Lazy<string>(() => Dns.GetHostEntryAsync(this.HeadNode).Result.HostName, LazyThreadSafetyMode.ExecutionAndPublication);
-            this.MonitoringConfigManager = new MonitoringConfigManager(this.headNodeFqdn.Value);
-            this.HostsManager = new HostsFileManager();
         }
 
         public event EventHandler<RegisterEventArgs> RegisterRequested;
@@ -71,9 +69,9 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
         public void Dispose()
         {
-            this.server.Dispose();
-            this.MonitoringConfigManager.Dispose();
-            this.HostsManager.Dispose();
+            this.server?.Dispose();
+            this.MonitoringConfigManager?.Dispose();
+            this.HostsManager?.Dispose();
             GC.SuppressFinalize(this);
         }
 
@@ -129,6 +127,10 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
         {
             this.Tracer.TraceInfo("Initializing LinuxCommunicator.");
 
+            this.MonitoringConfigManager = new MonitoringConfigManager(this.headNodeFqdn.Value);
+            Task.Run(() => this.MonitoringConfigManager.Initialize());
+            this.HostsManager = new HostsFileManager();
+
             ServicePointManager.ServerCertificateValidationCallback += (s, cert, chain, sslPolicyErrors) =>
             {
                 this.Tracer.TraceDetail("sslPolicyErrors {0}", sslPolicyErrors);
@@ -160,7 +162,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
         public bool Start()
         {
-            this.MonitoringConfigManager.Start();
+            this.MonitoringConfigManager?.Start();
             return this.Start(0);
         }
 
@@ -175,12 +177,12 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
                 return false;
             }
 
-            if (this.cancellationTokenSource != null) { this.cancellationTokenSource.Dispose(); }
+            this.cancellationTokenSource?.Dispose();
             this.cancellationTokenSource = new CancellationTokenSource();
 
             try
             {
-                this.server.Start().Wait();
+                this.server?.Start().Wait();
             }
             catch (AggregateException aggrEx)
             {
@@ -203,11 +205,11 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator
 
         public bool Stop()
         {
-            this.Tracer.TraceInfo("Stopping LinuxCommunicator.");
-            this.server.Stop();
-            this.MonitoringConfigManager.Stop();
-            this.cancellationTokenSource.Cancel();
-            this.cancellationTokenSource.Dispose();
+            this.Tracer?.TraceInfo("Stopping LinuxCommunicator.");
+            this.server?.Stop();
+            this.MonitoringConfigManager?.Stop();
+            this.cancellationTokenSource?.Cancel();
+            this.cancellationTokenSource?.Dispose();
             this.cancellationTokenSource = null;
             return true;
         }

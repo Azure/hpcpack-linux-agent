@@ -65,6 +65,15 @@ namespace hpc
                     return std::move(userName);
                 }
 
+                template <typename T>
+                static inline T ConvertTo(const std::string& str)
+                {
+                    T v;
+                    std::istringstream iss(str);
+                    iss >> v;
+                    return v;
+                }
+
             protected:
             private:
         };

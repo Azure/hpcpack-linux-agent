@@ -19,7 +19,7 @@ namespace hpc
         class RemoteCommunicator
         {
             public:
-                RemoteCommunicator(IRemoteExecutor& executor, const web::http::experimental::listener::http_listener_config& config);
+                RemoteCommunicator(IRemoteExecutor& executor, const web::http::experimental::listener::http_listener_config& config, const std::string& uri);
                 ~RemoteCommunicator();
 
                 void Open();
@@ -62,12 +62,13 @@ namespace hpc
                 pplx::task<json::value> Ping(json::value&& val, std::string&&);
                 pplx::task<json::value> Metric(json::value&& val, std::string&&);
                 pplx::task<json::value> MetricConfig(json::value&& val, std::string&&);
+                pplx::task<json::value> PeekTaskOutput(json::value&& val, std::string&&);
 
                 static const std::string ApiSpace;
-                static const std::string CallbackUriKey;
                 const std::string listeningUri;
 
                 bool isListening;
+                std::string localNodeName;
 
                 std::map<std::string, std::function<pplx::task<json::value>(json::value&&, std::string&&)>> processors;
 

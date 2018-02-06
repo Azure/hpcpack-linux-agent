@@ -7,6 +7,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
 using Microsoft.Hpc.Monitoring;
+using System.Net.Sockets;
 
 namespace Microsoft.Hpc.Communicators.LinuxCommunicator.Monitoring
 {
@@ -18,7 +19,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.Monitoring
 
         private Dictionary<string, string[]> schedulerInstanceMap = new Dictionary<string, string[]>(StringComparer.CurrentCultureIgnoreCase)
         {
-            { "HPCSchedulerJobs", 
+            { "HPCSchedulerJobs",
                 new string[]
                 {
                     PerformanceCounterNames.Scheduler_ClusterPerfCounter_NumberOfCanceledJobs_Name,
@@ -31,7 +32,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.Monitoring
                 }
             },
 
-            { "HPCSchedulerNodes", 
+            { "HPCSchedulerNodes",
                 new string[]
                 {
                     PerformanceCounterNames.Scheduler_ClusterPerfCounter_NumberOfDrainingNodes_Name,
@@ -42,7 +43,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.Monitoring
                 }
             },
 
-            { "HPCSchedulerCores", 
+            { "HPCSchedulerCores",
                 new string[]
                 {
                     PerformanceCounterNames.Scheduler_ClusterPerfCounter_NumberOfOnlineProcessors_Name,
@@ -54,7 +55,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.Monitoring
                 }
             },
 
-            { "HPCPoolUsage", 
+            { "HPCPoolUsage",
                 new string[]
                 {
                     PerformanceCounterNames.Scheduler_ClusterPerfCounter_PoolGaurantee_Name,
@@ -64,14 +65,38 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.Monitoring
         };
 
         private MetricCountersConfig metricCountersConfig = new MetricCountersConfig();
+        private string server;
 
         public MonitoringConfigManager(string server)
         {
-            this.Store = MonitoringStoreConnection.Connect(server, "LinuxCommunicator");
+            this.server = server;
             this.checkConfigTimer.AutoReset = true;
             this.checkConfigTimer.Interval = 5 * 60 * 1000;
-            this.checkConfigTimer.Elapsed += checkConfigTimer_Elapsed;
-            this.checkConfigTimer_Elapsed(this, null);
+            this.checkConfigTimer.Enabled = false;
+            this.checkConfigTimer.Elapsed += this.checkConfigTimer_Elapsed;
+        }
+
+
+        public void Initialize()
+        {
+            RetryManager rm = new RetryManager(new PeriodicRetryTimer(30 * 1000));
+            while (true)
+            {
+                try
+                {
+                    this.Store = MonitoringStoreConnection.Connect(this.server, "LinuxCommunicator");
+                    this.CheckConfig();
+                    break;
+                }
+                catch (Exception e)
+                {
+                    if (rm.HasAttemptsLeft)
+                    {
+                        LinuxCommunicator.Instance.Tracer.TraceException(e, "MonitoringConfigManager initialization failed. Retry count {0}, retry wait time {1}.", rm.RetryCount, rm.NextWaitTime);
+                        rm.WaitForNextAttempt();
+                    }
+                }
+            }
         }
 
         public event EventHandler<ConfigChangedEventArgs> ConfigChanged;
@@ -105,6 +130,21 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.Monitoring
         }
 
         private void checkConfigTimer_Elapsed(object sender, ElapsedEventArgs e)
+        {
+            try
+            {
+                this.CheckConfig();
+            }
+            catch (SocketException ex)
+            {
+                this.Stop();
+                LinuxCommunicator.Instance?.Tracer?.TraceException(ex);
+                this.Initialize();
+                this.Start();
+            }
+        }
+
+        private void CheckConfig()
         {
             var metrics = this.Store.GetMetrics(MetricTarget.ComputeNode);
             if (this.currentConfig.UpdateWhenChanged(metrics))

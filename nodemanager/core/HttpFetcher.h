@@ -16,12 +16,14 @@ namespace hpc
         {
             public:
                 HttpFetcher(
-                    const std::string& uri,
+                    const std::string& name,
+                    std::function<std::string(pplx::cancellation_token)> getReportUri,
                     int hold,
                     int interval,
                     std::function<bool(http::http_request&)> requestHandler,
-                    std::function<bool(http::http_response&)> responseHandler)
-                : Reporter<void>(uri, hold, interval, nullptr),
+                    std::function<bool(http::http_response&)> responseHandler,
+                    std::function<void()> onErrorFunc)
+                : Reporter<void>(name, getReportUri, hold, interval, nullptr, onErrorFunc),
                 requestHandler(requestHandler),
                 responseHandler(responseHandler)
                 {
@@ -33,12 +35,11 @@ namespace hpc
                     this->Stop();
                 }
 
-                virtual void Report();
+                virtual int Report();
 
             private:
                 std::function<bool(http::http_request&)> requestHandler;
                 std::function<bool(http::http_response&)> responseHandler;
-                pplx::cancellation_token_source cts;
         };
     }
 }

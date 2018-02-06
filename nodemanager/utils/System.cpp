@@ -372,6 +372,46 @@ const std::string& System::GetDistroInfo()
     return distroInfo;
 }
 
+int System::QueryGpuInfo(System::GpuInfoList& gpuInfo)
+{
+    std::string gpuInfoString;
+    int ret = System::ExecuteCommandOut(
+        gpuInfoString,
+        "nvidia-smi",
+        "--format=csv,noheader",
+        "--query-gpu=name,uuid,pci.bus_id,pci.device_id,memory.total,clocks.max.sm,fan.speed,memory.used,power.draw,clocks.current.sm,temperature.gpu,utilization.gpu");
+
+    if (127 == ret)
+    {
+        Logger::Warn("No nvidia-smi command found.");
+        return ret;
+    }
+
+    std::vector<std::string> gpuStrings = String::Split(gpuInfoString, '\n');
+    gpuInfo.GpuInfos.clear();
+    for (auto s : gpuStrings)
+    {
+        auto values = String::Split(s, ',');
+        System::GpuInfo info;
+        info.Name = String::Trim(values[0]);
+        info.Uuid = String::Trim(values[1]);
+        info.PciBusId = String::Trim(values[2]);
+        info.DeviceId = String::Trim(values[3]);
+        info.TotalMemoryMB = String::ConvertTo<float>(values[4]);
+        info.MaxSMClock = String::ConvertTo<float>(values[5]);
+        info.FanPercentage = String::ConvertTo<float>(values[6]);
+        info.UsedMemoryMB = String::ConvertTo<float>(values[7]);
+        info.PowerWatt = String::ConvertTo<float>(values[8]);
+        info.CurrentSMClock = String::ConvertTo<float>(values[9]);
+        info.Temperature = String::ConvertTo<float>(values[10]);
+        info.GpuUtilization = String::ConvertTo<float>(values[11]);
+
+        gpuInfo.GpuInfos.push_back(info);
+    }
+
+    return ret;
+}
+
 int System::CreateUser(
     const std::string& userName,
     const std::string& password)

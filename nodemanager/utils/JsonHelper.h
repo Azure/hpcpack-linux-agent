@@ -86,7 +86,12 @@ namespace hpc
                         std::back_inserter(values),
                         [](const T& v) { return JsonHelper<T>::ToJson(v); });
 
-                    return std::move(json::value::array(values));
+                    return json::value::array(values);
+                }
+
+                static void Write(const std::string& name, json::value& v, const std::vector<T>& t)
+                {
+                    v[name] = ToJson(t);
                 }
 
             protected:
