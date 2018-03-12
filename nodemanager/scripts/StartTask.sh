@@ -29,5 +29,5 @@ if $CGInstalled; then
     cgexec -g "$group" sudo -H -E -u $userName env "PATH=$PATH" /bin/bash $runPath
 else
     /bin/bash $taskFolder/TestMutualTrust.sh "$taskId" "$taskFolder" "$userName" &&\
-    /bin/bash sudo -H -E -u $userName env "PATH=$PATH" /bin/bash $runPath
+    sudo -H -E -u $userName env "PATH=$PATH" /bin/bash $runPath
 fi

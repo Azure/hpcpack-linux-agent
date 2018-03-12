@@ -587,6 +587,11 @@ namespace hpc
                             "Modified user mapping logic",
                         }
                     },
+                    { "2.3.4.0",
+                        {
+                            "Fixed a bug that task would fail when cgroup is not enabled",
+                        }
+                    },
                 };
 
                 return versionHistory;
