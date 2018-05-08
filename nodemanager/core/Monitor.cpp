@@ -25,10 +25,13 @@ Monitor::Monitor(const std::string& nodeName, const std::string& netName, int in
     std::get<0>(this->metricData[3]) = 0;
     std::get<0>(this->metricData[12]) = 1;
 
-    Logger::Info("Initializing GPU driver.");
+    Logger::Info("Checking nvidia-smi...");
     std::string output;
-    this->gpuInitRet = System::ExecuteCommandOut(output, "nvidia-smi -pm 1");
-    Logger::Info("Initialize GPU ret code {0}", this->gpuInitRet);
+    this->gpuInitRet = System::ExecuteCommandOut(output, "nvidia-smi -pm 1 2>/dev/null");
+    if (this->gpuInitRet != 0)
+    {
+        Logger::Warn("GPU metrics will not be collected.");
+    }
 
     this->collectors["\\Processor\\% Processor Time"] = std::make_shared<MetricCollectorBase>([this] (const std::string& instanceName)
     {
