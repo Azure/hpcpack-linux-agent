@@ -23,7 +23,7 @@ Monitor::Monitor(const std::string& nodeName, const std::string& netName, int in
 {
     if (NodeManagerConfig::GetMetricDisabled())
     {
-        Logger::LogDebug("MetricDisabled = true, skip initializing the monitor.");
+        Logger::Debug("MetricDisabled = true, skip initializing the monitor.");
         return;
     }
 
