@@ -136,7 +136,7 @@ define finish
 	$(indent);
 	[ -d $(2)/$(LIBOUTDIR) ] || mkdir $(2)/$(LIBOUTDIR)
 	$(indent);
-	cp $(shell ldd $(3) | cut -f3 -d' ') $(2)/$(LIBOUTDIR) 2> /dev/null || :
+	cp $(shell export LD_LIBRARY_PATH=/lib:/usr/lib:/usr/local/lib && ldd $(3) | cut -f3 -d' ') $(2)/$(LIBOUTDIR) 2> /dev/null || :
 	@tput bold;
 	@echo -n "Finished to build [ ";
 	@tput setaf 2;
