@@ -592,6 +592,11 @@ namespace hpc
                             "Fixed a bug that task would fail when cgroup is not enabled",
                         }
                     },
+                    { "3.1.1.0",
+                        {
+                            "Support for HPC-ACM.",
+                        }
+                    },
                 };
 
                 return versionHistory;
