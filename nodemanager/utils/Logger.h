@@ -6,6 +6,7 @@
 #include <stdarg.h>
 #include <iostream>
 #include <spdlog/spdlog.h>
+#include <spdlog/fmt/ostr.h>
 
 #include "String.h"
 
