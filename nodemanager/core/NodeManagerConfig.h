@@ -44,6 +44,7 @@ namespace hpc
                 AddConfigurationItem(std::string, HeartbeatUri);
                 AddConfigurationItem(std::string, TaskCompletionUri);
                 AddConfigurationItem(std::string, HostsFileUri);
+                AddConfigurationItem(bool, MetricDisabled);
 
                 static std::string ResolveRegisterUri(pplx::cancellation_token token)
                 {

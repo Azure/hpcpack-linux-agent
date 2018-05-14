@@ -21,6 +21,12 @@ Monitor::Monitor(const std::string& nodeName, const std::string& netName, int in
     : name(nodeName), networkName(netName), lock(PTHREAD_RWLOCK_INITIALIZER), intervalSeconds(interval),
     isCollected(false)
 {
+    if (NodeManagerConfig::GetMetricDisabled())
+    {
+        Logger::LogDebug("MetricDisabled = true, skip initializing the monitor.");
+        return;
+    }
+
     std::get<0>(this->metricData[1]) = 1;
     std::get<0>(this->metricData[3]) = 0;
     std::get<0>(this->metricData[12]) = 1;
