@@ -580,6 +580,7 @@ namespace hpc
                             "Removed unnecessary warning log of GPU monitors",
                             "Fixed the issue that user credential information may be left on disk when using execution filter",
                             "Fixed a bug that root user may fail in mutual trust in mpi docker task",
+                            "Enabled the user to specfic the private key only",
                         }
                     },
                     { "2.3.3.0",
