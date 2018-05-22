@@ -48,9 +48,9 @@ if $CGInstalled; then
 	while read pid || [ -n "$pid" ]
 	do
 		if [ "$forced" == "1" ]; then
-			[ -d "/proc/$pid" ] && kill -9 "$pid"
+			[ -d "/proc/$pid" ] && kill -9 $pid
 		else
-			[ -d "/proc/$pid" ] && kill -SIGINT "$pid"
+			[ -d "/proc/$pid" ] && kill -SIGINT $pid
 		fi
 	done < "$tasks"
 
