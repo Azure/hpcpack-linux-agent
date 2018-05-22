@@ -65,9 +65,9 @@ if $CGInstalled; then
 	done
 else
 	if [ "$forced" == "1" ]; then
-		kill -s 9 "$(pstree -l -p "$processId" | grep "([[:digit:]]*)" -o | tr -d '()')"
+		kill -s 9 $(pstree -l -p "$processId" | grep "([[:digit:]]*)" -o | tr -d '()')
 	else
-		kill -s SIGINT "$(pstree -l -p "$processId" | grep "([[:digit:]]*)" -o | tr -d '()')"
+		kill -s SIGINT $(pstree -l -p "$processId" | grep "([[:digit:]]*)" -o | tr -d '()')
 	fi
 fi
 
