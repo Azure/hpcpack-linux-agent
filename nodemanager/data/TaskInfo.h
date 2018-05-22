@@ -48,7 +48,7 @@ namespace hpc
 
                 uint64_t GetAttemptId() const
                 {
-                    return ((uint64_t)taskRequeueCount << 32) + TaskId;
+                    return ((uint64_t)this->JobId << 40) + ((uint64_t)taskRequeueCount << 32) + TaskId;
                 }
 
                 int GetTaskRequeueCount() const { return this->taskRequeueCount; }
