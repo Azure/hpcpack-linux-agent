@@ -64,10 +64,13 @@ if $CGInstalled; then
 		((maxLoop--))
 	done
 else
-	if [ "$forced" == "1" ]; then
-		kill -s 9 $(pstree -l -p "$processId" | grep "([[:digit:]]*)" -o | tr -d '()')
-	else
-		kill -s SIGINT $(pstree -l -p "$processId" | grep "([[:digit:]]*)" -o | tr -d '()')
+	$pid = $(pstree -l -p "$processId" | grep "([[:digit:]]*)" -o | tr -d '()')
+	if [ -n "$pid" ]; then
+		if [ "$forced" == "1" ]; then
+			kill -s 9 $pid
+		else
+			kill -s SIGINT $pid
+		fi
 	fi
 fi
 
