@@ -2,6 +2,8 @@
 #define MONITOR_H
 
 #include <cpprest/json.h>
+#include <cpprest/http_client.h>
+
 #include <map>
 #include <boost/uuid/uuid.hpp>
 
@@ -68,6 +70,12 @@ namespace hpc
                 float contextSwitchesPerSec = 0.0f;
                 float bytesPerSecond = 0.0f;
                 pthread_t threadId = 0;
+
+                std::string azureInstanceMetadata;
+                std::shared_ptr<http::client::http_client> metaDataClient;
+                std::shared_ptr<http::http_request> metaDataRequest;
+                void QueryAzureInstanceMetadata();
+                int remainingRequestCount = 5;
         };
     }
 }

@@ -333,6 +333,12 @@ Monitor::Monitor(const std::string& nodeName, const std::string& netName, int in
         });
     }
 
+    auto metaDataUri = "http://169.254.169.254/metadata/instance?api-version=2017-08-01";
+    this->metaDataClient = std::make_shared<web::http::client::http_client>(metaDataUri);
+    this->metaDataRequest = std::make_shared<web::http::http_request>(web::http::methods::GET);
+    this->metaDataRequest->headers().add("metadata", "true");
+    this->QueryAzureInstanceMetadata();
+
     int result = pthread_create(&this->threadId, nullptr, MonitoringThread, this);
     if (result != 0) Logger::Error("Create monitoring thread result {0}, errno {1}", result, errno);
 }
@@ -489,6 +495,11 @@ json::value Monitor::GetRegisterInfo()
 
     j["GpuInfo"] = json::value::array(gpuValues);
 
+    if (this->remainingRequestCount == -1)
+    {
+        j["AzureInstanceMetadata"] = json::value::string(this->azureInstanceMetadata);
+    }
+
     return std::move(j);
 }
 
@@ -585,6 +596,34 @@ void Monitor::Run()
 
         sleep(this->intervalSeconds);
     }
+}
+
+void Monitor::QueryAzureInstanceMetadata()
+{
+    metaDataClient->request(*metaDataRequest).then([this](pplx::task<web::http::http_response> t)
+    {
+        try
+        {
+            auto response = t.get();
+            if (response.status_code() == web::http::status_codes::OK)
+            {
+                this->azureInstanceMetadata = response.extract_string().get();
+                Logger::Info("Get metadata of Azure instance. {0}", this->azureInstanceMetadata);
+                this->remainingRequestCount = -1;
+                return;
+            }
+        }
+        catch (const std::exception& ex)
+        {
+            Logger::Warn("Exception when querying Azure node metadata. {0}.", ex.what());
+        }
+
+        Logger::Warn("Failed to get metadata of Azure instance. Remaining retry count = {0}.", --this->remainingRequestCount);
+        if (this->remainingRequestCount != 0)
+        {
+            this->QueryAzureInstanceMetadata();
+        }
+    });
 }
 
 void* Monitor::MonitoringThread(void* arg)
