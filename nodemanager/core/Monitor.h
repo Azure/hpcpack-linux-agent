@@ -74,8 +74,8 @@ namespace hpc
                 std::string azureInstanceMetadata;
                 std::shared_ptr<http::client::http_client> metaDataClient;
                 std::shared_ptr<http::http_request> metaDataRequest;
-                void QueryAzureInstanceMetadata();
-                int remainingRequestCount = 5;
+                std::string QueryAzureInstanceMetadata();
+                int remainingRetryCount = 5;
         };
     }
 }

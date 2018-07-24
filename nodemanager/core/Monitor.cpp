@@ -333,11 +333,18 @@ Monitor::Monitor(const std::string& nodeName, const std::string& netName, int in
         });
     }
 
-    auto metaDataUri = "http://169.254.169.254/metadata/instance?api-version=2017-08-01";
-    this->metaDataClient = std::make_shared<web::http::client::http_client>(metaDataUri);
+    web::http::client::http_client_config config;
+    utility::seconds timeout(1l);
+    config.set_timeout(timeout);
+    auto metaDataUri = NodeManagerConfig::GetAzureInstanceMetaDataUri();
+    if (metaDataUri.empty())
+    {
+        metaDataUri = "http://169.254.169.254/metadata/instance?api-version=2017-08-01";
+    }
+    
+    this->metaDataClient = std::make_shared<web::http::client::http_client>(metaDataUri, config);
     this->metaDataRequest = std::make_shared<web::http::http_request>(web::http::methods::GET);
     this->metaDataRequest->headers().add("metadata", "true");
-    this->QueryAzureInstanceMetadata();
 
     int result = pthread_create(&this->threadId, nullptr, MonitoringThread, this);
     if (result != 0) Logger::Error("Create monitoring thread result {0}, errno {1}", result, errno);
@@ -494,8 +501,8 @@ json::value Monitor::GetRegisterInfo()
     }
 
     j["GpuInfo"] = json::value::array(gpuValues);
-
-    if (this->remainingRequestCount == -1)
+    
+    if (!this->azureInstanceMetadata.empty())
     {
         j["AzureInstanceMetadata"] = json::value::string(this->azureInstanceMetadata);
     }
@@ -506,6 +513,7 @@ json::value Monitor::GetRegisterInfo()
 void Monitor::Run()
 {
     uint64_t cpuLast = 0, idleLast = 0, networkLast = 0;
+    int collectCount = 0;
 
     while (true)
     {
@@ -563,6 +571,13 @@ void Monitor::Run()
             this->gpuInitRet = System::QueryGpuInfo(gpuInfo);
         }
 
+        auto queryMetadata = collectCount % 30 == 0;
+        std::string metaData = "";
+        if (queryMetadata)
+        {
+            metaData = this->QueryAzureInstanceMetadata();
+        }
+
         {
             WriterLock writerLock(&this->lock);
 
@@ -590,40 +605,46 @@ void Monitor::Run()
                 Logger::Debug("Saving Gpu Info ret {0}, info count {1}", this->gpuInitRet, gpuInfo.GpuInfos.size());
                 this->gpuInfo = std::move(gpuInfo);
             }
+
+            if (queryMetadata)
+            {
+                this->azureInstanceMetadata = metaData;
+            }
         }
 
         this->isCollected = true;
 
         sleep(this->intervalSeconds);
+        collectCount++;
     }
 }
 
-void Monitor::QueryAzureInstanceMetadata()
+std::string Monitor::QueryAzureInstanceMetadata()
 {
-    metaDataClient->request(*metaDataRequest).then([this](pplx::task<web::http::http_response> t)
+    std::string azureInstanceMetadata = "";
+    if (this->remainingRetryCount > 0)
     {
         try
-        {
-            auto response = t.get();
+        {    
+            auto response = this->metaDataClient->request(*this->metaDataRequest).get();
             if (response.status_code() == web::http::status_codes::OK)
             {
-                this->azureInstanceMetadata = response.extract_string().get();
-                Logger::Info("Get metadata of Azure instance. {0}", this->azureInstanceMetadata);
-                this->remainingRequestCount = -1;
-                return;
+                azureInstanceMetadata = response.extract_string().get();
+                Logger::Debug("Get metadata of Azure instance. {0}", azureInstanceMetadata);
+                this->remainingRetryCount = 5;
+            }
+            else
+            {
+                Logger::Warn("Failed to query Azure node metadata. Status code: {0}. Remaining retry count: {1}.", response.status_code(), --this->remainingRetryCount);
             }
         }
         catch (const std::exception& ex)
         {
-            Logger::Warn("Exception when querying Azure node metadata. {0}.", ex.what());
+            Logger::Warn("Exception when querying Azure node metadata. {0}. Remaining retry count: {1}.", ex.what(), --this->remainingRetryCount);
         }
+    }
 
-        Logger::Warn("Failed to get metadata of Azure instance. Remaining retry count = {0}.", --this->remainingRequestCount);
-        if (this->remainingRequestCount != 0)
-        {
-            this->QueryAzureInstanceMetadata();
-        }
-    });
+    return std::move(azureInstanceMetadata);
 }
 
 void* Monitor::MonitoringThread(void* arg)

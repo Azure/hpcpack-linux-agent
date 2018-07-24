@@ -591,8 +591,14 @@ namespace hpc
                     { "2.3.4.0",
                         {
                             "Fixed a bug that task would fail when cgroup is not enabled",
+                            "Generate hostfile/machinefile for various mpi applications",
                         }
                     },
+                    { "2.3.6.0",
+                        {
+                            "Add Azure instance metadata to monitor",
+                        }
+                    },                    
                 };
 
                 return versionHistory;
