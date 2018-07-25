@@ -594,6 +594,12 @@ namespace hpc
                             "Generate hostfile/machinefile for various mpi applications",
                         }
                     },
+                    { "2.3.5.0",
+                        {
+                            "Upgraded the spdlog version",
+                            "Fixed the build in the old build environment",
+                        }
+                    },
                     { "2.3.6.0",
                         {
                             "Add Azure instance metadata to monitor",

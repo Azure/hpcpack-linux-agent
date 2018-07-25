@@ -1,14 +1,14 @@
 # node manager makefile.
 
 # casablanca
-CASABLANCA = ../../evancasa/cpprestsdk
+CASABLANCA = ../../evancasa
 CASA_RELEASE = $(CASABLANCA)/Release
 CASA_INC = $(CASA_RELEASE)/include
 CASA_LIB_DEBUG = $(CASA_RELEASE)/build.debug/Binaries
 CASA_LIB_RELEASE = $(CASA_RELEASE)/build.release/Binaries
 
 # spdlog
-SPDLOG = ../../spdlog
+SPDLOG = ../../evanspdlog
 SPDLOG_INC = $(SPDLOG)/include
 
 # tools
