@@ -519,6 +519,7 @@ int System::AddSshKey(
         else
         {
             Logger::Info("File {0} exist, skip overwriting", filePath);
+            ret = -2;
         }
 
         test.close();
