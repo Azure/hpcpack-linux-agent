@@ -108,6 +108,6 @@ void NamingClient::RequestForServiceLocation(const std::string& serviceName, std
 
         sleep(interval);
         interval *= 2;
-        if (interval > 300) interval = 300;
+        if (interval > 60) interval = 60;
     }
 }
