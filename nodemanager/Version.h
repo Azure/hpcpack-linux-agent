@@ -602,7 +602,10 @@ namespace hpc
                     },
                     { "2.3.6.0",
                         {
+                            "Revise a log message",
                             "Add Azure instance metadata to monitor",
+                            "Fix a bug that nodemanager would delete user ssh keys",
+                            "Reduce naming service request interval when failing to get response from headnode",
                         }
                     },                    
                 };
