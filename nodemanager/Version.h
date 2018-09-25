@@ -597,6 +597,11 @@ namespace hpc
                             "Support for HPC-ACM.",
                         }
                     },
+                    { "3.1.2.0",
+                        {
+                            "Make the JobId part of the task execution id",
+                        }
+                    },
                 };
 
                 return versionHistory;
