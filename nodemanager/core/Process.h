@@ -118,11 +118,6 @@ namespace hpc
                 static void* ForkThread(void*);
 
                 std::string GetAffinity();
-                static inline void OutputAffinity(std::ostringstream& oss, int start, int end)
-                {
-                    if (start == end) { oss << "," << start; }
-                    else if (start < end) { oss << "," << start << "-" << end; }
-                }
 
                 void Run(const std::string& path);
                 static void* ReadPipeThread(void* p);

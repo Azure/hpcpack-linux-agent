@@ -98,7 +98,7 @@ if $CGInstalled; then
 	while [ $maxLoop -gt 0 ]
 	do
 		cpusFile=$(GetCpusFile "$groupName")
-		echo "$2" > "$cpusFile"
+		echo "$affinity" > "$cpusFile"
 		ec=$?
 		if [ $ec -eq 0 ]
 		then
