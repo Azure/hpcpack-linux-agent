@@ -4,6 +4,7 @@
 #include <fstream>
 #include <cpprest/http_client.h>
 #include <boost/algorithm/string/predicate.hpp>
+#include <set>
 
 #include "Process.h"
 #include "../utils/Logger.h"
@@ -471,43 +472,28 @@ std::string Process::GetAffinity()
     int cores, sockets;
     System::CPU(cores, sockets);
 
-    std::string aff;
-    if (!this->affinity.empty())
+    std::vector<int> aff;
+    if (!this->affinity.empty() && cores > 0)
     {
-        std::ostringstream result;
-        for (int lastCore = 0, i = 0; i < cores; i++)
-        {
-            size_t affinityIndex = i / 64;
-            int affinityOffset = i % 64;
+		int coreId = 0;
+		std::set<int> coreIds;
+		for (uint64_t n : this->affinity)
+		{
+			for (uint64_t mask = 1; mask; mask <<= 1, coreId++)
+			{
+				if (mask & n)
+				{
+					coreIds.insert(coreId % cores);
+				}
+			}
+		}
 
-            if (this->affinity.size() <= affinityIndex)
-            {
-                OutputAffinity(result, lastCore, i - 1);
-
-                break;
-            }
-
-            uint64_t currentAffinity = this->affinity[affinityIndex];
-
-            if (!((currentAffinity >> affinityOffset) << (63 - affinityOffset)))
-            {
-                // if the bit is not set;
-                OutputAffinity(result, lastCore, i - 1);
-
-                lastCore = i + 1;
-            }
-            else if (i == cores - 1)
-            {
-                OutputAffinity(result, lastCore, i);
-            }
-        }
-
-        aff = result.str();
+		aff.assign(coreIds.begin(), coreIds.end());
     }
 
-    if (aff.size() > 1)
+    if (aff.size() > 0)
     {
-        return aff.substr(1);
+        return String::Join<','>(aff);
     }
     else
     {
