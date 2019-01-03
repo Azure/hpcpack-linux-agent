@@ -607,7 +607,13 @@ namespace hpc
                             "Fix a bug that nodemanager would delete user ssh keys",
                             "Reduce naming service request interval when failing to get response from headnode",
                         }
-                    },                    
+                    },
+                    { "2.3.7.0",
+                        {
+                            "Enable environment variable CCP_SWITCH_USER to run task command by switching user rather than by sudo",
+                            "Fix affinity bug",
+                        }
+                    },
                 };
 
                 return versionHistory;
