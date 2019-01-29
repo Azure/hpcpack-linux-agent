@@ -2,6 +2,7 @@
 #include "../utils/WriterLock.h"
 #include "../utils/ReaderLock.h"
 #include "../utils/System.h"
+#include <math.h>
 
 using namespace hpc::core;
 using namespace web;
@@ -32,31 +33,39 @@ int JobTaskTable::GetCoresInUse()
 {
     ReaderLock readerLock(&this->lock);
 
-    const uint64_t AllCores = 0xFFFFFFFFFFFFFFFF;
+    bool allUsed = false;
     int cores, sockets;
     System::CPU(cores, sockets);
 
-    uint64_t coresMask = 0;
-    for_each(this->nodeInfo.Jobs.begin(), this->nodeInfo.Jobs.end(), [&coresMask, cores, AllCores] (auto& i)
+    std::vector<uint64_t> coresMask(ceil((float)cores / 64), 0);
+    for_each(this->nodeInfo.Jobs.begin(), this->nodeInfo.Jobs.end(), [&coresMask, &allUsed] (auto& i)
     {
-        for_each(i.second->Tasks.begin(), i.second->Tasks.end(), [&coresMask, cores, AllCores] (auto& t)
+        for_each(i.second->Tasks.begin(), i.second->Tasks.end(), [&coresMask, &allUsed] (auto& t)
         {
             if (t.second->Affinity.empty())
             {
-                coresMask |= AllCores;
+                allUsed = true;
             }
             else
             {
-                coresMask |= t.second->Affinity[0];
+                for (size_t i = 0; i < coresMask.size(); i++)
+                {
+                    coresMask[i] |= t.second->Affinity[i];
+                }
             }
         });
     });
 
+    if (allUsed)
+    {
+        return cores;
+    }
+
     int used = 0;
-    int bit = 1;
+    uint64_t bit = 1;
     for (int i = 0; i < cores; i++)
     {
-        if (coresMask & (bit << i))
+        if (coresMask[i / 64] & (bit << i % 64))
         {
             used++;
         }
