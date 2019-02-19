@@ -38,19 +38,19 @@ int JobTaskTable::GetCoresInUse()
     System::CPU(cores, sockets);
 
     std::vector<uint64_t> coresMask(ceil((float)cores / 64), 0);
-    for_each(this->nodeInfo.Jobs.begin(), this->nodeInfo.Jobs.end(), [&coresMask, &allUsed] (auto& i)
+    for_each(this->nodeInfo.Jobs.begin(), this->nodeInfo.Jobs.end(), [&coresMask, &allUsed] (auto& job)
     {
-        for_each(i.second->Tasks.begin(), i.second->Tasks.end(), [&coresMask, &allUsed] (auto& t)
+        for_each(job.second->Tasks.begin(), job.second->Tasks.end(), [&coresMask, &allUsed] (auto& task)
         {
-            if (t.second->Affinity.empty())
+            if (task.second->Affinity.empty())
             {
                 allUsed = true;
             }
             else
             {
-                for (size_t i = 0; i < coresMask.size(); i++)
+                for (size_t i = 0; i < coresMask.size() && i < task.second->Affinity.size(); i++)
                 {
-                    coresMask[i] |= t.second->Affinity[i];
+                    coresMask[i] |= task.second->Affinity[i];
                 }
             }
         });
