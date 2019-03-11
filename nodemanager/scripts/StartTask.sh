@@ -35,10 +35,10 @@ if $CGInstalled; then
     groupName=$(GetCGroupName "$taskId")
     group=$CGroupSubSys:$groupName
     cgexec -g "$group" /bin/bash $taskFolder/TestMutualTrust.sh "$taskId" "$taskFolder" "$userName" && (\
-    [ "$CCP_SWITCH_USER" == "1" ] && (cgexec -g "$group" su - $userName -m -c "/bin/bash $runPath" || exit) ||\
+    [ "$CCP_SWITCH_USER" == "1" ] && (cgexec -g "$group" su $userName -m -c "/bin/bash $runPath" || exit) ||\
     cgexec -g "$group" sudo -H -E -u $userName env "PATH=$PATH" /bin/bash $runPath)
 else
     /bin/bash $taskFolder/TestMutualTrust.sh "$taskId" "$taskFolder" "$userName" && (\
-    [ "$CCP_SWITCH_USER" == "1" ] && (su - $userName -m -c "/bin/bash $runPath" || exit) ||\
+    [ "$CCP_SWITCH_USER" == "1" ] && (su $userName -m -c "/bin/bash $runPath" || exit) ||\
     sudo -H -E -u $userName env "PATH=$PATH" /bin/bash $runPath)
 fi
