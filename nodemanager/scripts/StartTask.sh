@@ -24,7 +24,7 @@ case "$CCP_MPI_HOSTFILE_FORMAT" in
 esac
 
 isDockerTask=$(CheckDockerEnvFileExist $taskFolder)
-if [ "$isDockerTask" == "1" ]; then
+if $isDockerTask; then
 	containerId=$(GetContainerId $taskFolder)
     docker exec $containerId /bin/bash -c "$taskFolder/TestMutualTrust.sh $taskId $taskFolder $userName" &&\
     docker exec -u $userName $containerId /bin/bash $runPath
@@ -32,7 +32,7 @@ if [ "$isDockerTask" == "1" ]; then
 fi
 
 cgDisabled=$(CheckCgroupDisabledInFlagFile $taskFolder)
-if $CGInstalled && [ "$cgDisabled" == "0" ]; then
+if $CGInstalled && ! $cgDisabled; then
     groupName=$(GetCGroupName "$taskId")
     group=$CGroupSubSys:$groupName
     cgexec -g "$group" /bin/bash $taskFolder/TestMutualTrust.sh "$taskId" "$taskFolder" "$userName" && (\

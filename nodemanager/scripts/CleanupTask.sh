@@ -12,15 +12,15 @@ processId=$2
 taskFolder=$3
 
 isDockerTask=$(CheckDockerEnvFileExist $taskFolder)
-if [ "$isDockerTask" == "1" ]; then
+if $isDockerTask; then
 	isDebugMode=$(CheckDockerDebugMode $taskFolder)
-	if [ "$isDebugMode" == "0" ]; then
+	if ! $isDebugMode; then
 		containerId=$(GetContainerId $taskFolder)
 		docker rm -f $containerId
 	fi
 
 	isMpiTask=$(CheckMpiTask $taskFolder)
-	if [ "$isMpiTask" == "1" ]; then
+	if $isMpiTask; then
 		$(GetSshStartCommand)
 		ec=$?
 		if [ $ec -ne 0 ]
@@ -36,7 +36,7 @@ fi
 /bin/bash ./EndTask.sh "$taskId" "$processId" "1"
 
 cgDisabled=$(CheckCgroupDisabledInFlagFile $taskFolder)
-if $CGInstalled && [ "$cgDisabled" == "0" ]; then
+if $CGInstalled && ! $cgDisabled; then
 	groupName=$(GetCGroupName "$taskId")
 	group=$CGroupSubSys:$groupName
 	cgdelete -g "$group"

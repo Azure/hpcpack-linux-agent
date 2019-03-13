@@ -13,14 +13,14 @@ taskFolder=$3
 userName=$4
 
 isDockerTask=$(CheckDockerEnvFileExist $taskFolder)
-if [ "$isDockerTask" == "1" ]; then
+if $isDockerTask; then
 	isMpiTask=$(CheckMpiTask $taskFolder)
-	if [ "$isMpiTask" == "1" ]; then
+	if $isMpiTask; then
 		mpiContainerStartOption=$(GetMpiContainerStartOption $userName)
 	fi
 
 	isDebugMode=$(CheckDockerDebugMode $taskFolder)
-	if [ "$isDebugMode" == "1" ]; then
+	if $isDebugMode; then
 		taskId=${taskId}_${DebugContainerSuffix}
 	fi
 
@@ -63,7 +63,7 @@ if [ "$isDockerTask" == "1" ]; then
 
 	docker exec $containerId useradd -m $userName
     docker exec $containerId chown $userName $taskFolder
-	if [ "$isMpiTask" == "1" ]; then
+	if $isMpiTask; then
 		/bin/bash MpiContainerPreparation.sh $containerId $userName
 	fi
 
@@ -71,7 +71,7 @@ if [ "$isDockerTask" == "1" ]; then
 fi
 
 cgDisabled=$(CheckCgroupDisabledInFlagFile $taskFolder)
-if $CGInstalled && [ "$cgDisabled" == "0" ]; then
+if $CGInstalled && ! $cgDisabled; then
 	groupName=$(GetCGroupName "$taskId")
 	group=$CGroupSubSys:$groupName
 
