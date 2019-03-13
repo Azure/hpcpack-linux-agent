@@ -31,7 +31,8 @@ if [ "$isDockerTask" == "1" ]; then
     exit
 fi
 
-if $CGInstalled; then
+cgDisabled=$(CheckCgroupDisabledInFlagFile $taskFolder)
+if $CGInstalled && [ "$cgDisabled" == "0" ]; then
     groupName=$(GetCGroupName "$taskId")
     group=$CGroupSubSys:$groupName
     cgexec -g "$group" /bin/bash $taskFolder/TestMutualTrust.sh "$taskId" "$taskFolder" "$userName" && (\

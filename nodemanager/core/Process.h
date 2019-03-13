@@ -147,7 +147,6 @@ namespace hpc
                 const std::string stdInFile;
                 const std::string workDirectory;
                 const std::string userName;
-                const std::string dockerImage;
                 bool dumpStdout = false;
                 const std::vector<uint64_t> affinity;
                 const std::map<std::string, std::string> environments;

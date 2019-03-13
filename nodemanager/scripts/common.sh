@@ -199,3 +199,10 @@ function GetSshStopCommand
 	local version=$(python -mplatform) || local version=$(cat /etc/*release | grep NAME=)
 	echo $version | grep -iq ubuntu && echo "service ssh stop" || echo "service sshd stop"
 }
+
+function CheckCgroupDisabledInFlagFile
+{
+	local taskFolder=$1
+	local flagFile="$taskFolder/disable_cgroup"
+	[ -f $flagFile ] && [ "$(head $flagFile)" == "1" ] && echo 1 || echo 0
+}

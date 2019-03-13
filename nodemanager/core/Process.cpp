@@ -37,7 +37,7 @@ Process::Process(
     const std::function<Callback> completed) :
     jobId(jobId), taskId(taskId), requeueCount(requeueCount), taskExecutionId(String::Join("_", taskExecutionName, taskId, requeueCount)),
     commandLine(cmdLine), stdOutFile(standardOut), stdErrFile(standardErr), stdInFile(standardIn),
-    workDirectory(workDir), userName(user.empty() ? "root" : user), dockerImage(envi["CCP_DOCKER_IMAGE"]), dumpStdout(dumpStdoutToExecutionMessage),
+    workDirectory(workDir), userName(user.empty() ? "root" : user), dumpStdout(dumpStdoutToExecutionMessage),
     affinity(cpuAffinity), environments(envi), callback(completed), processId(0)
 {
     this->streamOutput = StartWithHttpOrHttps(stdOutFile);
@@ -145,6 +145,10 @@ void* Process::ForkThread(void* arg)
 {
     Process* const p = static_cast<Process* const>(arg);
     std::string path;
+    auto dockerImageIt = p->environments.find("CCP_DOCKER_IMAGE");
+    bool isDockerTask = dockerImageIt != p->environments.end() && !dockerImageIt->second.empty();
+    auto disableCgroupIt = p->environments.find("CCP_DISABLE_CGROUP");
+    bool disableCgroup = disableCgroupIt != p->environments.end() && disableCgroupIt->second == "1";
 
 Start:
     int ret = p->CreateTaskFolder();
@@ -158,7 +162,6 @@ Start:
     }
 
     path = p->BuildScript();
-
     if (path.empty())
     {
         p->message << "Error when build script." << std::endl;
@@ -168,7 +171,7 @@ Start:
         goto Final;
     }
 
-    if (!p->dockerImage.empty())
+    if (isDockerTask)
     {
         p -> environmentsBuffer.clear();
         std::transform(
@@ -182,6 +185,17 @@ Start:
         if (ret != 0)
         {
             Logger::Error(p->jobId, p->taskId, p->requeueCount, "Failed to create environment file for docker task. Exitcode: {0}", ret);
+            goto Final;
+        }
+    }
+
+    if (disableCgroup)
+    {
+        std::string flagFile = p->taskFolder + "/disable_cgroup";
+        int ret = System::WriteStringToFile(flagFile, "1");
+        if (ret != 0)
+        {
+            Logger::Error(p->jobId, p->taskId, p->requeueCount, "Failed to create flag file to disable cgroup. Exitcode: {0}", ret);
             goto Final;
         }
     }

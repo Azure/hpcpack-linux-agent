@@ -14,7 +14,8 @@ forced=$3
 taskFolder=$4
 
 isDockerTask=$(CheckDockerEnvFileExist $taskFolder)
-if $CGInstalled; then
+cgDisabled=$(CheckCgroupDisabledInFlagFile $taskFolder)
+if $CGInstalled && [ "$cgDisabled" == "0" ]; then
 	if [ "$isDockerTask" == "1" ]; then
 		containerId=$(GetContainerId $taskFolder)
 		groupName=$(GetCGroupNameOfDockerTask $containerId)
