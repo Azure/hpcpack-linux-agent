@@ -106,11 +106,7 @@ function GetContainerId
 function CheckDockerEnvFileExist
 {
 	local taskFolder=$1
-	if [ -f $(GetDockerTaskEnvFile $taskFolder) ]; then
-		echo 1
-	else
-		echo 0
-	fi
+	[ -f $(GetDockerTaskEnvFile $taskFolder) ] && echo true || echo false
 } 
 
 function GetUserSshDir
@@ -136,22 +132,14 @@ function CheckMpiTask
 {
 	local taskFolder=$1
 	local nodeNum=$(cat $(GetDockerTaskEnvFile $taskFolder) | grep "CCP_NODES=" | sed -r 's/^CCP_NODES=([0-9]+) .*/\1/g')
-	if [ "$nodeNum" -gt 1 ]; then
-		echo 1
-	else
-		echo 0
-	fi
+	[ "$nodeNum" -gt 1 ] && echo true || echo false
 }
 
 function CheckDockerDebugMode
 {
 	local taskFolder=$1
 	debugOption=$(cat $(GetDockerTaskEnvFile $taskFolder) | grep "CCP_DOCKER_DEBUG=" | cut -d '=' -f 2)
-	if [ -z $debugOption ] || [ "$debugOption" == "0" ]; then
-		echo 0
-	else
-		echo 1
-	fi	
+	[ -z $debugOption ] || [ "$debugOption" == "0" ] && echo false || echo true
 }
 
 function GetDockerEngine
@@ -198,4 +186,11 @@ function GetSshStopCommand
 {
 	local version=$(python -mplatform) || local version=$(cat /etc/*release | grep NAME=)
 	echo $version | grep -iq ubuntu && echo "service ssh stop" || echo "service sshd stop"
+}
+
+function CheckCgroupDisabledInFlagFile
+{
+	local taskFolder=$1
+	local flagFile="$taskFolder/disable_cgroup"
+	[ -f $flagFile ] && [ "$(head $flagFile)" == "1" ] && echo true || echo false
 }

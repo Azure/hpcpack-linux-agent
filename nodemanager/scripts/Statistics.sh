@@ -34,8 +34,9 @@ function GetMemoryMaxusageFile
 	GetGroupFile "$groupName" memory memory.max_usage_in_bytes
 }
 
-if $CGInstalled; then
-	if [ "$isDockerTask" == "1" ]; then
+cgDisabled=$(CheckCgroupDisabledInFlagFile $taskFolder)
+if $CGInstalled && ! $cgDisabled; then
+	if $isDockerTask; then
 		containerId=$(GetContainerId $taskFolder)
 		groupName=$(GetCGroupNameOfDockerTask $containerId)
 	else
@@ -49,7 +50,7 @@ if $CGInstalled; then
 	cut -d" " -f2 "$statFile"
 	cat "$workingSetFile"
 
-	if [ "$isDockerTask" == "1" ]; then
+	if $isDockerTask; then
 		containerPlaceholder=$(GetContainerPlaceholder $taskFolder)
 		cat $tasksFile | sed "/^$(cat $containerPlaceholder)$/d" | tr "\\n" " " 
 	else

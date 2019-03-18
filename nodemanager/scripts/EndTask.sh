@@ -14,8 +14,9 @@ forced=$3
 taskFolder=$4
 
 isDockerTask=$(CheckDockerEnvFileExist $taskFolder)
-if $CGInstalled; then
-	if [ "$isDockerTask" == "1" ]; then
+cgDisabled=$(CheckCgroupDisabledInFlagFile $taskFolder)
+if $CGInstalled && ! $cgDisabled; then
+	if $isDockerTask; then
 		containerId=$(GetContainerId $taskFolder)
 		groupName=$(GetCGroupNameOfDockerTask $containerId)
 	else
@@ -37,7 +38,7 @@ if $CGInstalled; then
 		((maxLoop--))
 	done
 
-	if [ "$isDockerTask" == "1" ]; then
+	if $isDockerTask; then
 		dockerTasks=$taskFolder/dockerTasks
 		containerPlaceholder=$(GetContainerPlaceholder $taskFolder)
 		cat $tasks | sed "/^$(cat $containerPlaceholder)$/d" > $dockerTasks
