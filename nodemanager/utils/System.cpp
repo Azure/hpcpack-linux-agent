@@ -482,13 +482,15 @@ int System::AddSshKey(
 
     if (0 != ret) { return ret; }
 
-    std::string sshFolder = String::Join("", output, "/.ssh/");
+    std::string homeDir = output;
+    std::string sshFolder = String::Join("", homeDir, "/.ssh/");
 
     Logger::Debug("User {0}'s ssh folder {1}", userName, sshFolder);
 
     ret = System::ExecuteCommandOut(
         output,
-        "[ -d ", sshFolder, " ] || mkdir -p ", sshFolder,
+        "[ -d ", homeDir, " ] || (mkdir -p ", homeDir, " && chown ", userName, " ", homeDir, ")",
+        " && [ -d ", sshFolder, " ] || mkdir ", sshFolder,
         " && chown ", userName, " ", sshFolder, " && chmod 700 ", sshFolder);
 
     if (ret != 0)
