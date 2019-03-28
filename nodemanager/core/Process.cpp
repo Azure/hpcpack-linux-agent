@@ -548,7 +548,7 @@ std::string Process::BuildScript()
     
     Logger::Debug("{0}, {1}", this->taskFolder, this->workDirectory);
 
-    std::string workDirectory = this->workDirectory.empty() ? this->taskFolder : this->workDirectory;
+    std::string workDirectory = this->workDirectory.empty() ? "~" : this->workDirectory;
     fs << "cd " << workDirectory << " || exit $?" << std::endl << std::endl;
 
     if (this->stdOutFile.empty()) this->stdOutFile = this->taskFolder + "/stdout.txt";
