@@ -120,7 +120,8 @@ if $CGInstalled && ! $cgDisabled; then
 	while [ $maxLoop -gt 0 ]
 	do
 		memsFile=$(GetMemsFile "$groupName")
-		echo 0 > "$memsFile"
+		numaMaxIndex=$((`lscpu | grep 'NUMA node(s)' | awk '{print $NF}'` - 1))
+		echo 0-$numaMaxIndex > "$memsFile"
 		ec=$?
 		if [ $ec -eq 0 ]
 		then
