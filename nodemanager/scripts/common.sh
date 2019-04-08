@@ -112,11 +112,7 @@ function CheckDockerEnvFileExist
 function GetUserSshDir
 {
 	local userName=$1
-	if [ "$userName" == "root" ]; then
-		echo "/root/.ssh"
-	else
-		echo "/home/$userName/.ssh"
-	fi
+	eval echo ~$userName/.ssh
 }
 
 function GetMpiContainerStartOption

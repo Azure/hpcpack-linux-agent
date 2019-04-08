@@ -97,10 +97,7 @@ else
 	echo
 	echo "Saving logs"
 	trustKeysDir=${rootLogFolder}/${taskExecutionId}_${userName}/
-	sshFolder=/home/${userName}/.ssh/
-	if [ "$userName" = "root" ]; then
-		sshFolder=/root/.ssh/
-	fi
+	eval sshFolder=~${userName}/.ssh/
 
 	saveLogCmd="mkdir -p $trustKeysDir && cp -rf ${sshFolder}* $trustKeysDir"
 

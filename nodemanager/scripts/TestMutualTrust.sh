@@ -8,10 +8,7 @@ runDir="$2"
 trustLogFile="${runDir}/${1}_trust.txt"
 failedTrustLogFile="${runDir}/failed_${1}_trust.txt"
 trustKeysDir="${runDir}/${1}_${3}/"
-sshFolder="/home/${3}/.ssh/"
-if [ "$3" = "root" ]; then
-	sshFolder=/root/.ssh/
-fi
+eval sshFolder=~${userName}/.ssh/
 
 mkdir -p "$runDir" > /dev/null
 /bin/bash $runDir/WaitForTrust.sh "$3" "$1" "$runDir" > "$trustLogFile" 2>&1
