@@ -137,6 +137,8 @@ define finish
 	[ -d $(2)/$(LIBOUTDIR) ] || mkdir $(2)/$(LIBOUTDIR)
 	$(indent);
 	cp $(shell export LD_LIBRARY_PATH=/lib:/usr/lib:/usr/local/lib && ldd $(3) | cut -f3 -d' ') $(2)/$(LIBOUTDIR) 2> /dev/null || :
+	$(indent);
+	cp 3rdpartylicenses.txt $(2)/
 	@tput bold;
 	@echo -n "Finished to build [ ";
 	@tput setaf 2;
