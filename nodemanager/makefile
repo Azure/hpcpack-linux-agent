@@ -132,6 +132,8 @@ define finish
 	$(indent);
 	cp filters/*.sh $(2)/filters
 	$(indent);
+	cp filters/*.py $(2)/filters
+	$(indent);
 	[ -d $(2)/logs ] || mkdir $(2)/logs
 	$(indent);
 	[ -d $(2)/$(LIBOUTDIR) ] || mkdir $(2)/$(LIBOUTDIR)
