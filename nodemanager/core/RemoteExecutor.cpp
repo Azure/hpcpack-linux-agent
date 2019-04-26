@@ -606,10 +606,33 @@ void RemoteExecutor::StartHeartbeat()
                 [](pplx::cancellation_token token) { return NodeManagerConfig::ResolveHeartbeatUri(token); },
                 0,
                 this->NodeInfoReportInterval,
-                [this]() { return this->jobTaskTable.ToJson(); },
+                [this]() { this->UpdateStatistics(); return this->jobTaskTable.ToJson(); },
                 [this]() { this->ResyncAndInvalidateCache(); }));
 
     this->nodeInfoReporter->Start();
+}
+
+void RemoteExecutor::UpdateStatistics()
+{
+    Logger::Debug(0, 0, 0, "Updating tasks' statistics.");
+
+    auto* table = JobTaskTable::GetInstance();
+    if (table != nullptr)
+    {
+        auto tasks = table->GetAllTasks();
+        for (const auto& taskInfo : tasks)
+        {
+            auto p = this->processes.find(taskInfo->ProcessKey);
+            if (p != this->processes.end())
+            {
+                taskInfo->AssignFromStat(p->second->GetStatisticsFromCGroup());
+            }
+            else
+            {
+                Logger::Warn(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetTaskRequeueCount(), "No process object found when updating task statistics.");                   
+            }
+        }
+    }
 }
 
 void RemoteExecutor::StartHostsManager()

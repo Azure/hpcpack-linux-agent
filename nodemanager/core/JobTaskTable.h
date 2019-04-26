@@ -34,6 +34,7 @@ namespace hpc
                 std::shared_ptr<hpc::data::JobInfo> RemoveJob(int jobId);
                 void RemoveTask(int jobId, int taskId, uint64_t attemptId);
                 std::shared_ptr<hpc::data::TaskInfo> GetTask(int jobId, int taskId);
+                std::vector<std::shared_ptr<hpc::data::TaskInfo>> GetAllTasks();
                 int GetJobCount()
                 {
                     ReaderLock readerLock(&this->lock);

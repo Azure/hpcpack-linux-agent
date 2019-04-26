@@ -126,6 +126,22 @@ std::shared_ptr<TaskInfo> JobTaskTable::GetTask(int jobId, int taskId)
     return task;
 }
 
+std::vector<std::shared_ptr<TaskInfo>> JobTaskTable::GetAllTasks()
+{
+    ReaderLock readerLock(&this->lock);
+    
+    std::vector<std::shared_ptr<TaskInfo>> tasks;
+    for (const auto& job : this->nodeInfo.Jobs)
+    {
+        for (const auto& task : job.second->Tasks)
+        {
+            tasks.push_back(task.second);
+        }
+    }
+
+    return std::move(tasks);
+}
+
 std::shared_ptr<JobInfo> JobTaskTable::RemoveJob(int jobId)
 {
     WriterLock writerLock(&this->lock);

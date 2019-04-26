@@ -43,6 +43,7 @@ namespace hpc
                 static void* GracePeriodElapsed(void* data);
 
                 void StartHeartbeat();
+                void UpdateStatistics();
                 void StartMetric();
                 void StartHostsManager();
 
