@@ -6,7 +6,6 @@
 [ -z "$1" ] && echo "task id not specified" && exit 202
 [ -z "$2" ] && echo "process id not specified" && exit 202
 [ -z "$3" ] && echo "forced not specified" && exit 202
-[ -z "$4" ] && echo "task folder not specified" && exit 202
 
 taskId=$1
 processId=$2
