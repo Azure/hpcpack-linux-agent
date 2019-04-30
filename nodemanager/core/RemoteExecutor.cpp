@@ -27,18 +27,7 @@ using namespace hpc::common;
 RemoteExecutor::RemoteExecutor(const std::string& networkName)
     : monitor(System::GetNodeName(), networkName, MetricReportInterval), lock(PTHREAD_RWLOCK_INITIALIZER)
 {
-    this->registerReporter =
-        std::unique_ptr<Reporter<json::value>>(
-            new HttpReporter(
-                "RegisterReporter",
-                [](pplx::cancellation_token token) { return NodeManagerConfig::ResolveRegisterUri(token); },
-                3,
-                this->RegisterInterval,
-                [this]() { return this->monitor.GetRegisterInfo(); },
-                [this]() { this->ResyncAndInvalidateCache(); }));
-
-    this->registerReporter->Start();
-
+    this->StartRegister();
     this->StartHeartbeat();
     this->StartMetric();
     this->StartHostsManager();
@@ -667,6 +656,23 @@ void RemoteExecutor::StartHostsManager()
     {
         Logger::Warn("HostsFileUri not specified, hosts manager will not be started.");
     }
+}
+
+void RemoteExecutor::StartRegister()
+{
+    WriterLock writerLock(&this->lock);
+
+    this->registerReporter =
+        std::unique_ptr<Reporter<json::value>>(
+            new HttpReporter(
+                "RegisterReporter",
+                [](pplx::cancellation_token token) { return NodeManagerConfig::ResolveRegisterUri(token); },
+                3,
+                this->RegisterInterval,
+                [this]() { return this->monitor.GetRegisterInfo(); },
+                [this]() { this->ResyncAndInvalidateCache(); }));
+
+    this->registerReporter->Start();
 }
 
 pplx::task<json::value> RemoteExecutor::Ping(std::string&& callbackUri)

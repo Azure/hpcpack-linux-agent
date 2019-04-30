@@ -333,19 +333,8 @@ Monitor::Monitor(const std::string& nodeName, const std::string& netName, int in
         });
     }
 
-    web::http::client::http_client_config config;
-    utility::seconds timeout(1l);
-    config.set_timeout(timeout);
-    auto metaDataUri = NodeManagerConfig::GetAzureInstanceMetaDataUri();
-    if (metaDataUri.empty())
-    {
-        metaDataUri = "http://169.254.169.254/metadata/instance?api-version=2017-08-01";
-    }
+    InitializeMetadataRequester();
     
-    this->metaDataClient = std::make_shared<web::http::client::http_client>(metaDataUri, config);
-    this->metaDataRequest = std::make_shared<web::http::http_request>(web::http::methods::GET);
-    this->metaDataRequest->headers().add("metadata", "true");
-
     int result = pthread_create(&this->threadId, nullptr, MonitoringThread, this);
     if (result != 0) Logger::Error("Create monitoring thread result {0}, errno {1}", result, errno);
 }
@@ -617,6 +606,22 @@ void Monitor::Run()
         sleep(this->intervalSeconds);
         collectCount++;
     }
+}
+
+void Monitor::InitializeMetadataRequester()
+{
+    web::http::client::http_client_config config;
+    utility::seconds timeout(1l);
+    config.set_timeout(timeout);
+    auto metaDataUri = NodeManagerConfig::GetAzureInstanceMetaDataUri();
+    if (metaDataUri.empty())
+    {
+        metaDataUri = "http://169.254.169.254/metadata/instance?api-version=2017-08-01";
+    }
+    
+    this->metaDataClient = std::make_shared<web::http::client::http_client>(metaDataUri, config);
+    this->metaDataRequest = std::make_shared<web::http::http_request>(web::http::methods::GET);
+    this->metaDataRequest->headers().add("metadata", "true");
 }
 
 std::string Monitor::QueryAzureInstanceMetadata()
