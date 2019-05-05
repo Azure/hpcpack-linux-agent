@@ -582,6 +582,26 @@ namespace hpc
                             "Fixed a bug that root user may fail in mutual trust in mpi docker task",
                         }
                     },
+                    { "2.3.3.0",
+                        {
+                            "Modified user mapping logic",
+                        }
+                    },
+                    { "2.3.4.0",
+                        {
+                            "Fixed a bug that task would fail when cgroup is not enabled",
+                        }
+                    },
+                    { "3.1.1.0",
+                        {
+                            "Support for HPC-ACM.",
+                        }
+                    },
+                    { "3.1.2.0",
+                        {
+                            "Make the JobId part of the task execution id",
+                        }
+                    },
                 };
 
                 return versionHistory;

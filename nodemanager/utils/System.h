@@ -100,7 +100,8 @@ namespace hpc
 
                 static int CreateUser(
                     const std::string& userName,
-                    const std::string& password);
+                    const std::string& password,
+                    bool isAdmin);
 
                 static int AddSshKey(
                     const std::string& userName,

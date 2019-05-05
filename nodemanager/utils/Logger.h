@@ -6,6 +6,7 @@
 #include <stdarg.h>
 #include <iostream>
 #include <spdlog/spdlog.h>
+#include <spdlog/fmt/ostr.h>
 
 #include "String.h"
 
@@ -15,14 +16,12 @@ namespace hpc
     {
         enum class LogLevel
         {
-            Emergency =	0,	/* system is unusable */
-            Alert = 1,	/* action must be taken immediately */
-            Critical = 2,	/* critical conditions */
-            Error = 3,	/* error conditions */
-            Warning = 4,	/* warning conditions */
-            Notice = 5,	/* normal but significant condition */
-            Info = 6,	/* informational */
-            Debug = 7	/* debug-level messages */
+            Critical = 0,	/* critical conditions */
+            Error = 1,	/* error conditions */
+            Warning = 2,	/* warning conditions */
+            Info = 3,	/* informational */
+            Debug = 4,	/* debug-level messages */
+            Trace = 5	/* the most verbose messages */
         };
 
         class Logger
@@ -92,12 +91,6 @@ namespace hpc
                     {
                         switch (level)
                         {
-                            case LogLevel::Emergency:
-                                logger->emerg(fmt, args...);
-                                break;
-                            case LogLevel::Alert:
-                                logger->alert(fmt, args...);
-                                break;
                             case LogLevel::Critical:
                                 logger->critical(fmt, args...);
                                 break;
@@ -106,9 +99,6 @@ namespace hpc
                                 break;
                             case LogLevel::Warning:
                                 logger->warn(fmt, args...);
-                                break;
-                            case LogLevel::Notice:
-                                logger->notice(fmt, args...);
                                 break;
                             case LogLevel::Info:
                                 logger->info(fmt, args...);
