@@ -2,6 +2,8 @@
 
 . common.sh
 
+echo
+
 docker version > /dev/nul
 if [ $? -eq 0 ]; then
 	echo "Cleaning up docker containers..."
@@ -24,4 +26,3 @@ if $CGInstalled; then
 	done
 	exit 0
 fi
-
