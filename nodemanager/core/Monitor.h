@@ -48,7 +48,10 @@ namespace hpc
                 std::string name;
                 std::string networkName;
                 std::string metricTime;
-                std::map<int, std::tuple<int, float>> metricData;
+                float cpuUsage;
+                float availableMemoryMb;
+                float networkUsage;
+
                 int coreCount;
                 int socketCount;
                 int totalMemoryMb;

@@ -21,10 +21,6 @@ Monitor::Monitor(const std::string& nodeName, const std::string& netName, int in
     : name(nodeName), networkName(netName), lock(PTHREAD_RWLOCK_INITIALIZER), intervalSeconds(interval),
     isCollected(false)
 {
-    std::get<0>(this->metricData[1]) = 1;
-    std::get<0>(this->metricData[3]) = 0;
-    std::get<0>(this->metricData[12]) = 1;
-
     Logger::Info("Initializing GPU driver.");
     std::string output;
     this->gpuInitRet = System::ExecuteCommandOut(output, "nvidia-smi -pm 1");
@@ -34,7 +30,7 @@ Monitor::Monitor(const std::string& nodeName, const std::string& netName, int in
     {
         if (instanceName == "_Total")
         {
-            return std::get<1>(this->metricData[1]);
+            return this->cpuUsage;
         }
         else
         {
@@ -50,7 +46,7 @@ Monitor::Monitor(const std::string& nodeName, const std::string& netName, int in
 
     this->collectors["\\Memory\\Available MBytes"] = std::make_shared<MetricCollectorBase>([this] (const std::string& instanceName)
     {
-        return std::get<1>(this->metricData[3]);
+        return this->availableMemoryMb;
     });
 
     this->collectors["\\System\\Context switches/sec"] = std::make_shared<MetricCollectorBase>([this] (const std::string& instanceName)
@@ -141,7 +137,7 @@ Monitor::Monitor(const std::string& nodeName, const std::string& netName, int in
     {
         if (instanceName == "eth0" || instanceName.empty())
         {
-            return std::get<1>(this->metricData[12]);
+            return this->networkUsage;
         }
         else
         {
@@ -572,9 +568,9 @@ void Monitor::Run()
 
             this->metricTime = ctime(&t);
 
-            std::get<1>(this->metricData[1]) = cpuUsage;
-            std::get<1>(this->metricData[3]) = availableMemoryMb;
-            std::get<1>(this->metricData[12]) = networkUsage;
+            this->cpuUsage = cpuUsage;
+            this->availableMemoryMb = availableMemoryMb;
+            this->networkUsage = networkUsage;
 
             this->totalMemoryMb = totalMemoryMb;
             this->ipAddress = ipAddress;
