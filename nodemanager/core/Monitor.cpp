@@ -10,6 +10,7 @@
 #include "../utils/System.h"
 #include "JobTaskTable.h"
 #include "NodeManagerConfig.h"
+#include "../Version.h"
 
 using namespace hpc::core;
 using namespace hpc::utils;
@@ -491,6 +492,9 @@ json::value Monitor::GetRegisterInfo()
     {
         j["AzureInstanceMetadata"] = json::value::string(this->azureInstanceMetadata);
     }
+
+    j["CcpVersion"] = json::value::string(Version::GetVersion());
+    j["CustomProperties"] = json::value::string("");
 
     return std::move(j);
 }
