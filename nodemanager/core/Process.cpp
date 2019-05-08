@@ -34,11 +34,14 @@ Process::Process(
     bool dumpStdoutToExecutionMessage,
     std::vector<uint64_t>&& cpuAffinity,
     std::map<std::string, std::string>&& envi,
+    const std::string& inputFiles,
+    const std::string& outputFiles,
     const std::function<Callback> completed) :
     jobId(jobId), taskId(taskId), requeueCount(requeueCount), taskExecutionId(String::Join("_", taskExecutionName, taskId, requeueCount)),
     commandLine(cmdLine), stdOutFile(standardOut), stdErrFile(standardErr), stdInFile(standardIn),
     workDirectory(workDir), userName(user.empty() ? "root" : user), dumpStdout(dumpStdoutToExecutionMessage),
-    affinity(cpuAffinity), environments(envi), callback(completed), processId(0)
+    affinity(cpuAffinity), environments(envi), inputFilesForDownloading(inputFiles), outputFilesForUploading(outputFiles),
+    callback(completed), processId(0)
 {
     this->streamOutput = StartWithHttpOrHttps(stdOutFile);
 
@@ -535,26 +538,38 @@ int Process::CreateTaskFolder()
 
 std::string Process::BuildScript()
 {
+    Logger::Debug("{0}, {1}", this->taskFolder, this->workDirectory);
+
     std::string cmd = this->taskFolder + "/cmd.sh";
     std::ofstream fsCmd(cmd, std::ios::trunc);
     fsCmd << "#!/bin/bash" << std::endl << std::endl;
     fsCmd << this->commandLine << std::endl;
     fsCmd.close();
 
-    std::string runDirInOut = this->taskFolder + "/run_dir_in_out.sh";
+    std::string workDirectory = this->workDirectory.empty() ? "~" : this->workDirectory;
+    if (this->stdOutFile.empty())
+    {
+        this->stdOutFile = this->taskFolder + "/stdout.txt";
+    }
+    else if (!boost::algorithm::starts_with(this->stdOutFile, "/") && !StartWithHttpOrHttps(this->stdOutFile))
+    {
+        this->stdOutFile = workDirectory + "/" + this->stdOutFile;
+    }
 
+    if (this->stdErrFile.empty())
+    {
+        this->stdErrFile = this->taskFolder + "/stderr.txt";
+    }
+    else if (!boost::algorithm::starts_with(this->stdErrFile, "/") && !StartWithHttpOrHttps(this->stdErrFile))
+    {
+        this->stdErrFile = workDirectory + "/" + this->stdErrFile;
+    }
+
+    bool downloadInputFiles = !String::Trim(this->inputFilesForDownloading).empty();
+    std::string runDirInOut = this->taskFolder + "/run_dir_in_out.sh";
     std::ofstream fs(runDirInOut, std::ios::trunc);
     fs << "#!/bin/bash" << std::endl << std::endl;
-    
-    Logger::Debug("{0}, {1}", this->taskFolder, this->workDirectory);
-
-    std::string workDirectory = this->workDirectory.empty() ? "~" : this->workDirectory;
     fs << "cd " << workDirectory << " || exit $?" << std::endl << std::endl;
-
-    if (this->stdOutFile.empty()) this->stdOutFile = this->taskFolder + "/stdout.txt";
-    else if (!boost::algorithm::starts_with(this->stdOutFile, "/") && !StartWithHttpOrHttps(this->stdOutFile)) this->stdOutFile = workDirectory + "/" + this->stdOutFile;
-    if (this->stdErrFile.empty()) this->stdErrFile = this->taskFolder + "/stderr.txt";
-    else if (!boost::algorithm::starts_with(this->stdErrFile, "/") && !StartWithHttpOrHttps(this->stdErrFile)) this->stdErrFile = workDirectory + "/" + this->stdErrFile;
 
     // before
     fs << "echo before >" << this->taskFolder << "/before1.txt 2>" << this->taskFolder << "/before2.txt";
@@ -564,20 +579,15 @@ std::string Process::BuildScript()
     fs << "echo test >" << this->taskFolder << "/stdout.txt 2>" << this->taskFolder << "/stderr.txt";
     fs << " || ([ \"$?\" = \"1\" ] && exit 253)" << std::endl << std::endl;
 
-    // run
-    if (this->streamOutput)
+    // download input files
+    if (downloadInputFiles)
     {
-        fs << "/bin/bash " << cmd << " 2>&1";
-    }
-    else if (this->stdOutFile == this->stdErrFile)
-    {
-        fs << "/bin/bash " << cmd << " >" << this->stdOutFile << " 2>&1";
-    }
-    else
-    {
-        fs << "/bin/bash " << cmd << " >" << this->stdOutFile << " 2>" << this->stdErrFile;
+        std::string commandDownload = String::Join("", "HpcDataClient.exe download /source:", this->inputFilesForDownloading, " /dest:. /overwrite");
+        fs << this->BuildCommandRedirectingOutput(commandDownload, false) << " || exit 191" << std::endl << std::endl;
     }
 
+    // run
+    fs << this->BuildCommandRedirectingOutput(String::Join(" ", "/bin/bash", cmd), downloadInputFiles);
     if (!this->stdInFile.empty())
     {
         fs << " <" << this->stdInFile;
@@ -585,9 +595,16 @@ std::string Process::BuildScript()
 
     fs << std::endl;
     fs << "ec=$?" << std::endl;
-    fs << "[ $ec -ne 0 ] && exit $ec" << std::endl;
 
-    fs << std::endl << std::endl;
+    // upload output files
+    if (!String::Trim(this->outputFilesForUploading).empty())
+    {
+        fs << std::endl;
+        std::string commandUpload = String::Join("", "HpcDataClient.exe upload /source:. /dest:", this->outputFilesForUploading, " /overwrite");
+        fs << this->BuildCommandRedirectingOutput(commandUpload, true) << " || exit 192" << std::endl << std::endl;
+    }
+
+    fs << "[ $ec -ne 0 ] && exit $ec" << std::endl << std::endl;
 
     // after
     fs << "echo after >" << this->taskFolder << "/after1.txt 2>" << this->taskFolder << "/after2.txt";
@@ -596,6 +613,22 @@ std::string Process::BuildScript()
     fs.close();
 
     return std::move(runDirInOut);
+}
+
+std::string Process::BuildCommandRedirectingOutput(const std::string& command, bool appending)
+{
+    if (this->streamOutput)
+    {
+        return String::Join(" ", command, "2>&1");
+    }
+    else if (this->stdOutFile == this->stdErrFile)
+    {
+        return String::Join(" ", command, appending ? ">>" : ">", this->stdOutFile, "2>&1");
+    }
+    else
+    {
+        return String::Join("", command, " ", appending ? ">>" : ">", this->stdOutFile, " 2", appending ? ">>" : ">", this->stdErrFile);
+    }
 }
 
 std::unique_ptr<const char* []> Process::PrepareEnvironment()

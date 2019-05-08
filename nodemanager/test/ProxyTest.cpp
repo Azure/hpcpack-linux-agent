@@ -65,7 +65,9 @@ bool ProxyTest::ProxyToLocal()
         "",
         0,
         std::vector<uint64_t>(),
-        { { "CCP_ISADMIN", "1" } });
+        { { "CCP_ISADMIN", "1" } },
+        "",
+        "");
 
     StartJobAndTaskArgs arg(
         88,

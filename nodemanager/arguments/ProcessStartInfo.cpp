@@ -12,7 +12,9 @@ ProcessStartInfo::ProcessStartInfo(
     std::string&& workDir,
     int taskRequeueCount,
     std::vector<uint64_t>&& affinity,
-    std::map<std::string, std::string>&& enviVars) :
+    std::map<std::string, std::string>&& enviVars,
+    std::string&& inputFiles,
+    std::string&& outputFiles) :
     CommandLine(std::move(cmdLine)),
     StdInFile(std::move(stdIn)),
     StdOutFile(std::move(stdOut)),
@@ -20,7 +22,9 @@ ProcessStartInfo::ProcessStartInfo(
     WorkDirectory(std::move(workDir)),
     TaskRequeueCount(taskRequeueCount),
     Affinity(std::move(affinity)),
-    EnvironmentVariables(std::move(enviVars))
+    EnvironmentVariables(std::move(enviVars)),
+    InputFiles(std::move(inputFiles)),
+    OutputFiles(std::move(outputFiles))
 {
 }
 
@@ -35,6 +39,8 @@ json::value ProcessStartInfo::ToJson() const
     v["taskRequeueCount"] = this->TaskRequeueCount;
     v["affinity"] = JsonHelper<std::vector<uint64_t>>::ToJson(this->Affinity);
     v["environmentVariables"] = JsonHelper<std::map<std::string, std::string>>::ToJson(this->EnvironmentVariables);
+    v["inputFiles"] = json::value::string(this->InputFiles);
+    v["outputFiles"] = json::value::string(this->OutputFiles);
     return v;
 }
 
@@ -49,7 +55,9 @@ ProcessStartInfo ProcessStartInfo::FromJson(const web::json::value& jsonValue)
         JsonHelper<std::string>::Read("workingDirectory", jsonValue),
         JsonHelper<int>::Read("taskRequeueCount", jsonValue),
         JsonHelper<std::vector<uint64_t>>::Read("affinity", jsonValue),
-        JsonHelper<std::map<std::string, std::string>>::Read("environmentVariables", jsonValue));
+        JsonHelper<std::map<std::string, std::string>>::Read("environmentVariables", jsonValue),
+        JsonHelper<std::string>::Read("inputFiles", jsonValue),
+        JsonHelper<std::string>::Read("outputFiles", jsonValue));
 
     return std::move(startInfo);
 }

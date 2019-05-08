@@ -85,7 +85,7 @@ pplx::task<json::value> ExecutionFilter::ExecuteFilter(const std::string& filter
 
     std::shared_ptr<Process> p = std::make_shared<Process>(
         jobId, taskId, requeueCount, "Filter", filterFile, stdoutFile, stderrFile, stdinFile, folderString, "root", false,
-        std::vector<uint64_t>(), std::map<std::string, std::string>(),
+        std::vector<uint64_t>(), std::map<std::string, std::string>(), "", "",
         [=] (int exitCode, std::string&& message, const ProcessStatistics& stat)
         {
         });

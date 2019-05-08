@@ -196,6 +196,8 @@ pplx::task<json::value> RemoteExecutor::StartTask(StartTaskArgs&& args, std::str
                 true,
                 std::move(args.StartInfo.Affinity),
                 std::move(args.StartInfo.EnvironmentVariables),
+                std::move(args.StartInfo.InputFiles),
+                std::move(args.StartInfo.OutputFiles),
                 [taskInfo, uri = std::move(callbackUri), this] (
                     int exitCode,
                     std::string&& message,

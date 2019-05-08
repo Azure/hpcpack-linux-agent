@@ -46,6 +46,8 @@ namespace hpc
                     bool dumpStdoutToExecutionMessage,
                     std::vector<uint64_t>&& cpuAffinity,
                     std::map<std::string, std::string>&& envi,
+                    const std::string& InputFiles,
+                    const std::string& OutputFiles,
                     const std::function<Callback> completed);
 
                 Process(Process&&) = default;
@@ -124,6 +126,7 @@ namespace hpc
                 void SendbackOutput(const std::string& uri, const std::string& output, int order) const;
                 void Monitor();
                 std::string BuildScript();
+                std::string BuildCommandRedirectingOutput(const std::string& command, bool appending);
                 std::unique_ptr<const char* []> PrepareEnvironment();
                 void OnCompletedInternal();
 
@@ -150,6 +153,8 @@ namespace hpc
                 bool dumpStdout = false;
                 const std::vector<uint64_t> affinity;
                 const std::map<std::string, std::string> environments;
+                const std::string inputFilesForDownloading;
+                const std::string outputFilesForUploading;
                 std::vector<std::string> environmentsBuffer;
                 bool streamOutput = false;
                 int stdoutPipe[2];

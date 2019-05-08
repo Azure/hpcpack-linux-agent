@@ -50,7 +50,7 @@ bool ProcessTest::ClusRun()
 
     std::shared_ptr<Process> p = std::make_shared<Process>(
         25, 28, 1, "Task", "echo 30; sleep 1; echo 31", listeningUri, "", "", "", "root", true,
-        std::vector<uint64_t>(), std::map<std::string, std::string>(),
+        std::vector<uint64_t>(), std::map<std::string, std::string>(), "", "",
         [&result, &callbacked]
         (int exitCode, std::string&& message, const ProcessStatistics& stat)
         {
@@ -140,7 +140,7 @@ a8lxTKnZCsRXU1HexqZs+DSc+30tz50bNqLdido/l5B4EJnQP03ciO0=\
 
     std::shared_ptr<Process> p = std::make_shared<Process>(
         25, 28, 1, "Task", "echo 30", "", "", "", "", userName, true,
-        std::vector<uint64_t>(), std::map<std::string, std::string>(),
+        std::vector<uint64_t>(), std::map<std::string, std::string>(), "", "",
         [&result, &callbacked]
         (int exitCode, std::string&& message, const ProcessStatistics& stat)
         {
@@ -233,7 +233,7 @@ a8lxTKnZCsRXU1HexqZs+DSc+30tz50bNqLdido/l5B4EJnQP03ciO0=\
 
     std::shared_ptr<Process> p = std::make_shared<Process>(
         25, 28, 1, "Task", "echo 30", "", "", "", "", userName, true,
-        std::vector<uint64_t>({ UINT64_C(4) }), std::map<std::string, std::string>(),
+        std::vector<uint64_t>({ UINT64_C(4) }), std::map<std::string, std::string>(), "", "",
         [&result, &callbacked]
         (int exitCode, std::string&& message, const ProcessStatistics& stat)
         {
@@ -326,7 +326,7 @@ a8lxTKnZCsRXU1HexqZs+DSc+30tz50bNqLdido/l5B4EJnQP03ciO0=\
 
     std::shared_ptr<Process> p = std::make_shared<Process>(
         25, 28, 1, "Task", "echo 30; sleep 5 &", "", "", "", "", userName, true,
-        std::vector<uint64_t>({ UINT64_C(4) }), std::map<std::string, std::string>(),
+        std::vector<uint64_t>({ UINT64_C(4) }), std::map<std::string, std::string>(), "", "",
         [&result, &callbacked]
         (int exitCode, std::string&& message, const ProcessStatistics& stat)
         {

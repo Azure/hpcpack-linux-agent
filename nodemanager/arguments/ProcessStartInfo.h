@@ -22,7 +22,9 @@ namespace hpc
                     std::string&& workDir,
                     int taskRequeueCount,
                     std::vector<uint64_t>&& affinity,
-                    std::map<std::string, std::string>&& enviVars);
+                    std::map<std::string, std::string>&& enviVars,
+                    std::string&& inputFiles,
+                    std::string&& outputFiles);
 
                 ProcessStartInfo(ProcessStartInfo&& startInfo) = default;
 
@@ -37,6 +39,8 @@ namespace hpc
                 int TaskRequeueCount;
                 std::vector<uint64_t> Affinity;
                 std::map<std::string, std::string> EnvironmentVariables;
+                std::string InputFiles;
+                std::string OutputFiles;
             protected:
             private:
         };
