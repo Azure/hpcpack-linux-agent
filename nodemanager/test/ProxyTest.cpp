@@ -90,15 +90,13 @@ bool ProxyTest::ProxyToLocal()
 
     sleep(1);
 
-    // verify the job start filter is called.
-    // The command line is changed to echo 456.
     std::ifstream outFile(stdoutFile, std::ios::in);
     if (outFile)
     {
         int num;
         outFile >> num;
-        Logger::Debug("stdout value {0}, expected value {1}", num, 456);
-        result &= num == 456;
+        Logger::Debug("stdout value {0}, expected value {1}", num, 123);
+        result &= num == 123;
     }
     else
     {

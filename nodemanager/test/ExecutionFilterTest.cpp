@@ -7,6 +7,7 @@
 #include <string>
 #include <cpprest/http_listener.h>
 #include <cpprest/json.h>
+#include <boost/algorithm/string/predicate.hpp>
 
 #include "../utils/JsonHelper.h"
 #include "../core/Process.h"
@@ -48,19 +49,19 @@ bool ExecutionFilterTest::JobStart()
     std::string uri = "/api/" + nodeName + "/startjobandtask";
     uri_builder builder(uri);
 
-    std::string stdoutFile = "/tmp/JobStartFilterTest";
+    std::string stderrFile = "/tmp/JobStartFilterTest";
     std::string output;
-    System::ExecuteCommandOut(output, "rm", stdoutFile);
+    System::ExecuteCommandOut(output, "rm", stderrFile);
 
     ProcessStartInfo psi(
-        "echo 123",
+        "mpiexec hostname",
         "",
-        std::string(stdoutFile),
         "",
+        std::string(stderrFile),
         "",
         0,
         std::vector<uint64_t>(),
-        { { "CCP_ISADMIN", "1" } });
+        { { "CCP_MPI_SOURCE", "invalidPath" } });
 
     StartJobAndTaskArgs arg(
         88,
@@ -87,17 +88,17 @@ bool ExecutionFilterTest::JobStart()
 
     // verify the job start filter is called.
     // The command line is changed to echo 456.
-    std::ifstream outFile(stdoutFile, std::ios::in);
+    std::ifstream outFile(stderrFile, std::ios::in);
     if (outFile)
     {
-        int num;
-        outFile >> num;
-        Logger::Debug("stdout value {0}, expected value {1}", num, 456);
-        result &= num == 456;
+        std::string output((std::istreambuf_iterator<char>(outFile)), std::istreambuf_iterator<char>());
+        std::string expectedSuffix = "invalidPath/mpiexec: No such file or directory\n";
+        Logger::Debug("stdout value \"{0}\", expected value \"... {1}\"", output, expectedSuffix);
+        result &= boost::algorithm::ends_with(output, expectedSuffix);
     }
     else
     {
-        Logger::Debug("Stdout file not found {0}", stdoutFile);
+        Logger::Debug("Stdout file not found {0}", stderrFile);
         result = false;
     }
 
