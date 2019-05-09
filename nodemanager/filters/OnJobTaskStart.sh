@@ -12,7 +12,8 @@ log_error=$log_prefix.error
 
 echo $input | (\
 python /opt/hpcnodemanager/filters/AdjustTaskAffinity.py | \
-python /opt/hpcnodemanager/filters/AdjustMpiCommand.py \
+python /opt/hpcnodemanager/filters/AdjustMpiCommand.py | \
+python /opt/hpcnodemanager/filters/AddDataIoCommand.py \
 ) 2>$log_error
 
 error_code=$?
