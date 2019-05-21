@@ -99,7 +99,7 @@ else
 	trustKeysDir=${rootLogFolder}/${taskExecutionId}_${userName}/
 	eval sshFolder=~${userName}/.ssh/
 
-	saveLogCmd="mkdir -p $trustKeysDir && cp -rf ${sshFolder}* $trustKeysDir"
+	saveLogCmd="cp -rf ${sshFolder} $trustKeysDir"
 
 	for node in "${nodes[@]}"
 	do
