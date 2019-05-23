@@ -136,14 +136,22 @@ Monitor::Monitor(const std::string& nodeName, const std::string& netName, int in
 
     this->collectors["\\Network Interface\\Bytes Total/sec"] = std::make_shared<MetricCollectorBase>([this] (const std::string& instanceName)
     {
-        if (instanceName == "eth0" || instanceName.empty())
+        if (instanceName.empty())
+        {
+            return this->networkUsage + this->ibNetworkUsage;
+        }
+        else if (instanceName == "eth0")
         {
             return this->networkUsage;
         }
+        else if (instanceName == "IB")
+        {
+            return this->ibNetworkUsage;
+        }
         else
         {
-            return 0.0f;
             Logger::Warn("Unable to collect {0} for \\Network Interface\\Bytes Total/sec", instanceName);
+            return 0.0f;
         }
     });
 
@@ -501,7 +509,7 @@ json::value Monitor::GetRegisterInfo()
 
 void Monitor::Run()
 {
-    uint64_t cpuLast = 0, idleLast = 0, networkLast = 0;
+    uint64_t cpuLast = 0, idleLast = 0, networkLast = 0, ibNetworkLast = 0;
     int collectCount = 0;
 
     while (true)
@@ -540,6 +548,15 @@ void Monitor::Run()
         float networkUsage = (float)(networkCurrent - networkLast) / this->intervalSeconds;
         networkLast = networkCurrent;
 
+        // IB network usage
+        float ibNetworkUsage = 0;
+        if (NodeManagerConfig::GetCollectIbNetworkUsage())
+        {
+            uint64_t ibNetworkCurrent = this->GetIbNetworkUsage();
+            ibNetworkUsage = (float)(ibNetworkCurrent - ibNetworkLast) / this->intervalSeconds;
+            ibNetworkLast = ibNetworkCurrent;
+        }
+
         // ip address;
         std::string ipAddress = System::GetIpAddress(IpAddressVersion::V4, this->networkName);
 
@@ -575,6 +592,7 @@ void Monitor::Run()
             this->cpuUsage = cpuUsage;
             this->availableMemoryMb = availableMemoryMb;
             this->networkUsage = networkUsage;
+            this->ibNetworkUsage = ibNetworkUsage;
 
             this->totalMemoryMb = totalMemoryMb;
             this->ipAddress = ipAddress;
@@ -650,6 +668,29 @@ std::string Monitor::QueryAzureInstanceMetadata()
     }
 
     return std::move(azureInstanceMetadata);
+}
+
+uint64_t Monitor::GetIbNetworkUsage()
+{
+    uint64_t total = 0;
+    auto ibCounterPaths = NodeManagerConfig::GetIbNetworkCounterPath();
+    for (const auto & path : ibCounterPaths)
+    {
+        std::string output;
+        if (0 == System::ExecuteCommandOut(output, "head -n1 2>&1", path))
+        {
+            uint64_t value;
+            std::istringstream iss(output);
+            iss >> value;
+            total += value;
+        }
+        else
+        {
+            Logger::Warn("Failed to get IB network usage from {0}: {1}", path, output);
+        }
+    }
+
+    return total;
 }
 
 void* Monitor::MonitoringThread(void* arg)
