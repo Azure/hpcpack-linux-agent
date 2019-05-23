@@ -12,8 +12,8 @@ processId=$2
 forced=$3
 taskFolder=$4
 
-isDockerTask=$(CheckDockerEnvFileExist $taskFolder)
-cgDisabled=$(CheckCgroupDisabledInFlagFile $taskFolder)
+isDockerTask=$(CheckDockerImageNameNotEmpty $taskFolder)
+cgDisabled=$(CheckDisableCgroupSet $taskFolder)
 if $CGInstalled && ! $cgDisabled; then
 	if $isDockerTask; then
 		containerId=$(GetContainerId $taskFolder)

@@ -10,7 +10,7 @@ taskId=$1
 processId=$2
 taskFolder=$3
 
-isDockerTask=$(CheckDockerEnvFileExist $taskFolder)
+isDockerTask=$(CheckDockerImageNameNotEmpty $taskFolder)
 if $isDockerTask; then
 	isDebugMode=$(CheckDockerDebugMode $taskFolder)
 	if ! $isDebugMode; then
@@ -32,9 +32,9 @@ if $isDockerTask; then
 	exit
 fi
 
-/bin/bash ./EndTask.sh "$taskId" "$processId" "1"
+/bin/bash ./EndTask.sh "$taskId" "$processId" "1" "$taskFolder"
 
-cgDisabled=$(CheckCgroupDisabledInFlagFile $taskFolder)
+cgDisabled=$(CheckDisableCgroupSet $taskFolder)
 if $CGInstalled && ! $cgDisabled; then
 	groupName=$(GetCGroupName "$taskId")
 	group=$CGroupSubSys:$groupName

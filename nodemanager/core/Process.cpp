@@ -144,14 +144,12 @@ void Process::OnCompletedInternal()
 void* Process::ForkThread(void* arg)
 {
     Process* const p = static_cast<Process* const>(arg);
+    int ret;
     std::string path;
-    auto dockerImageIt = p->environments.find("CCP_DOCKER_IMAGE");
-    bool isDockerTask = dockerImageIt != p->environments.end() && !dockerImageIt->second.empty();
-    auto disableCgroupIt = p->environments.find("CCP_DISABLE_CGROUP");
-    bool disableCgroup = disableCgroupIt != p->environments.end() && disableCgroupIt->second == "1";
+    std::string envFile; 
 
 Start:
-    int ret = p->CreateTaskFolder();
+    ret = p->CreateTaskFolder();
     if (ret != 0)
     {
         p->message << "Task " << p->taskId << ": error when create task folder, ret " << ret << std::endl;
@@ -171,33 +169,18 @@ Start:
         goto Final;
     }
 
-    if (isDockerTask)
+    p -> environmentsBuffer.clear();
+    std::transform(
+        p->environments.cbegin(),
+        p->environments.cend(),
+        std::back_inserter(p->environmentsBuffer),
+        [](const auto& v) { return String::Join("=", v.first, v.second); });
+    envFile = p->taskFolder + "/environments";
+    ret = System::WriteStringToFile(envFile, String::Join<'\n'>(p->environmentsBuffer));
+    if (ret != 0)
     {
-        p -> environmentsBuffer.clear();
-        std::transform(
-            p->environments.cbegin(),
-            p->environments.cend(),
-            std::back_inserter(p->environmentsBuffer),
-            [](const auto& v) { return String::Join("=", v.first, v.second); });
-    
-        std::string envFile = p->taskFolder + "/environments"; 
-        int ret = System::WriteStringToFile(envFile, String::Join<'\n'>(p->environmentsBuffer));
-        if (ret != 0)
-        {
-            Logger::Error(p->jobId, p->taskId, p->requeueCount, "Failed to create environment file for docker task. Exitcode: {0}", ret);
-            goto Final;
-        }
-    }
-
-    if (disableCgroup)
-    {
-        std::string flagFile = p->taskFolder + "/disable_cgroup";
-        int ret = System::WriteStringToFile(flagFile, "1");
-        if (ret != 0)
-        {
-            Logger::Error(p->jobId, p->taskId, p->requeueCount, "Failed to create flag file to disable cgroup. Exitcode: {0}", ret);
-            goto Final;
-        }
+        Logger::Error(p->jobId, p->taskId, p->requeueCount, "Failed to create task environments file {0}. Exitcode: {1}", envFile, ret);
+        goto Final;
     }
 
     if (0 != p->ExecuteCommand("/bin/bash", "PrepareTask.sh", p->taskExecutionId, p->GetAffinity(), p->taskFolder, p->userName))

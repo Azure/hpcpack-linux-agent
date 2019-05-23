@@ -23,7 +23,7 @@ case "$CCP_MPI_HOSTFILE_FORMAT" in
     *) echo $CCP_NODES_CORES | tr ' ' '\n' | sed -n 'n;p' > $CCP_MPI_HOSTFILE;;
 esac
 
-isDockerTask=$(CheckDockerEnvFileExist $taskFolder)
+isDockerTask=$(CheckDockerImageNameNotEmpty $taskFolder)
 if $isDockerTask; then
 	containerId=$(GetContainerId $taskFolder)
     docker exec $containerId /bin/bash -c "$taskFolder/TestMutualTrust.sh $taskId $taskFolder $userName" &&\
@@ -31,7 +31,7 @@ if $isDockerTask; then
     exit
 fi
 
-cgDisabled=$(CheckCgroupDisabledInFlagFile $taskFolder)
+cgDisabled=$(CheckDisableCgroupSet $taskFolder)
 if $CGInstalled && ! $cgDisabled; then
     groupName=$(GetCGroupName "$taskId")
     group=$CGroupSubSys:$groupName

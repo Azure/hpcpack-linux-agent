@@ -12,7 +12,7 @@ affinity=$2
 taskFolder=$3
 userName=$4
 
-isDockerTask=$(CheckDockerEnvFileExist $taskFolder)
+isDockerTask=$(CheckDockerImageNameNotEmpty $taskFolder)
 if $isDockerTask; then
 	isMpiTask=$(CheckMpiTask $taskFolder)
 	if $isMpiTask; then
@@ -28,7 +28,7 @@ if $isDockerTask; then
 	dockerImage=$(GetDockerImageName $taskFolder)
 	volumeOption=$(GetDockerVolumeOption $taskFolder)
 	additionalOption=$(GetDockerAdditionalOption $taskFolder)
-	envFile=$(GetDockerTaskEnvFile $taskFolder)
+	envFile=$(GetTaskEnvFile $taskFolder)
 	containerIdFile=$(GetContainerIdFile $taskFolder)
 	dockerEngine=$(GetDockerEngine $taskFolder)
 	$dockerEngine run -id \
@@ -70,7 +70,7 @@ if $isDockerTask; then
 	exit
 fi
 
-cgDisabled=$(CheckCgroupDisabledInFlagFile $taskFolder)
+cgDisabled=$(CheckDisableCgroupSet $taskFolder)
 if $CGInstalled && ! $cgDisabled; then
 	groupName=$(GetCGroupName "$taskId")
 	group=$CGroupSubSys:$groupName
@@ -116,11 +116,11 @@ if $CGInstalled && ! $cgDisabled; then
 		exit $ec
 	fi
 
+	numaMaxIndex=$((`lscpu | grep 'NUMA node(s)' | awk '{print $NF}'` - 1))
 	maxLoop=3
 	while [ $maxLoop -gt 0 ]
 	do
 		memsFile=$(GetMemsFile "$groupName")
-		numaMaxIndex=$((`lscpu | grep 'NUMA node(s)' | awk '{print $NF}'` - 1))
 		echo 0-$numaMaxIndex > "$memsFile"
 		ec=$?
 		if [ $ec -eq 0 ]
@@ -138,6 +138,49 @@ if $CGInstalled && ! $cgDisabled; then
 		exit $ec
 	fi
 
+	memoryLimit=$(GetMemoryLimitBytes $taskFolder)
+	maxLoop=3
+	while [ $maxLoop -gt 0 ]
+	do
+		memoryLimitFile=$(GetMemoryLimitFile "$groupName")
+		echo $memoryLimit > "$memoryLimitFile"
+		ec=$?
+		if [ $ec -eq 0 ]
+		then
+			break
+		fi
+
+		echo "Failed to set memory limit for $group, error code $ec, retry after .5 seconds"
+		((maxLoop--))
+		sleep .5
+	done
+
+	if [ $ec -ne 0 ]
+	then
+		exit $ec
+	fi
+
+	maxLoop=3
+	while [ $maxLoop -gt 0 ]
+	do
+		memorySwappinessFile=$(GetMemorySwappinessFile "$groupName")
+		echo 0 > "$memorySwappinessFile"
+		ec=$?
+		if [ $ec -eq 0 ]
+		then
+			break
+		fi
+
+		echo "Failed to disable memory swap for $group, error code $ec, retry after .5 seconds"
+		((maxLoop--))
+		sleep .5
+	done
+
+	if [ $ec -ne 0 ]
+	then
+		exit $ec
+	fi
+
 	tasks=$(GetCpusetTasksFile "$groupName")
 	freezerState=$(GetFreezerStateFile "$groupName")
 
@@ -146,4 +189,3 @@ if $CGInstalled && ! $cgDisabled; then
 
 	exit 0
 fi
-

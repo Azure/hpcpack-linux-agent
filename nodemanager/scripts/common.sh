@@ -55,6 +55,18 @@ function GetFreezerStateFile
 	GetGroupFile "$groupName" freezer freezer.state
 }
 
+function GetMemoryLimitFile
+{
+	local groupName=$1
+	GetGroupFile "$groupName" memory memory.limit_in_bytes
+}
+
+function GetMemorySwappinessFile
+{
+	local groupName=$1
+	GetGroupFile "$groupName" memory memory.swappiness
+}
+
 MpiContainerSuffix="MPI"
 DebugContainerSuffix="DEBUG"
 TmpSshDir="/tmp/hpcSshKey/.ssh"
@@ -85,7 +97,7 @@ function GetContainerPlaceholder
 	echo "$taskFolder/placeholder"
 }
 
-function GetDockerTaskEnvFile
+function GetTaskEnvFile
 {
 	local taskFolder=$1
 	echo "$taskFolder/environments"
@@ -103,10 +115,10 @@ function GetContainerId
 	cat $(GetContainerIdFile $taskFolder)
 }
 
-function CheckDockerEnvFileExist
+function CheckDockerImageNameNotEmpty
 {
 	local taskFolder=$1
-	[ -f $(GetDockerTaskEnvFile $taskFolder) ] && echo true || echo false
+	[ -z $taskFolder ] || [ -z $(GetDockerImageName $taskFolder) ] && echo false || echo true
 } 
 
 function GetUserSshDir
@@ -127,14 +139,14 @@ function GetMpiContainerStartOption
 function CheckMpiTask
 {
 	local taskFolder=$1
-	local nodeNum=$(cat $(GetDockerTaskEnvFile $taskFolder) | grep "CCP_NODES=" | sed -r 's/^CCP_NODES=([0-9]+) .*/\1/g')
+	local nodeNum=$(cat $(GetTaskEnvFile $taskFolder) | grep "CCP_NODES=" | sed -r 's/^CCP_NODES=([0-9]+) .*/\1/g')
 	[ "$nodeNum" -gt 1 ] && echo true || echo false
 }
 
 function CheckDockerDebugMode
 {
 	local taskFolder=$1
-	debugOption=$(cat $(GetDockerTaskEnvFile $taskFolder) | grep "CCP_DOCKER_DEBUG=" | cut -d '=' -f 2)
+	debugOption=$(cat $(GetTaskEnvFile $taskFolder) | grep "CCP_DOCKER_DEBUG=" | cut -d '=' -f 2)
 	[ -z $debugOption ] || [ "$debugOption" == "0" ] && echo false || echo true
 }
 
@@ -145,7 +157,7 @@ function GetDockerEngine
 		echo "docker"
 	else
 		local taskFolder=$1
-		local nvidiaOption=$(cat $(GetDockerTaskEnvFile $taskFolder) | grep "CCP_DOCKER_NVIDIA=" | cut -d '=' -f 2)
+		local nvidiaOption=$(cat $(GetTaskEnvFile $taskFolder) | grep "CCP_DOCKER_NVIDIA=" | cut -d '=' -f 2)
 		if [ -z $nvidiaOption ] || [ "$nvidiaOption" == "0" ]; then
 			echo "docker"
 		else
@@ -157,19 +169,19 @@ function GetDockerEngine
 function GetDockerImageName
 {
 	local taskFolder=$1
-	cat $(GetDockerTaskEnvFile $taskFolder) | grep "CCP_DOCKER_IMAGE=" | cut -d '=' -f 2
+	cat $(GetTaskEnvFile $taskFolder) | grep "CCP_DOCKER_IMAGE=" | cut -d '=' -f 2
 }
 
 function GetDockerVolumeOption
 {
 	local taskFolder=$1
-	cat $(GetDockerTaskEnvFile $taskFolder) | grep "CCP_DOCKER_VOLUMES=" | sed -e 's/^CCP_DOCKER_VOLUMES=/-v /g' -e 's/,/ -v /g'
+	cat $(GetTaskEnvFile $taskFolder) | grep "CCP_DOCKER_VOLUMES=" | sed -e 's/^CCP_DOCKER_VOLUMES=/-v /g' -e 's/,/ -v /g'
 }
 
 function GetDockerAdditionalOption
 {
 	local taskFolder=$1
-	cat $(GetDockerTaskEnvFile $taskFolder) | grep "CCP_DOCKER_START_OPTION=" | sed 's/^CCP_DOCKER_START_OPTION=//'
+	cat $(GetTaskEnvFile $taskFolder) | grep "CCP_DOCKER_START_OPTION=" | sed 's/^CCP_DOCKER_START_OPTION=//'
 }
 
 function GetSshStartCommand
@@ -184,9 +196,17 @@ function GetSshStopCommand
 	echo $version | grep -iq ubuntu && echo "service ssh stop" || echo "service sshd stop"
 }
 
-function CheckCgroupDisabledInFlagFile
+function CheckDisableCgroupSet
 {
 	local taskFolder=$1
-	local flagFile="$taskFolder/disable_cgroup"
-	[ -f $flagFile ] && [ "$(head $flagFile)" == "1" ] && echo true || echo false
+	[ -z $taskFolder ] && echo false && exit
+	local disableCgroupValue=$(cat $(GetTaskEnvFile $taskFolder) | grep "CCP_DISABLE_CGROUP=" | cut -d '=' -f 2)
+	[ "$disableCgroupValue" == "1" ] && echo true || echo false
+}
+
+function GetMemoryLimitBytes
+{
+	local taskFolder=$1
+	local memoryLimitMegaBytes=$(cat $(GetTaskEnvFile $taskFolder) | grep "CCP_MAXIMUMMEMORY=" | cut -d '=' -f 2)
+	[ -z $memoryLimitMegaBytes ] && echo -1 || echo ${memoryLimitMegaBytes}M
 }

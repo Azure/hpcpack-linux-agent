@@ -9,7 +9,7 @@
 taskId=$1
 taskFolder=$2
 
-isDockerTask=$(CheckDockerEnvFileExist $taskFolder)
+isDockerTask=$(CheckDockerImageNameNotEmpty $taskFolder)
 
 userTime10Ms=0
 kernelTime10Ms=0
@@ -34,7 +34,7 @@ function GetMemoryMaxusageFile
 	GetGroupFile "$groupName" memory memory.max_usage_in_bytes
 }
 
-cgDisabled=$(CheckCgroupDisabledInFlagFile $taskFolder)
+cgDisabled=$(CheckDisableCgroupSet $taskFolder)
 if $CGInstalled && ! $cgDisabled; then
 	if $isDockerTask; then
 		containerId=$(GetContainerId $taskFolder)
