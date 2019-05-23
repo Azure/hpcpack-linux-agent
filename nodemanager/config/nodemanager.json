@@ -3,22 +3,20 @@
     "TrustedCAPath":"/opt/hpcnodemanager/certs/",
     "UseDefaultCA":false,
     "ClusterAuthenticationKey":"",
-    "HeartbeatUri":"https://{0}:40001/api/evanclv9/computenodereported",
-    "TaskCompletionUri":"http://evanc7:1328/api/evanclv9/taskcompleted",
-    "MetricInstanceIdsUri":"https://{0}:40001/api/evanclv9/getinstanceids",
-    "MetricUri":"udp://EVANCV7.fareast.corp.microsoft.com:9894/api/4aed4836-c0c8-4e92-853d-cac4698582d1/metricreported",
-    "RegisterUri":"https://{0}:40001/api/evanclv9/registerrequested",
+    "HeartbeatUri":"http://{0}:80/HpcLinux/api/IaaSLnxCN000/computenodereported",
+    "TaskCompletionUri":"http://{0}:80/HpcLinux/api/IaaSLnxCN000/taskcompleted",
+    "MetricInstanceIdsUri":"http://{0}:80/HpcLinux/api/IaaSLnxCN000/getinstanceids",
+    "MetricUri":"udp://{0}:9894/api/736c5d1e-4dce-4463-851b-e85d00abac4c/metricreported",
+    "RegisterUri":"http://{0}:80/HpcLinux/api/IaaSLnxCN000/registerrequested",
     "CertificateChainFile":"/opt/hpcnodemanager/certs/hpclocal.onmicrosoft.com.crt",
     "PrivateKeyFile":"/opt/hpcnodemanager/certs/hpclocal.onmicrosoft.com.key",
-    "ListeningUri":"https://0.0.0.0:40002",
+    "ListeningUri":"http://0.0.0.0:40000",
     "Debug":false,
     "LogLevel":1,
-    "NamingServiceUri":[
-        "http://evancv7:8939/api/fabric/resolve/singleton/",
-        "http://evancv7:8939/api/fabric/resolve/singleton/",
-        "http://evancv7:8939/api/fabric/resolve/singleton/"
-        ],
+    "NamingServiceUri":["https://hpc6292:443/HpcNaming/api/fabric/resolve/singleton/"],
     "DefaultServiceName":"SchedulerStatefulService",
     "UdpMetricServiceName":"MonitoringStatefulService",
-    "AzureInstanceMetaDataUri":"http://169.254.169.254/metadata/instance?api-version=2017-08-01"
+    "AzureInstanceMetaDataUri":"http://169.254.169.254/metadata/instance?api-version=2017-08-01",
+    "HostsFetchInterval":120,
+    "HostsFileUri":"http://{0}:80/HpcLinux/api/hostsfile"
 }
