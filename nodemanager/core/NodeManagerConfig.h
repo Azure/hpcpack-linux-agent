@@ -45,6 +45,8 @@ namespace hpc
                 AddConfigurationItem(std::string, TaskCompletionUri);
                 AddConfigurationItem(std::string, HostsFileUri);
                 AddConfigurationItem(std::string, AzureInstanceMetaDataUri);
+                AddConfigurationItem(bool, CollectIbNetworkUsage);
+                AddConfigurationItem(std::vector<std::string>, IbNetworkCounterPath);
 
                 static std::string ResolveRegisterUri(pplx::cancellation_token token)
                 {

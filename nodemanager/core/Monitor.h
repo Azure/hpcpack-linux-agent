@@ -51,6 +51,7 @@ namespace hpc
                 float cpuUsage;
                 float availableMemoryMb;
                 float networkUsage;
+                float ibNetworkUsage;
 
                 int coreCount;
                 int socketCount;
@@ -80,6 +81,7 @@ namespace hpc
                 void InitializeMetadataRequester();
                 std::string QueryAzureInstanceMetadata();
                 int remainingRetryCount = 5;
+                uint64_t GetIbNetworkUsage();
         };
     }
 }

@@ -20,5 +20,10 @@
         ],
     "DefaultServiceName":"SchedulerStatefulService",
     "UdpMetricServiceName":"MonitoringStatefulService",
-    "AzureInstanceMetaDataUri":"http://169.254.169.254/metadata/instance?api-version=2017-08-01"
+    "AzureInstanceMetaDataUri":"http://169.254.169.254/metadata/instance?api-version=2017-08-01",
+    "CollectIbNetworkUsage":false,
+    "IbNetworkCounterPath":[
+        "/sys/class/infiniband/mlx5_*/ports/1/counters/port_xmit_data",
+        "/sys/class/infiniband/mlx5_*/ports/1/counters/port_rcv_data"
+    ]
 }
