@@ -20,8 +20,8 @@
     "HostsFetchInterval":120,
     "HostsFileUri":"http://{0}:80/HpcLinux/api/hostsfile",
     "CollectIbNetworkUsage":false,
-    "IbNetworkCounterPath":[
-        "/sys/class/infiniband/mlx5_*/ports/1/counters/port_xmit_data",
-        "/sys/class/infiniband/mlx5_*/ports/1/counters/port_rcv_data"
-    ]
+    "IbNetworkCounterPathAndFactor":{
+        "/sys/class/infiniband/mlx5_*/ports/1/counters/port_xmit_data":4,
+        "/sys/class/infiniband/mlx5_*/ports/1/counters/port_rcv_data":4
+    }
 }

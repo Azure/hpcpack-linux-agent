@@ -22,6 +22,14 @@ namespace hpc
                     instance.Save(); \
                 }
 
+#define AddReadOnlyConfigurationItem(T, name) \
+                static T Get##name() \
+                { \
+                    return instance.ReadValue<T>(#name); \
+                }
+
+typedef std::map<std::string, int> map_string_int_t;
+
         class NodeManagerConfig : Configuration
         {
             public:
@@ -46,7 +54,7 @@ namespace hpc
                 AddConfigurationItem(std::string, HostsFileUri);
                 AddConfigurationItem(std::string, AzureInstanceMetaDataUri);
                 AddConfigurationItem(bool, CollectIbNetworkUsage);
-                AddConfigurationItem(std::vector<std::string>, IbNetworkCounterPath);
+                AddReadOnlyConfigurationItem(map_string_int_t, IbNetworkCounterPathAndFactor);
 
                 static std::string ResolveRegisterUri(pplx::cancellation_token token)
                 {

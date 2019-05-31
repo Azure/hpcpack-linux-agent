@@ -673,16 +673,18 @@ std::string Monitor::QueryAzureInstanceMetadata()
 uint64_t Monitor::GetIbNetworkUsage()
 {
     uint64_t total = 0;
-    auto ibCounterPaths = NodeManagerConfig::GetIbNetworkCounterPath();
-    for (const auto & path : ibCounterPaths)
+    auto ibCounterPathAndFactors = NodeManagerConfig::GetIbNetworkCounterPathAndFactor();
+    for (const auto & pathAndFactor : ibCounterPathAndFactors)
     {
         std::string output;
+        std::string path = pathAndFactor.first;
+        int factor = pathAndFactor.second;
         if (0 == System::ExecuteCommandOut(output, "head -n1 2>&1", path))
         {
             uint64_t value;
             std::istringstream iss(output);
             iss >> value;
-            total += value;
+            total += value * factor;
         }
         else
         {
