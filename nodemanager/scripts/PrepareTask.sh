@@ -15,8 +15,13 @@ userName=$4
 isDockerTask=$(CheckDockerEnvFileExist $taskFolder)
 if $isDockerTask; then
 	isMpiTask=$(CheckMpiTask $taskFolder)
+	skipSshSetup=$(CheckSkipSshSetup $taskFolder)
 	if $isMpiTask; then
 		mpiContainerStartOption=$(GetMpiContainerStartOption $userName)
+	fi
+
+	if $skipSshSetup; then
+		mpiContainerStartOption=""
 	fi
 
 	isDebugMode=$(CheckDockerDebugMode $taskFolder)
@@ -32,15 +37,15 @@ if $isDockerTask; then
 	containerIdFile=$(GetContainerIdFile $taskFolder)
 	dockerEngine=$(GetDockerEngine $taskFolder)
 	$dockerEngine run -id \
+				$additionalOption \
+				$volumeOption \
+				$mpiContainerStartOption \
 				--name $containerName \
 				--cpuset-cpus $affinity \
 				--env-file $envFile \
 				--cidfile $containerIdFile \
 				-v $taskFolder:$taskFolder:z \
-				$volumeOption \
-				$mpiContainerStartOption \
-				$additionalOption \
-				$dockerImage $ContainerPlaceholderCommand 2>&1
+				$dockerImage 2>&1
 	
 	ec=$?
 	if [ $ec -ne 0 ]
@@ -50,20 +55,9 @@ if $isDockerTask; then
 	fi	
 
 	containerId=$(GetContainerId $taskFolder)
-	groupName=$(GetCGroupNameOfDockerTask $containerId)
-	tasks=$(GetCpusetTasksFile "$groupName")
-	cat $tasks > $(GetContainerPlaceholder $taskFolder)
-
-	ec=$?
-	if [ $ec -ne 0 ]
-	then
-		echo "Failed to set docker container placeholder $tasks"
-		exit $ec
-	fi	
-
 	docker exec $containerId useradd -m $userName
     docker exec $containerId chown $userName $taskFolder
-	if $isMpiTask; then
+	if $isMpiTask && ! $skipSshSetup; then
 		/bin/bash MpiContainerPreparation.sh $containerId $userName
 	fi
 

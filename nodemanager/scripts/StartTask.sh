@@ -27,7 +27,7 @@ isDockerTask=$(CheckDockerEnvFileExist $taskFolder)
 if $isDockerTask; then
 	containerId=$(GetContainerId $taskFolder)
     docker exec $containerId /bin/bash -c "$taskFolder/TestMutualTrust.sh $taskId $taskFolder $userName" &&\
-    docker exec -u $userName $containerId /bin/bash $runPath
+    docker exec -u $userName -e CCP_MPI_HOSTFILE=$taskFolder/mpi_hostfile $containerId /bin/bash $runPath
     exit
 fi
 

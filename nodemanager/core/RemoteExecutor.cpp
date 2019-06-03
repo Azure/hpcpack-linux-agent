@@ -3,6 +3,7 @@
 #include <boost/uuid/string_generator.hpp>
 #include <boost/uuid/uuid_io.hpp>
 #include <boost/algorithm/string.hpp>
+#include <boost/algorithm/string/replace.hpp>
 
 #include "RemoteExecutor.h"
 #include "HttpReporter.h"
@@ -162,11 +163,18 @@ pplx::task<json::value> RemoteExecutor::StartTask(StartTaskArgs&& args, std::str
         Logger::Info(args.JobId, args.TaskId, args.StartInfo.TaskRequeueCount, "MPI non-master task found, skip creating the process.");
         std::string dockerImage = args.StartInfo.EnvironmentVariables["CCP_DOCKER_IMAGE"];
         std::string isNvidiaDocker = args.StartInfo.EnvironmentVariables["CCP_DOCKER_NVIDIA"];
+        std::string additionalOption = args.StartInfo.EnvironmentVariables["CCP_DOCKER_START_OPTION"];
+        std::string skipSshSetup = args.StartInfo.EnvironmentVariables["CCP_DOCKER_SKIP_SSH_SETUP"];
         if (!dockerImage.empty())
         {
             taskInfo->IsPrimaryTask = false;
             std::string output;
-            int ret = System::ExecuteCommandOut(output, "/bin/bash 2>&1", "StartMpiContainer.sh", taskInfo->TaskId, userName, dockerImage, isNvidiaDocker);
+            dockerImage = String::Join(dockerImage, "\"", "\"");
+            isNvidiaDocker = String::Join(isNvidiaDocker, "\"", "\"");
+            boost::replace_all(additionalOption, "\"", "\\\"");
+            additionalOption = String::Join(additionalOption, "\"", "\"");
+            skipSshSetup = String::Join(skipSshSetup, "\"", "\"");
+            int ret = System::ExecuteCommandOut(output, "/bin/bash 2>&1", "StartMpiContainer.sh", taskInfo->TaskId, userName, dockerImage, isNvidiaDocker, additionalOption, skipSshSetup);
             if (ret == 0)
             {
                 Logger::Info(taskInfo->JobId, taskInfo->TaskId, taskInfo->GetTaskRequeueCount(), "Start MPI container successfully.");

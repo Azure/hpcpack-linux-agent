@@ -19,7 +19,8 @@ if $isDockerTask; then
 	fi
 
 	isMpiTask=$(CheckMpiTask $taskFolder)
-	if $isMpiTask; then
+	skipSshSetup=$(CheckSkipSshSetup $taskFolder)
+	if $isMpiTask && ! $skipSshSetup; then
 		$(GetSshStartCommand)
 		ec=$?
 		if [ $ec -ne 0 ]

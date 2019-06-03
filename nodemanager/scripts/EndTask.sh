@@ -37,13 +37,6 @@ if $CGInstalled && ! $cgDisabled; then
 		((maxLoop--))
 	done
 
-	if $isDockerTask; then
-		dockerTasks=$taskFolder/dockerTasks
-		containerPlaceholder=$(GetContainerPlaceholder $taskFolder)
-		cat $tasks | sed "/^$(cat $containerPlaceholder)$/d" > $dockerTasks
-		tasks=$dockerTasks
-	fi
-
 	# kill all tasks
 	while read pid || [ -n "$pid" ]
 	do

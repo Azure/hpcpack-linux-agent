@@ -58,7 +58,6 @@ function GetFreezerStateFile
 MpiContainerSuffix="MPI"
 DebugContainerSuffix="DEBUG"
 TmpSshDir="/tmp/hpcSshKey/.ssh"
-ContainerPlaceholderCommand="/bin/bash"
 
 function GetContainerName
 {
@@ -77,12 +76,6 @@ function GetCGroupNameOfDockerTask
 	else
 		echo $systemdName
 	fi
-}
-
-function GetContainerPlaceholder
-{
-	local taskFolder=$1
-	echo "$taskFolder/placeholder"
 }
 
 function GetDockerTaskEnvFile
@@ -136,6 +129,13 @@ function CheckDockerDebugMode
 	local taskFolder=$1
 	debugOption=$(cat $(GetDockerTaskEnvFile $taskFolder) | grep "CCP_DOCKER_DEBUG=" | cut -d '=' -f 2)
 	[ -z $debugOption ] || [ "$debugOption" == "0" ] && echo false || echo true
+}
+
+function CheckSkipSshSetup
+{
+	local taskFolder=$1
+	local skipSshSetup=$(cat $(GetDockerTaskEnvFile $taskFolder) | grep "CCP_DOCKER_SKIP_SSH_SETUP=" | cut -d '=' -f 2)
+	[ "$skipSshSetup" == "1" ] && echo true || echo false
 }
 
 function GetDockerEngine
