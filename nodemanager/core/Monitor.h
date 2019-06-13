@@ -30,7 +30,7 @@ namespace hpc
 
                 ~Monitor();
 
-                std::vector<unsigned char> GetMonitorPacketData();
+                std::vector<std::vector<unsigned char>> GetMonitorPacketData();
                 json::value GetRegisterInfo();
 
                 void SetNodeUuid(const uuid& id);

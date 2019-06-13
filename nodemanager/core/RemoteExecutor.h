@@ -68,7 +68,7 @@ namespace hpc
 
                 std::unique_ptr<Reporter<json::value>> nodeInfoReporter;
                 std::unique_ptr<Reporter<json::value>> registerReporter;
-                std::unique_ptr<Reporter<std::vector<unsigned char>>> metricReporter;
+                std::unique_ptr<Reporter<std::vector<std::vector<unsigned char>>>> metricReporter;
                 std::unique_ptr<HostsManager> hostsManager;
 
                 std::map<uint64_t, std::shared_ptr<Process>> processes;

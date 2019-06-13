@@ -15,9 +15,9 @@ UdpReporter::UdpReporter(
     std::function<std::string(pplx::cancellation_token)> getReportUri,
     int hold,
     int interval,
-    std::function<std::vector<unsigned char>()> fetcher,
+    std::function<std::vector<std::vector<unsigned char>>()> fetcher,
     std::function<void()> onErrorFunc)
-    : Reporter<std::vector<unsigned char>>(name, getReportUri, hold, interval, fetcher, onErrorFunc)
+    : Reporter<std::vector<std::vector<unsigned char>>>(name, getReportUri, hold, interval, fetcher, onErrorFunc)
 {
 }
 
@@ -122,32 +122,35 @@ int UdpReporter::Report()
         }
     }
 
-    auto data = this->valueFetcher();
+    auto dataSet = this->valueFetcher();
 
 //    std::vector<int> dataInt;
 //    std::transform(data.cbegin(), data.cend(), std::back_inserter(dataInt), [] (unsigned char c) { return c; });
 //    Logger::Debug("Report datasize {0}, data {1}", data.size(), String::Join<' '>(dataInt));
 
-    auto buffer = &data[0];
-
-    if (NodeManagerConfig::GetDebug())
+    for (const auto& data : dataSet)
     {
-        std::vector<int> d;
-        d.assign(data.begin(), data.end());
+        auto buffer = &data[0];
 
-        Logger::Debug("UdpReporter, Udp packet sent: {0}", String::Join<','>(d));
-    }
+        if (NodeManagerConfig::GetDebug())
+        {
+            std::vector<int> d;
+            d.assign(data.begin(), data.end());
 
-    int ret = write(this->s, buffer, data.size());
-    if (ret == -1)
-    {
-        Logger::Error(
-            "UdpReporter, Error when sendto {0}, socket {1}, errno {2}",
-            this->uri,
-            this->s,
-            errno);
+            Logger::Debug("UdpReporter, Udp packet sent: {0}", String::Join<','>(d));
+        }
 
-        this->initialized = false;
+        int ret = write(this->s, buffer, data.size());
+        if (ret == -1)
+        {
+            Logger::Error(
+                "UdpReporter, Error when sendto {0}, socket {1}, errno {2}",
+                this->uri,
+                this->s,
+                errno);
+
+            this->initialized = false;
+        }
     }
 
     return 0;

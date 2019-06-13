@@ -10,7 +10,7 @@ namespace hpc
 {
     namespace core
     {
-        class UdpReporter : public Reporter<std::vector<unsigned char>>
+        class UdpReporter : public Reporter<std::vector<std::vector<unsigned char>>>
         {
             public:
                 UdpReporter(
@@ -18,7 +18,7 @@ namespace hpc
                     std::function<std::string(pplx::cancellation_token)> getReportUri,
                     int hold,
                     int interval,
-                    std::function<std::vector<unsigned char>()> fetcher,
+                    std::function<std::vector<std::vector<unsigned char>>()> fetcher,
                     std::function<void()> onErrorFunc);
 
                 virtual ~UdpReporter();

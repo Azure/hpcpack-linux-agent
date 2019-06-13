@@ -52,6 +52,22 @@ namespace hpc
                 {
                 }
 
+                std::vector<unsigned char> ToByteArray(size_t size) const
+                {
+                    std::vector<unsigned char> packetData(size);
+                    memcpy(&packetData[0], this, std::min(sizeof(*this), size));
+                    return std::move(packetData);
+                }
+                
+                void ClearData()
+                {
+                    for (int i = 0; i < UmidCount; i++)
+                    {
+                        Umids[i] = Umid(0, 0);
+                        Values[i] = 0.0f;
+                    }
+                }
+
                 int Version;
                 Guid Uuid;
                 int Count;

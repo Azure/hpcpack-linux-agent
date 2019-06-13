@@ -392,10 +392,10 @@ bool Monitor::EnableMetricCounter(const MetricCounter& counterConfig, pplx::canc
     return false;
 }
 
-std::vector<unsigned char> Monitor::GetMonitorPacketData()
+std::vector<std::vector<unsigned char>> Monitor::GetMonitorPacketData()
 {
     const size_t MaxPacketSize = 1024;
-    std::vector<unsigned char> packetData(MaxPacketSize);
+    std::vector<std::vector<unsigned char>> packets;
 
     ReaderLock readerLock(&this->lock);
 
@@ -403,12 +403,7 @@ std::vector<unsigned char> Monitor::GetMonitorPacketData()
     {
        // this->packet.Count = std::count_if(this->collectors.begin(), this->collectors.end(), [] (auto& kvp) { return kvp.second->IsEnabled(); });
         this->packet.TickCount = this->intervalSeconds;
-        for (int i = 0; i < MaxCountersInPacket; i++)
-        {
-            this->packet.Umids[i] = Umid(0, 0);
-            this->packet.Values[i] = 0.0f;
-        }
-
+        this->packet.ClearData();
         int p = 0;
 
         if (NodeManagerConfig::GetDebug())
@@ -432,16 +427,26 @@ std::vector<unsigned char> Monitor::GetMonitorPacketData()
                     this->packet.Umids[p] = v.second;
                     this->packet.Values[p] = v.first;
                     p ++;
+
+                    if (p >= MaxCountersInPacket)
+                    {
+                        this->packet.Count = p;
+                        packets.push_back(this->packet.ToByteArray(MaxPacketSize));
+                        this->packet.ClearData();
+                        p = 0;
+                    }
                 }
             }
         }
 
-        this->packet.Count = p;
-
-        memcpy(&packetData[0], &this->packet, std::min(sizeof(this->packet), MaxPacketSize));
+        if (p > 0)
+        {
+            this->packet.Count = p;
+            packets.push_back(this->packet.ToByteArray(MaxPacketSize));
+        }
     }
 
-    return std::move(packetData);
+    return std::move(packets);
 }
 
 json::value Monitor::GetRegisterInfo()
@@ -609,7 +614,11 @@ void Monitor::Run()
 
             if (this->gpuInitRet == 0)
             {
-                Logger::Debug("Saving Gpu Info ret {0}, info count {1}", this->gpuInitRet, gpuInfo.GpuInfos.size());
+                if (NodeManagerConfig::GetDebug())
+                {
+                    Logger::Debug("Saving Gpu Info ret {0}, info count {1}", this->gpuInitRet, gpuInfo.GpuInfos.size());
+                }
+                
                 this->gpuInfo = std::move(gpuInfo);
             }
 

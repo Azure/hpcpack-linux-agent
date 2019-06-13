@@ -701,7 +701,7 @@ void RemoteExecutor::StartMetric()
         this->monitor.SetNodeUuid(id);
 
         this->metricReporter =
-            std::unique_ptr<Reporter<std::vector<unsigned char>>>(
+            std::unique_ptr<Reporter<std::vector<std::vector<unsigned char>>>>(
                 new UdpReporter(
                     "MetricReporter",
                     [](pplx::cancellation_token token) { return NodeManagerConfig::ResolveMetricUri(token); },
