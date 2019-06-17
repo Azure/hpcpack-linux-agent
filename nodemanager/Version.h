@@ -614,6 +614,26 @@ namespace hpc
                             "Fix affinity bug",
                         }
                     },
+                    { "2.4.0.0",
+                        {
+                            "Fix 'Cores In Use' not correct bug",
+                            "Fix a bug that HPC Pack environment variables will be lost if CCP_SWITCH_USER is set on CentOS",
+                            "Add environment variable CCP_DISABLE_CGROUP to enable running a task without cgroup",
+                            "Change the owner of home directory, which is created by Linux nodemanager, to the user instead of leaving it root",
+                            "Change the default working directory to home",
+                            "Fix a bug that memory is limited to the first NUMA node when using cgroup",
+                            "Fix code defect: get home dir by tilde expansion",
+                            "Add build-in execution filters to adjust task affinity in terms of core distribution in NUMA nodes",
+                            "Add build-in execution filters to modify command for preparation of mpi task",
+                            "Enable task statistics when task is running",
+                            "Fix a bug that zombie task clean up would fail when nodemanager starts",
+                            "Fix a bug that processes in task are not actually terminated after task canceling when cgroup is not enabled",
+                            "Add properties 'CcpVersion' and 'CustomProperties' in node registration info",
+                            "Add build-in execution filters to modify command for supporting downloading input files and uploading output files of task with HpcData service",
+                            "Support monitoring InfiniBand network usage",
+                            "Fix node manager crash issue due to out-of-bound array writing when constructing monitoring packet with too many data values",
+                        }
+                    },
                 };
 
                 return versionHistory;
