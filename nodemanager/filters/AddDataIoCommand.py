@@ -4,7 +4,7 @@ import sys, json
 
 j = json.load(sys.stdin)
 
-HpcDataClient = '/opt/HpcDataClient/HpcDataClient.exe'
+HpcDataClient = '/opt/HpcData/HpcDataClient.exe'
 commandLine = j['m_Item2'].get('commandLine')
 if commandLine:
     inputFiles = j['m_Item2'].get('inputFiles')
