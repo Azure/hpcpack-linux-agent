@@ -49,13 +49,7 @@ if $CGInstalled && ! $cgDisabled; then
 
 	cut -d" " -f2 "$statFile"
 	cat "$workingSetFile"
-
-	if $isDockerTask; then
-		containerPlaceholder=$(GetContainerPlaceholder $taskFolder)
-		cat $tasksFile | sed "/^$(cat $containerPlaceholder)$/d" | tr "\\n" " " 
-	else
-		tr "\\n" " " < "$tasksFile"
-	fi
+	tr "\\n" " " < "$tasksFile"
 
 	echo
 else
