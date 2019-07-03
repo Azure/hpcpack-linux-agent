@@ -56,7 +56,7 @@ if $CGInstalled && ! $cgDisabled; then
 		sleep .1
 		((maxLoop--))
 	done
-else
+else # processes would run away if pstree is not installed
     pid=$(pstree -l -p "$processId" | grep "([[:digit:]]*)" -o | tr -d '()')
     if [ -n "$pid" ]; then
         if [ "$forced" == "1" ]; then
