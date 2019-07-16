@@ -4,14 +4,12 @@ using namespace hpc::core;
 
 void MetricCollectorBase::ApplyConfig(const MetricCounter& config, pplx::cancellation_token token)
 {
-    this->metricId = config.MetricId;
-
-    if (config.InstanceName.empty() && this->instanceNamesFunc)
+    if (this->instanceNamesFunc)
     {
         try
         {
-            auto instanceNames = this->instanceNamesFunc();
-            Logger::Debug("queried instanceNames '{0}'", String::Join<','>(instanceNames));
+            auto instanceNames = this->instanceNamesFunc(config.InstanceName);
+            Logger::Debug("Filtered instance names: {0}", String::Join<','>(instanceNames));
 
             if (!instanceNames.empty())
             {
@@ -20,9 +18,9 @@ void MetricCollectorBase::ApplyConfig(const MetricCounter& config, pplx::cancell
                 json::value jsonBody = JsonHelper<std::vector<std::string>>::ToJson(instanceNames);
                 auto request = HttpHelper::GetHttpRequest(web::http::methods::POST, jsonBody);
 
-                client->request(*request).then([instanceNames, this](pplx::task<web::http::http_response> t)
+                client->request(*request).then([config, instanceNames, this](pplx::task<web::http::http_response> t)
                 {
-                    auto response = t.get().extract_json().then([instanceNames, this](pplx::task<json::value> t)
+                    auto response = t.get().extract_json().then([config, instanceNames, this](pplx::task<json::value> t)
                     {
                         auto jsonIds = t.get();
                         std::vector<int> ids = JsonHelper<std::vector<int>>::FromJson(jsonIds);
@@ -37,10 +35,10 @@ void MetricCollectorBase::ApplyConfig(const MetricCounter& config, pplx::cancell
                         }
                         else
                         {
-                            this->cachedInstanceIds.clear();
+                            this->counters[config.MetricId].clear();
                             for (size_t i = 0; i < ids.size(); i++)
                             {
-                                this->cachedInstanceIds[ids[i]] = instanceNames[i];
+                                this->counters[config.MetricId][ids[i]] = instanceNames[i];
                             }
 
                             this->enabled = true;
@@ -71,11 +69,8 @@ void MetricCollectorBase::ApplyConfig(const MetricCounter& config, pplx::cancell
             }
             else
             {
-                Logger::Warn(
-                    "No instances returned for metric {0}",
-                    config.MetricId);
-
-                this->cachedInstanceIds[config.InstanceId] = config.InstanceName;
+                Logger::Warn("No instances returned for metric {0}, instance filter {1}", config.MetricId, config.InstanceName);
+                this->counters[config.MetricId][config.InstanceId] = config.InstanceName;
                 this->enabled = true;
             }
         }
@@ -87,7 +82,7 @@ void MetricCollectorBase::ApplyConfig(const MetricCounter& config, pplx::cancell
     else
     {
         Logger::Debug("Config instance name {0}, instance id {1}", config.InstanceName, config.InstanceId);
-        this->cachedInstanceIds[config.InstanceId] = config.InstanceName;
+        this->counters[config.MetricId][config.InstanceId] = config.InstanceName;
         this->enabled = true;
     }
 }

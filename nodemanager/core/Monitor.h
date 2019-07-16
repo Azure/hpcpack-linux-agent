@@ -50,8 +50,7 @@ namespace hpc
                 std::string metricTime;
                 float cpuUsage;
                 float availableMemoryMb;
-                float networkUsage;
-                float ibNetworkUsage;
+                std::map<std::string, uint64_t> networkUsage;
 
                 int coreCount;
                 int socketCount;
@@ -81,7 +80,7 @@ namespace hpc
                 void InitializeMetadataRequester();
                 std::string QueryAzureInstanceMetadata();
                 int remainingRetryCount = 5;
-                uint64_t GetIbNetworkUsage();
+                static std::vector<std::string> GetFilteredInstanceNames(const std::vector<std::string> & instanceNames, const std::string & instanceFilter);
         };
     }
 }

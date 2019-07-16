@@ -18,10 +18,5 @@
     "UdpMetricServiceName":"MonitoringStatefulService",
     "AzureInstanceMetaDataUri":"http://169.254.169.254/metadata/instance?api-version=2017-08-01",
     "HostsFetchInterval":120,
-    "HostsFileUri":"http://{0}:80/HpcLinux/api/hostsfile",
-    "CollectIbNetworkUsage":false,
-    "IbNetworkCounterPathAndFactor":{
-        "/sys/class/infiniband/mlx5_*/ports/1/counters/port_xmit_data":4,
-        "/sys/class/infiniband/mlx5_*/ports/1/counters/port_rcv_data":4
-    }
+    "HostsFileUri":"http://{0}:80/HpcLinux/api/hostsfile"
 }

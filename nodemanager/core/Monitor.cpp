@@ -136,27 +136,56 @@ Monitor::Monitor(const std::string& nodeName, const std::string& netName, int in
 
     this->collectors["\\Network Interface\\Bytes Total/sec"] = std::make_shared<MetricCollectorBase>([this] (const std::string& instanceName)
     {
-        if (instanceName.empty())
+        if (instanceName == "_Total" || instanceName.empty())
         {
-            return this->networkUsage + this->ibNetworkUsage;
+            float total = 0;
+            for (const auto & pair : this->networkUsage)
+            {
+                total += (float)pair.second;
+            }
+
+            return total;
         }
-        else if (instanceName == "eth0")
+        else if (this->networkUsage.find(instanceName) != this->networkUsage.end())
         {
-            return this->networkUsage;
-        }
-        else if (instanceName == "IB")
-        {
-            return this->ibNetworkUsage;
+            return (float)this->networkUsage[instanceName];
         }
         else
         {
+            // handle network interface names with format "<link name>@<peer interface index>", like "eth0@if2"
+            auto pos = instanceName.find('@');
+            if (pos != std::string::npos)
+            {
+                auto subStr = instanceName.substr(0, pos);
+                if (this->networkUsage.find(subStr) != this->networkUsage.end())
+                {
+                    return (float)this->networkUsage[subStr];
+                }
+            }
+
             Logger::Warn("Unable to collect {0} for \\Network Interface\\Bytes Total/sec", instanceName);
             return 0.0f;
         }
+    },
+    [](const std::string& instanceFilter)
+    {
+        auto instanceNames = System::GetIbDevices();
+        for (const auto & netInfo : System::GetNetworkInfo())
+        {
+            instanceNames.push_back(std::get<0>(netInfo));
+        }
+
+        return GetFilteredInstanceNames(instanceNames, instanceFilter);
     });
 
     if (this->gpuInitRet == 0)
     {
+        auto gpuInstanceNamesFunc = [this](const std::string& instanceFilter)
+        {
+            auto instanceNames = this->gpuInfo.GetGpuInstanceNames();
+            return GetFilteredInstanceNames(instanceNames, instanceFilter);
+        };
+
         this->collectors["\\GPU\\GPU Time (%)"] = std::make_shared<MetricCollectorBase>([this] (const std::string& instanceName)
         {
             if (instanceName == "_Total" || instanceName.empty())
@@ -178,11 +207,7 @@ Monitor::Monitor(const std::string& nodeName, const std::string& netName, int in
                     return 0.0f;
                 }
             }
-        },
-        [this]()
-        {
-            return this->gpuInfo.GetGpuInstanceNames();
-        });
+        }, gpuInstanceNamesFunc);
 
         this->collectors["\\GPU\\GPU Fan Speed (%)"] = std::make_shared<MetricCollectorBase>([this] (const std::string& instanceName)
         {
@@ -203,11 +228,7 @@ Monitor::Monitor(const std::string& nodeName, const std::string& netName, int in
                     return 0.0f;
                 }
             }
-        },
-        [this]()
-        {
-            return this->gpuInfo.GetGpuInstanceNames();
-        });
+        }, gpuInstanceNamesFunc);
 
         this->collectors["\\GPU\\GPU Memory Usage (%)"] = std::make_shared<MetricCollectorBase>([this] (const std::string& instanceName)
         {
@@ -228,11 +249,7 @@ Monitor::Monitor(const std::string& nodeName, const std::string& netName, int in
                     return 0.0f;
                 }
             }
-        },
-        [this]()
-        {
-            return this->gpuInfo.GetGpuInstanceNames();
-        });
+        }, gpuInstanceNamesFunc);
 
         this->collectors["\\GPU\\GPU Memory Used (MB)"] = std::make_shared<MetricCollectorBase>([this] (const std::string& instanceName)
         {
@@ -254,11 +271,7 @@ Monitor::Monitor(const std::string& nodeName, const std::string& netName, int in
                     return 0.0f;
                 }
             }
-        },
-        [this]()
-        {
-            return this->gpuInfo.GetGpuInstanceNames();
-        });
+        }, gpuInstanceNamesFunc);
 
         this->collectors["\\GPU\\GPU Power Usage (Watts)"] = std::make_shared<MetricCollectorBase>([this] (const std::string& instanceName)
         {
@@ -279,11 +292,7 @@ Monitor::Monitor(const std::string& nodeName, const std::string& netName, int in
                     return 0.0f;
                 }
             }
-        },
-        [this]()
-        {
-            return this->gpuInfo.GetGpuInstanceNames();
-        });
+        }, gpuInstanceNamesFunc);
 
         this->collectors["\\GPU\\GPU SM Clock (MHz)"] = std::make_shared<MetricCollectorBase>([this] (const std::string& instanceName)
         {
@@ -305,11 +314,7 @@ Monitor::Monitor(const std::string& nodeName, const std::string& netName, int in
                     return 0.0f;
                 }
             }
-        },
-        [this]()
-        {
-            return this->gpuInfo.GetGpuInstanceNames();
-        });
+        }, gpuInstanceNamesFunc);
 
         this->collectors["\\GPU\\GPU Temperature (degrees C)"] = std::make_shared<MetricCollectorBase>([this] (const std::string& instanceName)
         {
@@ -331,11 +336,7 @@ Monitor::Monitor(const std::string& nodeName, const std::string& netName, int in
                     return 0.0f;
                 }
             }
-        },
-        [this]()
-        {
-            return this->gpuInfo.GetGpuInstanceNames();
-        });
+        }, gpuInstanceNamesFunc);
     }
 
     InitializeMetadataRequester();
@@ -514,7 +515,8 @@ json::value Monitor::GetRegisterInfo()
 
 void Monitor::Run()
 {
-    uint64_t cpuLast = 0, idleLast = 0, networkLast = 0, ibNetworkLast = 0;
+    uint64_t cpuLast = 0, idleLast = 0;
+    std::map<std::string, uint64_t> networkLast;
     int collectCount = 0;
 
     while (true)
@@ -542,24 +544,19 @@ void Monitor::Run()
         System::Vmstat(pagesPerSec, contextSwitchesPerSec);
         System::Iostat(bytesPerSecond);
 
-        uint64_t networkCurrent = 0;
-        int ret = System::NetworkUsage(networkCurrent, this->networkName);
-
-        if (ret != 0)
+        // network usage
+        auto networkUsage = System::GetNetworkUsage();
+        for (const auto & pair : networkUsage)
         {
-            Logger::Error("Error occurred while collecting network usage {0}", ret);
-        }
+            auto networkName = pair.first;
+            auto networkCurrent = pair.second;
+            if (networkLast.find(networkName) == networkLast.end())
+            {
+                networkLast[networkName] = 0;
+            }
 
-        float networkUsage = (float)(networkCurrent - networkLast) / this->intervalSeconds;
-        networkLast = networkCurrent;
-
-        // IB network usage
-        float ibNetworkUsage = 0;
-        if (NodeManagerConfig::GetCollectIbNetworkUsage())
-        {
-            uint64_t ibNetworkCurrent = this->GetIbNetworkUsage();
-            ibNetworkUsage = (float)(ibNetworkCurrent - ibNetworkLast) / this->intervalSeconds;
-            ibNetworkLast = ibNetworkCurrent;
+            networkUsage[networkName] = (networkCurrent - networkLast[networkName]) / this->intervalSeconds;
+            networkLast[networkName] = networkCurrent;
         }
 
         // ip address;
@@ -596,8 +593,7 @@ void Monitor::Run()
 
             this->cpuUsage = cpuUsage;
             this->availableMemoryMb = availableMemoryMb;
-            this->networkUsage = networkUsage;
-            this->ibNetworkUsage = ibNetworkUsage;
+            this->networkUsage = std::move(networkUsage);
 
             this->totalMemoryMb = totalMemoryMb;
             this->ipAddress = ipAddress;
@@ -679,31 +675,6 @@ std::string Monitor::QueryAzureInstanceMetadata()
     return std::move(azureInstanceMetadata);
 }
 
-uint64_t Monitor::GetIbNetworkUsage()
-{
-    uint64_t total = 0;
-    auto ibCounterPathAndFactors = NodeManagerConfig::GetIbNetworkCounterPathAndFactor();
-    for (const auto & pathAndFactor : ibCounterPathAndFactors)
-    {
-        std::string output;
-        std::string path = pathAndFactor.first;
-        int factor = pathAndFactor.second;
-        if (0 == System::ExecuteCommandOut(output, "head -n1 2>&1", path))
-        {
-            uint64_t value;
-            std::istringstream iss(output);
-            iss >> value;
-            total += value * factor;
-        }
-        else
-        {
-            Logger::Warn("Failed to get IB network usage from {0}: {1}", path, output);
-        }
-    }
-
-    return total;
-}
-
 void* Monitor::MonitoringThread(void* arg)
 {
     pthread_setcancelstate(PTHREAD_CANCEL_ENABLE, nullptr);
@@ -714,4 +685,19 @@ void* Monitor::MonitoringThread(void* arg)
     m->Run();
 
     pthread_exit(nullptr);
+}
+
+std::vector<std::string> Monitor::GetFilteredInstanceNames(const std::vector<std::string> & instanceNames, const std::string & instanceFilter)
+{
+    if (instanceFilter.empty())
+    {
+        return std::move(instanceNames);
+    }
+    else
+    {
+        std::vector<std::string> filteredInstanceNames;
+        std::copy_if(instanceNames.begin(), instanceNames.end(), std::back_inserter(filteredInstanceNames),
+            [instanceFilter](std::string s){return String::AsteriskMatch(s, instanceFilter);});
+        return std::move(filteredInstanceNames);
+    }
 }

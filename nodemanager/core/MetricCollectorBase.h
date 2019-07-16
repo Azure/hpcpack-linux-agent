@@ -20,7 +20,7 @@ namespace hpc
         class MetricCollectorBase
         {
             public:
-                MetricCollectorBase(std::function<float(const std::string&)> collecter, std::function<std::vector<std::string>()> instanceNameQuerier = std::function<std::vector<std::string>()>())
+                MetricCollectorBase(std::function<float(const std::string&)> collecter, std::function<std::vector<std::string>(const std::string&)> instanceNameQuerier = std::function<std::vector<std::string>(const std::string&)>())
                     : collectFunc(collecter), instanceNamesFunc(instanceNameQuerier)
                 {
                 }
@@ -32,7 +32,7 @@ namespace hpc
                 void Reset()
                 {
                     this->enabled = false;
-                    this->cachedInstanceIds.clear();
+                    this->counters.clear();
                 }
 
                 bool IsInstanceLevelMetric() { return this->isInstanceLevelMetric; }
@@ -42,24 +42,26 @@ namespace hpc
                 virtual std::vector<std::pair<float, Umid>> CollectValues()
                 {
                     std::vector<std::pair<float, Umid>> results;
-
-                    std::transform(cachedInstanceIds.cbegin(), cachedInstanceIds.cend(), std::back_inserter(results), [this] (auto& i)
+                    for (const auto & counter : counters)
                     {
-                        return std::make_pair<float, Umid>(
-                            this->collectFunc(i.second),
-                            Umid(this->metricId, i.first));
-                    });
+                        auto metricId = counter.first;
+                        for (const auto & instance : counter.second)
+                        {
+                            auto instanceId = instance.first;
+                            auto instanceName = instance.second;
+                            results.push_back(std::make_pair<float, Umid>(this->collectFunc(instanceName), Umid(metricId, instanceId)));
+                        }
+                    }
 
                     return std::move(results);
                 }
 
             private:
-                uint16_t metricId;
                 bool enabled = false;
                 bool isInstanceLevelMetric = false;
                 std::function<float(const std::string&)> collectFunc;
-                std::function<std::vector<std::string>()> instanceNamesFunc;
-                std::map<uint16_t, std::string> cachedInstanceIds;
+                std::function<std::vector<std::string>(const std::string&)> instanceNamesFunc;
+                std::map<uint16_t, std::map<uint16_t, std::string>> counters;
         };
     }
 }

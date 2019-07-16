@@ -74,6 +74,41 @@ namespace hpc
                     return v;
                 }
 
+                static inline bool AsteriskMatch(const std::string & str, const std::string & patternStr)
+                {
+                    const char ASTERISK = '*';
+                    if (patternStr.find(ASTERISK) == std::string::npos)
+                    {
+                        return str == patternStr;
+                    }
+
+                    bool first = true;
+                    size_t pos = 0;
+                    auto patterns = Split(patternStr, ASTERISK);
+                    auto last = patterns.back();
+                    patterns.pop_back();
+                    for (const auto & p : patterns)
+                    {
+                        pos = str.find(p, pos);
+                        if (pos == std::string::npos || (first && pos != 0))
+                        {
+                            return false;
+                        }
+
+                        pos += p.size();
+                        first = false;
+                    }
+                    
+                    if (patternStr[patternStr.size() - 1] == ASTERISK)
+                    {
+                        pos = str.find(last, pos);
+                        return first ? pos == 0 : pos != std::string::npos;
+                    }
+
+                    auto lastPos = str.rfind(last);
+                    return lastPos != std::string::npos && lastPos >= pos && lastPos + last.size() == str.size();
+                }
+
             protected:
             private:
         };

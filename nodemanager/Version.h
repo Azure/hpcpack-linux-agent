@@ -632,6 +632,7 @@ namespace hpc
                             "Add build-in execution filters to modify command for supporting downloading input files and uploading output files of task with HpcData service",
                             "Support monitoring InfiniBand network usage",
                             "Fix node manager crash issue due to out-of-bound array writing when constructing monitoring packet with too many data values",
+                            "Support monitoring multiple instances of network usage",
                         }
                     },
                 };

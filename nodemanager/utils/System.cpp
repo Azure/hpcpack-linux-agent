@@ -50,8 +50,13 @@ std::vector<System::NetInfo> System::GetNetworkInfo()
 
                 lineStream >> name >> name;
 
+                if (name.length() > 0)
+                {
+                    name = name.substr(0, name.length() - 1);
+                }
+
                 // temporarily identify IB
-                if (name == "eth1:")
+                if (name == "ib0")
                 {
                     isIB = true;
                 }
@@ -83,6 +88,13 @@ std::vector<System::NetInfo> System::GetNetworkInfo()
     }
 
     return std::move(info);
+}
+
+std::vector<std::string> System::GetIbDevices()
+{
+    std::string output;
+    System::ExecuteCommandOut(output, "ls /sys/class/infiniband 2>/dev/null; :");
+    return std::move(String::Split(String::Trim(output), '\n'));
 }
 
 std::string System::GetIpAddress(IpAddressVersion version, const std::string& name)
@@ -302,9 +314,11 @@ int System::FreeSpace(float &freeSpacePercent)
     return ret;
 }
 
-int System::NetworkUsage(uint64_t &network, const std::string& netName)
+std::map<std::string, uint64_t> System::GetNetworkUsage()
 {
-    int ret = 1;
+    std::map<std::string, uint64_t> networkUsage;
+
+    bool collected = false;
     std::ifstream fs("/proc/net/dev", std::ios::in);
     std::string name;
     uint64_t receive, send, tmp;
@@ -312,26 +326,51 @@ int System::NetworkUsage(uint64_t &network, const std::string& netName)
     fs.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     fs.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
 
-    network = 0;
-
     while (fs.good())
     {
         std::getline(fs, name, ':');
         name = String::Trim(name);
 
-        if (netName.empty() || netName == name)
-        {
-            fs >> receive >> tmp >> tmp >> tmp >> tmp >> tmp >> tmp >> tmp >> send;
-            network += receive + send;
-            ret = 0;
-        }
+        fs >> receive >> tmp >> tmp >> tmp >> tmp >> tmp >> tmp >> tmp >> send;
+        networkUsage[name] = receive + send;
+        collected = true;
 
         fs.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
     }
 
     fs.close();
+    if (!collected)
+    {
+        Logger::Error("Error occurred while collecting network usage from /proc/net/dev");
+    }
 
-    return ret;
+    auto devices = System::GetIbDevices();
+    for (const auto & device : devices)
+    {
+        std::vector<std::string> counters {"port_rcv_data", "port_xmit_data"};
+        int factor = 4;
+        uint64_t usage = 0;
+        for (const auto & counter : counters)
+        {
+            std::string path = String::Join("", "/sys/class/infiniband/", device, "/ports/1/counters/", counter);
+            std::string output;
+            if (0 == System::ExecuteCommandOut(output, "head -n1 2>&1", path))
+            {
+                uint64_t value;
+                std::istringstream iss(output);
+                iss >> value;
+                usage += value * factor;
+            }
+            else
+            {
+                Logger::Warn("Failed to get IB network usage from {0}: {1}", path, output);
+            }
+        }
+
+        networkUsage[device] = usage;
+    }
+
+    return std::move(networkUsage);
 }
 
 const std::string& System::GetNodeName()

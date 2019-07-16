@@ -2,6 +2,7 @@
 #define SYSTEM_H
 
 #include <string>
+#include <map>
 
 #include "String.h"
 #include "Logger.h"
@@ -84,11 +85,12 @@ namespace hpc
                 } GpuInfoList;
 
                 static std::vector<NetInfo> GetNetworkInfo();
+                static std::vector<std::string> GetIbDevices();
                 static std::string GetIpAddress(IpAddressVersion version, const std::string& name);
                 static void CPUUsage(uint64_t &total, uint64_t &idle);
                 static void Memory(uint64_t &available, uint64_t &total);
                 static void CPU(int &cores, int &sockets);
-                static int NetworkUsage(uint64_t &network, const std::string& netName);
+                static std::map<std::string, uint64_t> GetNetworkUsage();
                 static int Vmstat(float &pagesPerSec, float &contextSwitchesPerSec);
                 static int Iostat(float &bytesPerSec);
                 static int IostatX(float &queueLength);
