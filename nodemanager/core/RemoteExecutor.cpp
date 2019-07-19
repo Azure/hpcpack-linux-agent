@@ -604,7 +604,13 @@ void RemoteExecutor::StartHeartbeat()
                 0,
                 this->NodeInfoReportInterval,
                 [this]() { this->UpdateStatistics(); return this->jobTaskTable.ToJson(); },
-                [this]() { this->ResyncAndInvalidateCache(); }));
+                [this](int retryCount) {
+                    NamingClient::InvalidateCache();
+                    if (retryCount > 2)
+                    {
+                        this->jobTaskTable.RequestResync();
+                    }
+                }));
 
     this->nodeInfoReporter->Start();
 }
@@ -678,7 +684,13 @@ void RemoteExecutor::StartRegister()
                 3,
                 this->RegisterInterval,
                 [this]() { return this->monitor.GetRegisterInfo(); },
-                [this]() { this->ResyncAndInvalidateCache(); }));
+                [this](int retryCount) {
+                    NamingClient::InvalidateCache();
+                    if (retryCount > 2)
+                    {
+                        this->jobTaskTable.RequestResync();
+                    }
+                }));
 
     this->registerReporter->Start();
 }
@@ -716,7 +728,7 @@ void RemoteExecutor::StartMetric()
                     0,
                     this->MetricReportInterval,
                     [this]() { return this->monitor.GetMonitorPacketData(); },
-                    [this]() { NamingClient::InvalidateCache(); }));
+                    [this](int _) { NamingClient::InvalidateCache(); }));
 
         this->metricReporter->Start();
     }

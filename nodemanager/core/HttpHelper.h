@@ -92,7 +92,17 @@ namespace hpc
                         }
                     });
 
-                    utility::seconds timeout(5l);
+                    long httpRequestTimeoutSeconds = 10l;
+                    try
+                    {
+                        httpRequestTimeoutSeconds = NodeManagerConfig::GetHttpRequestTimeoutSeconds();
+                    }
+                    catch (...)
+                    {
+                        Logger::Debug("HttpRequestTimeoutSeconds not specified or invalid, use the default value {0} seconds.", httpRequestTimeoutSeconds);
+                    }
+
+                    utility::seconds timeout(httpRequestTimeoutSeconds);
                     config.set_timeout(timeout);
                     Logger::Debug(
                         "Create client to {0}, configure: timeout {1} seconds, chuck size {2}",

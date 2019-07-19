@@ -34,7 +34,7 @@ HostsManager::HostsManager(std::function<std::string(pplx::cancellation_token)> 
                 {
                     return this->HostsResponseHandler(response);
                 },
-                []()
+                [](int _)
                 {
                     NamingClient::InvalidateCache();
                 }));

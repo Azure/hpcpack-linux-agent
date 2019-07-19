@@ -19,7 +19,7 @@ namespace hpc
                     int hold,
                     int interval,
                     std::function<std::vector<std::vector<unsigned char>>()> fetcher,
-                    std::function<void()> onErrorFunc);
+                    std::function<void(int)> onErrorFunc);
 
                 virtual ~UdpReporter();
 
