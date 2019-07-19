@@ -1,0 +1,14 @@
+[{
+  "name": "HPCNodeManager",
+  "version": 1.0,
+  "handlerManifest": {
+    "installCommand": "hpcnodemanager.py -install",
+    "uninstallCommand": "hpcnodemanager.py -uninstall",
+    "updateCommand": "hpcnodemanager.py -update",
+    "enableCommand": "hpcnodemanager.py -enable",
+    "disableCommand": "hpcnodemanager.py -disable",
+    "rebootAfterInstall": false,
+    "reportHeartbeat": false,
+    "updateMode": "UpdateWithInstall"
+  }
+}]
