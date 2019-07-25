@@ -3,6 +3,7 @@
 
 #include <cpprest/json.h>
 #include <functional>
+#include <cmath>
 
 #include "../utils/Logger.h"
 #include "NamingClient.h"
@@ -17,8 +18,8 @@ namespace hpc
         class Reporter
         {
             public:
-                Reporter(std::string reporterName, std::function<std::string(pplx::cancellation_token)> getUri, int hold, int interval, std::function<ReportType()> fetcher, std::function<void()> onErrorFunc)
-                    : name(reporterName), getReportUri(getUri), valueFetcher(fetcher), onError(onErrorFunc), intervalSeconds(interval), holdSeconds(hold)
+                Reporter(std::string reporterName, std::function<std::string(pplx::cancellation_token)> getUri, int hold, int interval, std::function<ReportType()> fetcher, std::function<void(int)> onErrorFunc, int retryFactor = 1)
+                    : name(reporterName), getReportUri(getUri), valueFetcher(fetcher), onError(onErrorFunc), intervalSeconds(interval), holdSeconds(hold), errorRetryMultiplyFactor(retryFactor)
                 {
                 }
 
@@ -54,7 +55,7 @@ namespace hpc
                 std::string name;
                 std::function<std::string(pplx::cancellation_token)> getReportUri;
                 std::function<ReportType()> valueFetcher;
-                std::function<void()> onError;
+                std::function<void(int)> onError;
                 int intervalSeconds;
                 pplx::cancellation_token_source cts;
 
@@ -74,23 +75,28 @@ namespace hpc
                             {
                                 if (r->onError)
                                 {
-                                    r->onError();
+                                    r->onError(r->retryCount++);
                                 }
+                            }
+                            else
+                            {
+                                r->retryCount = 0;
                             }
 
                             r->inRequest = false;
                         }
 
-                        if (r->isRunning) sleep(needRetry ? r->ErrorRetrySeconds : r->intervalSeconds);
+                        int retrySeconds = r->ErrorRetrySecondsInit * pow(r->errorRetryMultiplyFactor, r->retryCount);
+                        if (r->isRunning) sleep(needRetry && retrySeconds > 0 && retrySeconds < r->intervalSeconds ? retrySeconds : r->intervalSeconds);
                     }
 
                     return nullptr;
                 }
 
-                const int ErrorRetrySeconds = 2;
-
+                const int ErrorRetrySecondsInit = 2;
                 int holdSeconds;
-
+                int errorRetryMultiplyFactor;
+                int retryCount = 0;
                 pthread_t threadId = 0;
                 bool isRunning = true;
                 bool inRequest = false;

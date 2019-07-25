@@ -16,7 +16,7 @@ UdpReporter::UdpReporter(
     int hold,
     int interval,
     std::function<std::vector<std::vector<unsigned char>>()> fetcher,
-    std::function<void()> onErrorFunc)
+    std::function<void(int)> onErrorFunc)
     : Reporter<std::vector<std::vector<unsigned char>>>(name, getReportUri, hold, interval, fetcher, onErrorFunc)
 {
 }

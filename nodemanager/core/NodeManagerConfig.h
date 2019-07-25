@@ -53,8 +53,7 @@ typedef std::map<std::string, int> map_string_int_t;
                 AddConfigurationItem(std::string, TaskCompletionUri);
                 AddConfigurationItem(std::string, HostsFileUri);
                 AddConfigurationItem(std::string, AzureInstanceMetaDataUri);
-                AddConfigurationItem(bool, CollectIbNetworkUsage);
-                AddReadOnlyConfigurationItem(map_string_int_t, IbNetworkCounterPathAndFactor);
+                AddConfigurationItem(long, HttpRequestTimeoutSeconds);
 
                 static std::string ResolveRegisterUri(pplx::cancellation_token token)
                 {
