@@ -307,8 +307,10 @@ def config_firewall_rules():
         major_version = int(DistroVersion.split('.')[0])
         if major_version < 7:
             waagent.Run('lokkit --port=40000:tcp --update', chk_err=False)
+            waagent.Run('lokkit --port=40002:tcp --update', chk_err=False)
         elif waagent.Run("firewall-cmd --state", chk_err=False) == 0:
             waagent.Run("firewall-cmd --permanent --zone=public --add-port=40000/tcp")
+            waagent.Run("firewall-cmd --permanent --zone=public --add-port=40002/tcp")
             waagent.Run("firewall-cmd --reload")
 
 def parse_context(operation):
