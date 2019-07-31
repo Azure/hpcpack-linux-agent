@@ -91,6 +91,7 @@ namespace hpc
                 static void Memory(uint64_t &available, uint64_t &total);
                 static void CPU(int &cores, int &sockets);
                 static std::map<std::string, uint64_t> GetNetworkUsage();
+                static void IbNetworkUsage(std::map<std::string, uint64_t> & networkUsage, bool logFailure = false);
                 static int Vmstat(float &pagesPerSec, float &contextSwitchesPerSec);
                 static int Iostat(float &bytesPerSec);
                 static int IostatX(float &queueLength);

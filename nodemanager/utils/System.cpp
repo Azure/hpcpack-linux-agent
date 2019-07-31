@@ -92,9 +92,15 @@ std::vector<System::NetInfo> System::GetNetworkInfo()
 
 std::vector<std::string> System::GetIbDevices()
 {
-    std::string output;
-    System::ExecuteCommandOut(output, "ls /sys/class/infiniband 2>/dev/null; :");
-    return std::move(String::Split(String::Trim(output), '\n'));
+    std::map<std::string, uint64_t> networkUsage;
+    System::IbNetworkUsage(networkUsage, true);
+    std::vector<std::string> devices;
+    for (auto const& element : networkUsage)
+    {
+        devices.push_back(element.first);
+    }
+
+    return std::move(devices);
 }
 
 std::string System::GetIpAddress(IpAddressVersion version, const std::string& name)
@@ -344,17 +350,28 @@ std::map<std::string, uint64_t> System::GetNetworkUsage()
         Logger::Error("Error occurred while collecting network usage from /proc/net/dev");
     }
 
-    auto devices = System::GetIbDevices();
+    System::IbNetworkUsage(networkUsage);
+
+    return std::move(networkUsage);
+}
+
+void System::IbNetworkUsage(std::map<std::string, uint64_t> & networkUsage, bool logFailure)
+{
+    std::string output;
+    System::ExecuteCommandOut(output, "ls /sys/class/infiniband 2>/dev/null; :");
+    auto devices = String::Split(String::Trim(output), '\n');
     for (const auto & device : devices)
     {
         std::vector<std::string> counters {"port_rcv_data", "port_xmit_data"};
         int factor = 4;
         uint64_t usage = 0;
+        bool succeed = true;
         for (const auto & counter : counters)
         {
             std::string path = String::Join("", "/sys/class/infiniband/", device, "/ports/1/counters/", counter);
             std::string output;
-            if (0 == System::ExecuteCommandOut(output, "head -n1 2>&1", path))
+            System::ExecuteCommandOut(output, String::Join(" ", "head -n1", path, "2>/dev/null; :"));
+            if (!output.empty())
             {
                 uint64_t value;
                 std::istringstream iss(output);
@@ -363,14 +380,19 @@ std::map<std::string, uint64_t> System::GetNetworkUsage()
             }
             else
             {
-                Logger::Warn("Failed to get IB network usage from {0}: {1}", path, output);
+                succeed = false;
+                if (logFailure)
+                {
+                    Logger::Warn("Failed to get IB network usage from {0}", path);
+                }
             }
         }
 
-        networkUsage[device] = usage;
+        if (succeed)
+        {
+            networkUsage[device] = usage;
+        }
     }
-
-    return std::move(networkUsage);
 }
 
 const std::string& System::GetNodeName()
