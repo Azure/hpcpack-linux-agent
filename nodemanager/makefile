@@ -124,7 +124,7 @@ endef
 
 define finish
 	$(indent);
-	cp config/* $(2)/
+	cp config/nodemanager.json $(2)/nodemanager.json.sample
 	$(indent);
 	cp scripts/* $(2)/
 	$(indent);
