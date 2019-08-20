@@ -632,6 +632,11 @@ namespace hpc
                             "Support monitoring multiple instances of network usage, which is set as default instead of monitoring total usage",
                         }
                     },
+                    { "2.4.1.0",
+                        {
+                            "Fix a issue that node with FQDN host name may not be recognized by scheduler",
+                        }
+                    },
                 };
 
                 return versionHistory;

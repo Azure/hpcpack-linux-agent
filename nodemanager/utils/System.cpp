@@ -413,6 +413,8 @@ const std::string& System::GetNodeName()
             nodeName.end(),
             nodeName.begin(),
             ::toupper);
+
+        nodeName = String::Split(nodeName, '.')[0];
     }
 
     return nodeName;
