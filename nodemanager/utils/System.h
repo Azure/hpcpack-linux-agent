@@ -74,7 +74,8 @@ namespace hpc
                             this->gpuInstanceNames.clear();
                             for (size_t i = 0; i < this->GpuInfos.size(); i++)
                             {
-                                this->gpuInstanceNames.push_back(std::to_string(i));
+                                auto instanceName = String::Join("", GpuInfos[i].Name, '(', i, ')');
+                                this->gpuInstanceNames.push_back(instanceName);
                             }
 
                            // this->gpuInstanceNames.push_back("_Total");

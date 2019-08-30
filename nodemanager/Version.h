@@ -635,6 +635,7 @@ namespace hpc
                     { "2.4.1.0",
                         {
                             "Fix a issue that node with FQDN host name may not be recognized by scheduler",
+                            "Improve GPU instance name readability in metric info",
                         }
                     },
                 };
