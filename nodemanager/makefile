@@ -8,7 +8,7 @@ CASA_LIB_DEBUG = $(CASA_RELEASE)/build.debug/Binaries
 CASA_LIB_RELEASE = $(CASA_RELEASE)/build.release/Binaries
 
 # spdlog
-SPDLOG = ../../evanspdlog
+SPDLOG = ../../spdlog
 SPDLOG_INC = $(SPDLOG)/include
 
 # tools
