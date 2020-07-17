@@ -638,6 +638,11 @@ namespace hpc
                             "Improve GPU instance name readability in metric info",
                         }
                     },
+                    { "2.5.0.0",
+                        {
+                            "Update building environment (from cpprest2.8 on ubuntu1404 with system gnu libs to cpprest2.10 on ubuntu1804) to fix memory leak issue",
+                        }
+                    },
                 };
 
                 return versionHistory;
