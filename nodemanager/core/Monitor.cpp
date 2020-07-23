@@ -22,11 +22,8 @@ Monitor::Monitor(const std::string& nodeName, const std::string& netName, int in
     : name(nodeName), networkName(netName), lock(PTHREAD_RWLOCK_INITIALIZER), intervalSeconds(interval),
     isCollected(false)
 {
-    Logger::Info("Initializing GPU driver.");
-    std::string output;
-    this->gpuInitRet = System::ExecuteCommandOut(output, "nvidia-smi -pm 1");
-    Logger::Info("Initialize GPU ret code {0}", this->gpuInitRet);
-
+    InitializeGpuDriver();
+    
     this->collectors["\\Processor\\% Processor Time"] = std::make_shared<MetricCollectorBase>([this] (const std::string& instanceName)
     {
         if (instanceName == "_Total")
@@ -628,6 +625,17 @@ void Monitor::Run()
 
         sleep(this->intervalSeconds);
         collectCount++;
+    }
+}
+
+void Monitor::InitializeGpuDriver()
+{
+    Logger::Info("Check nvidia-smi and enable persistence mode for GPU.");
+    std::string output;
+    this->gpuInitRet = System::ExecuteCommandOut(output, "nvidia-smi -pm 1 2>/dev/null");
+    if (this->gpuInitRet != 0)
+    {
+        Logger::Warn("GPU metrics will not be collected.");
     }
 }
 
