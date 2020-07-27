@@ -617,7 +617,7 @@ void RemoteExecutor::StartHeartbeat()
 
 void RemoteExecutor::UpdateStatistics()
 {
-    Logger::Debug(0, 0, 0, "Updating tasks' statistics.");
+    Logger::Info("Update tasks' statistics.");
 
     auto* table = JobTaskTable::GetInstance();
     if (table != nullptr)
@@ -625,6 +625,7 @@ void RemoteExecutor::UpdateStatistics()
         auto tasks = table->GetAllTasks();
         for (const auto& taskInfo : tasks)
         {
+            ReaderLock readerLock(&this->lock);
             auto p = this->processes.find(taskInfo->ProcessKey);
             if (p != this->processes.end())
             {

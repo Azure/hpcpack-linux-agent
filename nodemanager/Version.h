@@ -641,6 +641,7 @@ namespace hpc
                     { "2.5.0.0",
                         {
                             "Update building environment (from cpprest2.8 on ubuntu1404 with system gnu libs to cpprest2.10 on ubuntu1804) to fix memory leak issue",
+                            "Fix a bug that heartbeat thread may be stuck due to deadlock",
                         }
                     },
                 };
