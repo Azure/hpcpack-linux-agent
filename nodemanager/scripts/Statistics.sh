@@ -22,10 +22,10 @@ function GetCpuStatFile
 	GetGroupFile "$groupName" cpuacct cpuacct.stat
 }
 
-function GetCpuacctTasksFile
+function GetCpusetTasksFile
 {
 	local groupName=$1
-	GetGroupFile "$groupName" cpuacct tasks
+	GetGroupFile "$groupName" cpuset tasks
 }
 
 function GetMemoryMaxusageFile
@@ -44,8 +44,8 @@ if $CGInstalled && ! $cgDisabled; then
 	fi
 	
 	statFile=$(GetCpuStatFile "$groupName")
-	tasksFile=$(GetCpuacctTasksFile "$groupName")
 	workingSetFile=$(GetMemoryMaxusageFile "$groupName")
+	tasksFile=$(GetCpusetTasksFile "$groupName")
 
 	cut -d" " -f2 "$statFile"
 	cat "$workingSetFile"
