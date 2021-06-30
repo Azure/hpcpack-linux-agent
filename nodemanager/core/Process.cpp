@@ -94,18 +94,21 @@ const ProcessStatistics& Process::GetStatisticsFromCGroup()
     std::istringstream statIn(stat);
 
     WriterLock writerLock(&this->lock);
+    
+    this->statistics.UserTimeMs = 0;
     statIn >> this->statistics.UserTimeMs;
     this->statistics.UserTimeMs *= 10;
 
+    this->statistics.KernelTimeMs = 0;
     statIn >> this->statistics.KernelTimeMs;
     this->statistics.KernelTimeMs *= 10;
 
+    this->statistics.WorkingSetKb = 0;
     statIn >> this->statistics.WorkingSetKb;
     Logger::Debug(this->jobId, this->taskId, this->requeueCount, "WorkingSet {0}", this->statistics.WorkingSetKb);
     this->statistics.WorkingSetKb /= 1024;
 
     this->statistics.ProcessIds.clear();
-
     int id;
     while (statIn >> id)
     {
