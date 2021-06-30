@@ -644,6 +644,12 @@ namespace hpc
                             "Fix a bug that heartbeat thread may be stuck due to deadlock",
                         }
                     },
+                    { "2.5.1.0",
+                        {
+                            "Fix a bug that task statistics may be incorrect",
+                            "Decrease node resync and service location requests when the connection to scheduler is poor",
+                        }
+                    },
                 };
 
                 return versionHistory;
