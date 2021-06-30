@@ -5,6 +5,7 @@
 #include <cpprest/http_client.h>
 #include <functional>
 #include "../utils/WriterLock.h"
+#include <chrono>
 
 namespace hpc
 {
@@ -47,6 +48,7 @@ namespace hpc
                 std::vector<std::string> namingServicesUri;
                 pplx::cancellation_token_source cts;
                 pthread_rwlock_t lock;
+                std::chrono::time_point<std::chrono::system_clock> lastClearTime;
         };
     }
 }

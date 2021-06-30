@@ -13,13 +13,21 @@ using namespace hpc::utils;
 void NamingClient::InvalidateCache()
 {
     auto instance = GetInstance(NodeManagerConfig::GetNamingServiceUri());
-
     if (instance)
     {
+        // Avoid updating cache too frequently to decrease scheduler pressure
+        const int ImmunTimeSeconds = 30;
+        if ((std::chrono::system_clock::now() - instance->lastClearTime).count() < ImmunTimeSeconds)
+        {
+            Logger::Debug("ResolveServiceLocation> Skipped cache clearing.");
+            return;
+        }
+
         WriterLock writerLock(&instance->lock);
 
         Logger::Debug("ResolveServiceLocation> Cleared.");
         instance->serviceLocations.clear();
+        instance->lastClearTime = std::chrono::system_clock::now();
     }
 }
 
