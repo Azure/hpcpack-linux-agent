@@ -13,13 +13,21 @@ using namespace hpc::utils;
 void NamingClient::InvalidateCache()
 {
     auto instance = GetInstance(NodeManagerConfig::GetNamingServiceUri());
-
     if (instance)
     {
+        // Avoid updating cache too frequently to decrease scheduler pressure
+        const int ImmunTimeSeconds = 30;
+        if ((std::chrono::system_clock::now() - instance->lastClearTime).count() < ImmunTimeSeconds)
+        {
+            Logger::Debug("ResolveServiceLocation> Skipped cache clearing.");
+            return;
+        }
+
         WriterLock writerLock(&instance->lock);
 
         Logger::Debug("ResolveServiceLocation> Cleared.");
         instance->serviceLocations.clear();
+        instance->lastClearTime = std::chrono::system_clock::now();
     }
 }
 
@@ -59,7 +67,7 @@ std::string NamingClient::GetServiceLocation(const std::string& serviceName, ppl
         }
     }
 
-    Logger::Info("ResolveServiceLocation> Resolved serviceLocation {0} for {1}", location->second, serviceName);
+    Logger::Debug("ResolveServiceLocation> Resolved serviceLocation {0} for {1}", location->second, serviceName);
     return location->second;
 }
 
@@ -75,7 +83,7 @@ void NamingClient::RequestForServiceLocation(const std::string& serviceName, std
         {
             selected %= this->namingServicesUri.size();
             uri = this->namingServicesUri[selected++] + serviceName;
-            Logger::Debug("ResolveServiceLocation> Fetching from {0}", uri);
+            Logger::Info("ResolveServiceLocation> Fetching from {0}", uri);
             auto client = HttpHelper::GetHttpClient(uri);
 
             auto request = HttpHelper::GetHttpRequest(methods::GET);

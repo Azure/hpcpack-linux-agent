@@ -606,7 +606,7 @@ void RemoteExecutor::StartHeartbeat()
                 [this]() { this->UpdateStatistics(); return this->jobTaskTable.ToJson(); },
                 [this](int retryCount) {
                     NamingClient::InvalidateCache();
-                    if (retryCount > 2)
+                    if (retryCount > 5)
                     {
                         this->jobTaskTable.RequestResync();
                     }
@@ -617,7 +617,7 @@ void RemoteExecutor::StartHeartbeat()
 
 void RemoteExecutor::UpdateStatistics()
 {
-    Logger::Debug(0, 0, 0, "Updating tasks' statistics.");
+    Logger::Info("Update tasks' statistics.");
 
     auto* table = JobTaskTable::GetInstance();
     if (table != nullptr)
@@ -625,6 +625,7 @@ void RemoteExecutor::UpdateStatistics()
         auto tasks = table->GetAllTasks();
         for (const auto& taskInfo : tasks)
         {
+            ReaderLock readerLock(&this->lock);
             auto p = this->processes.find(taskInfo->ProcessKey);
             if (p != this->processes.end())
             {
@@ -686,7 +687,7 @@ void RemoteExecutor::StartRegister()
                 [this]() { return this->monitor.GetRegisterInfo(); },
                 [this](int retryCount) {
                     NamingClient::InvalidateCache();
-                    if (retryCount > 2)
+                    if (retryCount > 5)
                     {
                         this->jobTaskTable.RequestResync();
                     }
@@ -742,6 +743,7 @@ pplx::task<json::value> RemoteExecutor::Metric(std::string&& callbackUri)
         NodeManagerConfig::SaveMetricUri(callbackUri);
 
         // callbackUri is like udp://server:port/api/nodeguid/metricreported
+        Logger::Info("Start reporting metrics to {0}", callbackUri);
         this->StartMetric();
     }
 

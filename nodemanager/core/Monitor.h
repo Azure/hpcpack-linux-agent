@@ -63,6 +63,8 @@ namespace hpc
 
                 int gpuInitRet;
                 System::GpuInfoList gpuInfo;
+                void InitializeGpuDriver();
+
                 pthread_rwlock_t lock;
 
                 int intervalSeconds;

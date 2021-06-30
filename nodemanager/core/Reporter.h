@@ -28,19 +28,20 @@ namespace hpc
                     if (this->getReportUri)
                     {
                         pthread_create(&this->threadId, nullptr, ReportingThread, this);
+                        Logger::Debug("Started the thread {0} for Reporter {1}", this->threadId, this->name);
                     }
                 }
 
                 void Stop()
                 {
-                    Logger::Debug("Stopping the thread of Reporter {0}", this->name);
+                    Logger::Debug("Stopping the thread {0} for Reporter {1}", this->threadId, this->name);
                     this->isRunning = false;
                     this->cts.cancel();
                     if (this->threadId != 0)
                     {
                         while (this->inRequest) usleep(1);
                         pthread_join(this->threadId, nullptr);
-                        Logger::Debug("Stopped the thread of Reporter {0}", this->name);
+                        Logger::Debug("Stopped the thread {0} for Reporter {1}", this->threadId, this->name);
                     }
                 }
 

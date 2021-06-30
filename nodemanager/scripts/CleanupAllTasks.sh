@@ -4,7 +4,7 @@
 
 echo
 
-docker version > /dev/nul
+docker version >/dev/null 2>&1
 if [ $? -eq 0 ]; then
 	echo "Cleaning up docker containers..."
 	containers=$(docker ps -a -q -f name=^/$(GetContainerName))

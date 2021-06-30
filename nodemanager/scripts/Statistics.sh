@@ -13,8 +13,8 @@ isDockerTask=$(CheckDockerEnvFileExist $taskFolder)
 
 userTime10Ms=0
 kernelTime10Ms=0
-processes=""
 workingSetBytes=0
+processes=""
 
 function GetCpuStatFile
 {
@@ -22,10 +22,10 @@ function GetCpuStatFile
 	GetGroupFile "$groupName" cpuacct cpuacct.stat
 }
 
-function GetCpuacctTasksFile
+function GetCpusetTasksFile
 {
 	local groupName=$1
-	GetGroupFile "$groupName" cpuacct tasks
+	GetGroupFile "$groupName" cpuset tasks
 }
 
 function GetMemoryMaxusageFile
@@ -44,18 +44,21 @@ if $CGInstalled && ! $cgDisabled; then
 	fi
 	
 	statFile=$(GetCpuStatFile "$groupName")
-	tasksFile=$(GetCpuacctTasksFile "$groupName")
 	workingSetFile=$(GetMemoryMaxusageFile "$groupName")
+	tasksFile=$(GetCpusetTasksFile "$groupName")
 
-	cut -d" " -f2 "$statFile"
-	cat "$workingSetFile"
-	tr "\\n" " " < "$tasksFile"
-
-	echo
-else
-    echo $userTime10Ms
-    echo $kernelTime10Ms
-    echo $workingSetBytes
-    echo $processes
-    echo
+	read ignore tempUserTime < <(sed -n 1p "$statFile")
+	[ -z "$tempUserTime" ] || userTime10Ms=$tempUserTime
+	read ignore tempKernelTime < <(sed -n 2p "$statFile")
+	[ -z "$tempKernelTime" ] || kernelTime10Ms=$tempKernelTime
+	tempWorkingSet=`cat "$workingSetFile"`
+	[ -z "$tempWorkingSet" ] || workingSetBytes=$tempWorkingSet
+	tempProcesses=`cat "$tasksFile"`
+	[ -z "$tempProcesses" ] || processes=$tempProcesses
 fi
+
+echo $userTime10Ms
+echo $kernelTime10Ms
+echo $workingSetBytes
+echo $processes
+echo
