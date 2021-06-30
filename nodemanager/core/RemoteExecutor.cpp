@@ -606,7 +606,7 @@ void RemoteExecutor::StartHeartbeat()
                 [this]() { this->UpdateStatistics(); return this->jobTaskTable.ToJson(); },
                 [this](int retryCount) {
                     NamingClient::InvalidateCache();
-                    if (retryCount > 2)
+                    if (retryCount > 5)
                     {
                         this->jobTaskTable.RequestResync();
                     }
@@ -687,7 +687,7 @@ void RemoteExecutor::StartRegister()
                 [this]() { return this->monitor.GetRegisterInfo(); },
                 [this](int retryCount) {
                     NamingClient::InvalidateCache();
-                    if (retryCount > 2)
+                    if (retryCount > 5)
                     {
                         this->jobTaskTable.RequestResync();
                     }
