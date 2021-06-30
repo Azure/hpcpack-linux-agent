@@ -743,6 +743,7 @@ pplx::task<json::value> RemoteExecutor::Metric(std::string&& callbackUri)
         NodeManagerConfig::SaveMetricUri(callbackUri);
 
         // callbackUri is like udp://server:port/api/nodeguid/metricreported
+        Logger::Info("Start reporting metrics to {0}", callbackUri);
         this->StartMetric();
     }
 

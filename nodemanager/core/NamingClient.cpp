@@ -59,7 +59,7 @@ std::string NamingClient::GetServiceLocation(const std::string& serviceName, ppl
         }
     }
 
-    Logger::Info("ResolveServiceLocation> Resolved serviceLocation {0} for {1}", location->second, serviceName);
+    Logger::Debug("ResolveServiceLocation> Resolved serviceLocation {0} for {1}", location->second, serviceName);
     return location->second;
 }
 
@@ -75,7 +75,7 @@ void NamingClient::RequestForServiceLocation(const std::string& serviceName, std
         {
             selected %= this->namingServicesUri.size();
             uri = this->namingServicesUri[selected++] + serviceName;
-            Logger::Debug("ResolveServiceLocation> Fetching from {0}", uri);
+            Logger::Info("ResolveServiceLocation> Fetching from {0}", uri);
             auto client = HttpHelper::GetHttpClient(uri);
 
             auto request = HttpHelper::GetHttpRequest(methods::GET);
