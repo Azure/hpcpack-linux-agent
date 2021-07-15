@@ -4,6 +4,7 @@
 #include <cpprest/json.h>
 #include <functional>
 #include <cmath>
+#include <stdlib.h>
 
 #include "../utils/Logger.h"
 #include "NamingClient.h"
@@ -86,8 +87,23 @@ namespace hpc
                             r->inRequest = false;
                         }
 
-                        int retrySeconds = r->ErrorRetrySecondsInit * pow(r->errorRetryMultiplyFactor, r->retryCount);
-                        if (r->isRunning) sleep(needRetry && retrySeconds > 0 && retrySeconds < r->intervalSeconds ? retrySeconds : r->intervalSeconds);
+                        auto base = r->errorRetryMultiplyFactor;
+                        if (base < 0)
+                        {
+                            base = -base;
+                        }
+
+                        int retrySeconds = r->ErrorRetrySecondsInit * pow(base, r->retryCount);
+                        if (r->isRunning)
+                        {
+                            auto time = r->intervalSeconds;
+                            if (r->errorRetryMultiplyFactor < 0 && rand() % 10 <= time % 10)
+                            {
+                                time *= 4;
+                            }
+                            sleep(needRetry && retrySeconds > 0 && retrySeconds < r->intervalSeconds ? retrySeconds : time);
+                        }
+                
                     }
 
                     return nullptr;

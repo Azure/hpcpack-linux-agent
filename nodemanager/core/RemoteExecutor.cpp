@@ -610,7 +610,8 @@ void RemoteExecutor::StartHeartbeat()
                     {
                         this->jobTaskTable.RequestResync();
                     }
-                }));
+                },
+                -2));
 
     this->nodeInfoReporter->Start();
 }

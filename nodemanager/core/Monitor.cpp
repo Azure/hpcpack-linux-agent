@@ -383,7 +383,11 @@ bool Monitor::EnableMetricCounter(const MetricCounter& counterConfig, pplx::canc
     auto collector = this->collectors.find(counterConfig.Path);
     if (collector != this->collectors.end())
     {
-        collector->second->ApplyConfig(counterConfig, token);
+        for (int i = 0; i < 7; i++)
+        {
+            collector->second->ApplyConfig(counterConfig, token);
+        }
+        
         return true;
     }
 
