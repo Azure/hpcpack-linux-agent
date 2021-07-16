@@ -97,7 +97,7 @@ namespace hpc
                         if (r->isRunning)
                         {
                             auto time = r->intervalSeconds;
-                            if (r->errorRetryMultiplyFactor < 0 && rand() % 10 <= time % 10)
+                            if (r->errorRetryMultiplyFactor < 0 && rand() % 10 < time % 10)
                             {
                                 time *= 4;
                             }
