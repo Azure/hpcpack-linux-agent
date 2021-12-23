@@ -2,11 +2,11 @@
   "name": "HPCNodeManager",
   "version": 1.0,
   "handlerManifest": {
-    "installCommand": "hpcnodemanager.py -install",
-    "uninstallCommand": "hpcnodemanager.py -uninstall",
-    "updateCommand": "hpcnodemanager.py -update",
-    "enableCommand": "hpcnodemanager.py -enable",
-    "disableCommand": "hpcnodemanager.py -disable",
+    "installCommand": "./shim.sh -install",
+    "uninstallCommand": "./shim.sh -uninstall",
+    "updateCommand": "./shim.sh -update",
+    "enableCommand": "./shim.sh -enable",
+    "disableCommand": "./shim.sh -disable",
     "rebootAfterInstall": false,
     "reportHeartbeat": false,
     "updateMode": "UpdateWithInstall"

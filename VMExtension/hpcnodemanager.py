@@ -15,10 +15,6 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#
-# Requires Python 2.7+
-
-
 import os
 import sys
 import json
@@ -47,10 +43,10 @@ RestartIntervalInSeconds = 60
 
 def main():
     waagent.LoggerInit('/var/log/waagent.log','/dev/stdout')
-    waagent.Log("%s started to handle." %(ExtensionShortName))
+    waagent.Log('Microsoft.HpcPack Linux NodeAgent started to handle.')
     waagent.MyDistro = waagent.GetMyDistro()
     global DistroName, DistroVersion
-    distro = platform.dist()
+    distro = get_dist_info()
     DistroName = distro[0].lower()
     DistroVersion = distro[1]
     for a in sys.argv[1:]:        
@@ -78,7 +74,7 @@ def _is_nodemanager_daemon(pid):
     return False
 
 def install_package(package_name):
-    if DistroName == "centos" or DistroName == "redhat":
+    if DistroName in ["centos", "redhat", "alma", "rocky"]:
         cmd = "yum -y install " + package_name
     elif DistroName == "ubuntu":
         waagent.Log("Updating apt package lists with command: apt-get -y update")
@@ -271,7 +267,7 @@ def _update_dns_record(domain_fqdn):
         try:
             s.connect((domain_fqdn, 53))
             break
-        except Exception, e:
+        except Exception as e:
             waagent.Log('Failed to connect to {0}:53: {1}'.format(domain_fqdn, e))
     ipaddr = s.getsockname()[0]
     host_fqdn = "{0}.{1}".format(socket.gethostname().split('.')[0], domain_fqdn)
@@ -338,7 +334,7 @@ def install():
     try:
         cleanup_host_entries()
         _uninstall_nodemanager_files()
-        if DistroName == "centos" or DistroName == "redhat":
+        if DistroName in ["centos", "redhat", "alma", "rocky"]:
             waagent.Run("yum-config-manager --setopt=\\*.skip_if_unavailable=1 --save", chk_err=False)
         _install_cgroup_tool()
         _install_sysstat()
@@ -459,7 +455,7 @@ def install():
         shutil.copy2(configfile, backup_configfile)
         config_firewall_rules()
         hutil.do_exit(0, 'Install', 'success', '0', 'Install Succeeded.')
-    except Exception, e:
+    except Exception as e:
         hutil.do_exit(1, 'Install','error','1', '{0}'.format(e))
 
 def enable():
@@ -477,7 +473,7 @@ def enable():
                 os.killpg(int(pid), 9)
         os.remove(DaemonPidFilePath)
 
-    args = [os.path.join(os.getcwd(), __file__), "daemon"]
+    args = [get_python_executor(), os.path.join(os.getcwd(), __file__), "daemon"]
     devnull = open(os.devnull, 'w')
     child = subprocess.Popen(args, stdout=devnull, stderr=devnull, preexec_fn=os.setsid)
     if child.pid is None or child.pid < 1:
@@ -569,7 +565,7 @@ def daemon():
             waagent.Log("Restart HPC node manager process after {0} seconds".format(RestartIntervalInSeconds))
             time.sleep(RestartIntervalInSeconds)
 
-    except Exception, e:
+    except Exception as e:
         hutil.error("Failed to enable the extension with error: %s, stack trace: %s" %(str(e), traceback.format_exc()))
         hutil.do_exit(1, 'Enable','error','1', 'Enable failed.')
 
@@ -616,6 +612,57 @@ def update():
                     waagent.MyDistro.publishHostname(confighostname)
     hutil.do_exit(0,'Update','success','0', 'Update Succeeded')
 
+def get_python_executor():
+    cmd = ''
+    if sys.version_info.major == 2:
+        cmd = 'python2'
+    elif sys.version_info.major == 3:
+        cmd = 'python3'
+    if waagent.Run("command -v {0}".format(cmd), chk_err=False) != 0:
+        # If a user-installed python isn't available, check for a platform-python. This is typically only used in RHEL 8.0.
+        if waagent.Run("command -v /usr/libexec/platform-python", chk_err=False) == 0:
+            cmd = '/usr/libexec/platform-python'
+    return cmd
+
+def get_dist_info():
+    try:
+        return waagent.DistInfo()
+    except:
+        pass
+    errCode, info = waagent.RunGetOutput("cat /etc/*-release")
+    if errCode != 0:
+        raise Exception('Failed to get Linux Distro info by running command "cat /etc/*release", error code: {}'.format(errCode))
+    distroName = ''
+    distroVersion = ''
+    for line in info.splitlines():
+        if line.startswith('PRETTY_NAME='):
+            line = line.lower()
+            if 'ubuntu' in line:
+                distroName = 'ubuntu'
+            elif 'centos' in line:
+                distroName = 'centos'
+            elif 'red hat' in line:
+                distroName = 'redhat'
+            elif 'suse' in line:
+                distroName = 'suse'
+            elif 'alma' in line:
+                distroName = 'alma'
+            elif 'rocky' in line:
+                distroName = 'rocky'
+            elif 'fedora' in line:
+                distroName = 'fedora'
+            elif 'freebsd' in line:
+                distroName = 'freebsd'
+            else:
+                raise Exception('Unknown linux distribution with {}'.format(line))
+        if line.startswith('VERSION_ID='):
+            line = line.strip(' ')
+            quoteIndex = line.index('"')
+            if quoteIndex >= 0:
+                distroVersion = line[quoteIndex+1:-1]
+    return distroName, distroVersion, ""
+
+  
 if __name__ == '__main__' :
     main()
 
