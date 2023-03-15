@@ -56,17 +56,27 @@ namespace hpc
                 void SetTaskRequeueCount(int c)
                 {
                     int oldC = this->taskRequeueCount;
-                    this->taskRequeueCount = c;
 
-                    if (!this->processKeySet)
+                    if (c < oldC)
                     {
-                        this->ProcessKey = this->GetAttemptId();
-                        this->processKeySet = true;
+                        hpc::utils::Logger::Warn(this->JobId, this->TaskId, this->taskRequeueCount,
+                                                 "The requeue count must be monotonically increasing, cannot change requeue count from {0} to {1}",
+                                                 oldC, c);
                     }
+                    else
+                    {
+                        this->taskRequeueCount = c;
 
-                    hpc::utils::Logger::Info(this->JobId, this->TaskId, this->taskRequeueCount,
-                        "Change requeue count from {0} to {1}, processKey {2}",
-                        oldC, c, this->ProcessKey);
+                        if (!this->processKeySet)
+                        {
+                            this->ProcessKey = this->GetAttemptId();
+                            this->processKeySet = true;
+                        }
+
+                        hpc::utils::Logger::Info(this->JobId, this->TaskId, this->taskRequeueCount,
+                                                 "Change requeue count from {0} to {1}, processKey {2}",
+                                                 oldC, c, this->ProcessKey);
+                    }
                 }
 
                 int GetProcessCount() const { return this->ProcessIds.size(); }
