@@ -23,7 +23,7 @@ LIBOUTDIR = lib
 INSTALLDIR = /opt/hpcnodemanager
 INC = -I$(CASA_INC) -I$(SPDLOG_INC)
 CFLAGS = -Wall -std=c++14 -Wno-unused-local-typedefs
-LIB = -lcpprest -lpthread -lboost_system -lssl -lcrypto
+LIB = -lcpprest -lpthread -lboost_system -lssl -lcrypto -lfmt
 LDFLAGS = -Wl,-rpath,\$$ORIGIN/$(LIBOUTDIR),-I$(INSTALLDIR)/$(LIBOUTDIR)/ld-linux-x86-64.so.2
 BINARY = nodemanager
 DEBUG = debug

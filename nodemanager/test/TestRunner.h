@@ -4,6 +4,7 @@
 #ifdef DEBUG
 
 #include <map>
+#include <string>
 #include <functional>
 
 namespace hpc
