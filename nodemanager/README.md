@@ -1,14 +1,5 @@
 ## Compiling and Dependencies
 
-### Compile from source code
-The code is compiled on Ubuntu(16.04) with the following dependencies:
-
-* [Boost](https://www.boost.org/) - can be installed by package libboost-all-dev(1.58)
-* [C++ REST SDK](https://github.com/Microsoft/cpprestsdk) - can be installed by package libcpprest-dev(2.8.0-2)
-* [spdlog](https://github.com/gabime/spdlog) - only header files in the `include` dir. Just clone the branch `v1.x` from GitHub. Note that the package libspdlog-dev(1.6-1) is too old to use.
-
-Depending on where the spdlog headers are put, you may need to modify makefile to modify path for spdlog headers.
-
 ### Compile from docker image
 We offer an image to help build artifacts. You can build and get artifacts by running the script `./build_and_get_artifact.sh`.
 
