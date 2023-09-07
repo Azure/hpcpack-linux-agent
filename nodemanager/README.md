@@ -1,4 +1,12 @@
+# nodemanager
+
 ## Compiling and Dependencies
+
+Bootstrap Vcpkg:
+
+```bash
+../vcpkg/bootstrap-vcpkg.sh
+```
 
 ### Compile from docker image
 We offer an image to help build artifacts. You can build and get artifacts by running the script `./build_and_get_artifact.sh`.
