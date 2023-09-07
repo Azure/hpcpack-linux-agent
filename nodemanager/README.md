@@ -8,6 +8,13 @@ Bootstrap Vcpkg:
 ../vcpkg/bootstrap-vcpkg.sh
 ```
 
+Build:
+
+```bash
+cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake
+cmake --build build -j`nproc`
+```
+
 ### Compile from docker image
 We offer an image to help build artifacts. You can build and get artifacts by running the script `./build_and_get_artifact.sh`.
 
