@@ -1,8 +1,15 @@
 #!/bin/bash
+set -e
 
-echo "Start to build from image aaronyll/nodemanager_build_1804"
-docker run -it aaronyll/nodemanager_build_1804
-echo "Start to copy artifacts to ./hpcnodemanager-latest"
-docker cp $(docker ps -qa | head -n 1):/hpcpack-linux-agent/nodemanager/bin/release ./hpcnodemanager-latest
-tput setaf 2
-echo "Done."
+# Activate Holy Build Box environment.
+source /hbb_exe/activate
+
+set -x
+
+yum update -y
+yum install perl-IPC-Cmd kernel-devel -y
+
+cd /hpcpack-linux-agent/nodemanager
+../vcpkg/bootstrap-vcpkg.sh
+cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake
+cmake --build build -- -j`nproc`

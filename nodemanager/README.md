@@ -1,22 +1,11 @@
 # nodemanager
 
-## Compiling and Dependencies
-
-Bootstrap Vcpkg:
-
-```bash
-../vcpkg/bootstrap-vcpkg.sh
-```
-
-Build:
+### Compilation
+We offer an script to help build artifacts. You can build and get artifacts under `build` by running:
 
 ```bash
-cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake
-cmake --build build -j`nproc`
+docker run -t -i --rm   -v `pwd`/../:/hpcpack-linux-agent   ghcr.io/phusion/holy-build-box/hbb-64 bash /hpcpack-linux-agent/nodemanager/build_and_get_artifact.sh
 ```
-
-### Compile from docker image
-We offer an image to help build artifacts. You can build and get artifacts by running the script `./build_and_get_artifact.sh`.
 
 ## Conding Convention
 

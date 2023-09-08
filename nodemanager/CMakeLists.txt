@@ -16,4 +16,4 @@ file(GLOB SOURCES "arguments/*.cpp" "arguements/*.h" "common/*.h" "core/*.cpp" "
 
 add_executable(nodemanager ${SOURCES})
 
-target_link_libraries(nodemanager PRIVATE fmt::fmt spdlog::spdlog Boost::boost cpprestsdk::cpprest)
+target_link_libraries(nodemanager PRIVATE fmt::fmt spdlog::spdlog Boost::boost cpprestsdk::cpprest -static-libstdc++)
