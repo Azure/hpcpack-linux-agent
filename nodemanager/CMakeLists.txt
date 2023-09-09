@@ -21,6 +21,8 @@ target_link_libraries(nodemanager PRIVATE fmt::fmt spdlog::spdlog Boost::boost c
 # pack scripts and compiled executable into hpcnodeagent.tar.gz
 add_custom_target(
     hpcnodeagent.tar.gz ALL
+    COMMAND rm -rf ${CMAKE_BINARY_DIR}/hpcnodeagent
+    COMMAND rm -f ${CMAKE_BINARY_DIR}/hpcnodeagent.tar.gz
     COMMAND mkdir -p ${CMAKE_BINARY_DIR}/hpcnodeagent
     COMMAND mkdir -p ${CMAKE_BINARY_DIR}/hpcnodeagent/lib
     COMMAND mkdir -p ${CMAKE_BINARY_DIR}/hpcnodeagent/Utils
@@ -32,3 +34,23 @@ add_custom_target(
     DEPENDS nodemanager
 )
 
+add_custom_target(
+    linuxnodeagent2016u1_reset
+    COMMAND rm -rf ${CMAKE_BINARY_DIR}/linuxnodeagent2016u1
+    COMMAND rm -f ${CMAKE_BINARY_DIR}/linuxnodeagent2016u1.zip
+    COMMAND mkdir -p ${CMAKE_BINARY_DIR}/linuxnodeagent2016u1
+)
+
+# pack the linux VM Extension (Yes it's called linuxnodeagent2016u1 ever since 2016u1)
+add_custom_target(
+    linuxnodeagent2016u1.zip ALL
+    COMMAND mkdir -p ${CMAKE_BINARY_DIR}/linuxnodeagent2016u1/bin
+    COMMAND mkdir -p ${CMAKE_BINARY_DIR}/linuxnodeagent2016u1/bin/lib
+    COMMAND cp -r ${CMAKE_SOURCE_DIR}/scripts/* ${CMAKE_BINARY_DIR}/linuxnodeagent2016u1/bin
+    COMMAND cp ${CMAKE_BINARY_DIR}/nodemanager ${CMAKE_BINARY_DIR}/linuxnodeagent2016u1/bin
+    COMMAND cp ${CMAKE_SOURCE_DIR}/config/nodemanager.json ${CMAKE_BINARY_DIR}/linuxnodeagent2016u1/bin/nodemanager.json.sample
+    COMMAND cp -r ${CMAKE_SOURCE_DIR}/../VMExtension/* ${CMAKE_BINARY_DIR}/linuxnodeagent2016u1/
+    COMMAND zip -r ${CMAKE_BINARY_DIR}/linuxnodeagent2016u1.zip *
+    WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/linuxnodeagent2016u1
+    DEPENDS nodemanager linuxnodeagent2016u1_reset
+)
