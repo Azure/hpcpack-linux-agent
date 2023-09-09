@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<package >
+  <metadata>
+    <id>HPCPackLinuxAgent</id>
+    <version>1.0.0</version>
+    <authors>zheyushen</authors>
+    <requireLicenseAcceptance>false</requireLicenseAcceptance>
+    <license type="expression">MIT</license>
+    <!-- <icon>icon.png</icon> -->
+    <description>HPC Pack Linux VM Extension and node agent</description>
+  </metadata>
+  <files>
+    <file src="build/hpcnodeagent.tar.gz" target="" />
+    <file src="build/linuxnodeagent2016u1.zip" target="" />
+  </files>
+</package>
