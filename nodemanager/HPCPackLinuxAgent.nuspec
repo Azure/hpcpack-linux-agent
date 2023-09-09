@@ -3,7 +3,7 @@
   <metadata>
     <id>HPCPackLinuxAgent</id>
     <version>1.0.0</version>
-    <authors>zheyushen</authors>
+    <authors>HPC Pack</authors>
     <requireLicenseAcceptance>false</requireLicenseAcceptance>
     <license type="expression">MIT</license>
     <!-- <icon>icon.png</icon> -->
