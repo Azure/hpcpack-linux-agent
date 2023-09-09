@@ -1,0 +1,28 @@
+# manual trigger GitHub Actions
+# start with an environment with docker, then run docker container with bash script that builds and pushes nuget package to Azure Artifacts specified in secrets
+# https://docs.microsoft.com/en-us/azure/devops/artifacts/nuget/publish?view=azure-devops&tabs=windows#push-packages-to-azure-artifacts
+
+name: NuGet
+description: 'Build and push NuGet package to Azure Artifacts'
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version'
+        required: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Build and push NuGet package
+        run: |
+          docker run -t -i --rm \
+            -e PACKAGE_VERSION=${{ github.event.inputs.version }} \
+            -e PUBLISH_PACKAGE_FEED=${{ secrets.AZURE_ARTIFACTS_FEED }} \
+            -e PUBLISH_PACKAGE_USERNAME=${{ secrets.AZURE_ARTIFACTS_USERNAME }} \
+            -e PUBLISH_PACKAGE_PASSWORD=${{ secrets.AZURE_ARTIFACTS_PASSWORD }} \
+            -v "$(pwd):/hpcpack-linux-agent" \
+            -w "/hpcpack-linux-agent/nodemanager" \
+            ghcr.io/phusion/holy-build-box/hbb-64 \
+            bash build_and_get_artifact.sh

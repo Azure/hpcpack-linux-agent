@@ -1,2 +1,3 @@
 build
 *.nupkg
+nuget.config
