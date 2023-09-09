@@ -16,7 +16,7 @@ jobs:
       - uses: actions/checkout@v2
       - name: Build and push NuGet package
         run: |
-          docker run -t -i --rm \
+          docker run --rm \
             -e PACKAGE_VERSION=${{ github.event.inputs.version }} \
             -e PUBLISH_PACKAGE_FEED=${{ secrets.AZURE_ARTIFACTS_FEED }} \
             -e PUBLISH_PACKAGE_USERNAME=${{ secrets.AZURE_ARTIFACTS_USERNAME }} \
