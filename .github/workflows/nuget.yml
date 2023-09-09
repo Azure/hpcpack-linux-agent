@@ -14,10 +14,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
-        with:
-          submodules: recursive
-          all_commits: true # workaround for a vcpkg error
-          all_tags: true # workaround for a vcpkg error
+      - name: clone submodules
+        run: git submodule update --init --recursive --no-recommend-shallow
       - name: Build and push NuGet package
         run: |
           docker run --rm \
