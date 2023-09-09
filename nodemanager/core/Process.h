@@ -11,6 +11,7 @@
 #include <pplx/pplxtasks.h>
 #include <sys/wait.h>
 #include <sys/resource.h>
+#include <boost/algorithm/string.hpp>
 
 #include "../utils/String.h"
 #include "../utils/Logger.h"

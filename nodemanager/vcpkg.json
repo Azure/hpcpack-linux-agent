@@ -1,0 +1,18 @@
+{
+    "dependencies": [
+        "cpprestsdk",
+        "spdlog",
+        "fmt",
+        "boost-regex",
+        "boost-algorithm",
+        "boost-thread",
+        "boost-uuid",
+        "boost-asio",
+        "boost-range",
+        "boost-phoenix"
+    ],
+    "builtin-baseline": "095ee8757ec933b22d445738d2dbb1ce89bb8021",
+    "overrides": [
+        { "name": "fmt", "version": "8.1.1" }
+    ]
+}

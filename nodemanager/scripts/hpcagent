@@ -1,0 +1,246 @@
+#!/usr/bin/env python
+#
+# HPCNodeManager extension
+#
+# Copyright 2015 Microsoft Corporation
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# Requires Python 2.7+
+
+
+import os
+import sys
+import subprocess
+import re
+import time
+import traceback
+import platform
+import Utils.AgentUtil as agentUtil
+import Utils.ConfigUtil as configUtil
+
+# Define global variables
+PidFilePath = '/var/run/hpcnmdaemon.pid'
+InstallRoot = '/opt/hpcnodemanager'
+LogFile = '/opt/hpcnodemanager/logs/hpclinuxagent.log'
+RestartIntervalInSeconds = 60
+
+def main():
+    global config, logger
+    logger = agentUtil.LoggerInit(LogFile, '/dev/stdout')
+    logger.Log("The command line is: " + " ".join(sys.argv))
+    config = configUtil.ConfigUtility(logger.Log, logger.Error)
+
+    ret = 1
+    if re.match("^([-/]*)(disable)", sys.argv[1]):
+        ret = disable()
+    elif re.match("^([-/]*)(enable)", sys.argv[1]):
+        ret = enable()
+    elif re.match("^([-/]*)(daemon)", sys.argv[1]):
+        ret = daemon()
+    elif re.match("^([-/]*)(restart)", sys.argv[1]):
+        disable()
+        ret = enable()
+    else:
+        logger.Log("Invalid parameter %s" % sys.argv[1])
+    sys.exit(ret)
+
+
+def _is_nodemanager_daemon(pid):
+    retcode, output = agentUtil.RunGetOutput("ps -p {0} -o cmd=".format(pid))
+    if retcode == 0:
+        logger.Log("The cmd for process {0} is {1}".format(pid, output))
+        pattern = r'(.*[/\s])?{0}\s+[-/]*daemon$'.format(__file__)
+        if re.match(pattern, output):
+            return True
+    logger.Log("The process {0} is not HPC Linux node manager daemon".format(pid))
+    return False
+
+
+def _add_dns_search(domain_fqdn):
+    need_update = False
+    new_content = ''
+    for line in (open('/etc/resolv.conf', 'r')).readlines():
+        if re.match('^search.* {0}'.format(domain_fqdn), line):
+            logger.Log('{0} was already added in /etc/resolv.conf'.format(domain_fqdn))
+            return
+        if re.match('^search', line):
+            need_update = True
+            new_content += line.replace('search', 'search {0}'.format(domain_fqdn))
+        else:
+            new_content += line
+    if need_update:
+        logger.Log('Adding {0} to /etc/resolv.conf'.format(domain_fqdn))
+        agentUtil.SetFileContents('/etc/resolv.conf', new_content)
+
+def _mount_cgroup():
+    if not os.path.isdir('/cgroup'):
+        os.mkdir('/cgroup')
+    if not os.listdir('/cgroup'):
+        retcode, mount_msg = agentUtil.RunGetOutput('mount -t cgroup cgroup /cgroup')
+        logger.Log("mount /cgroup directory {0}:{1}".format(retcode, mount_msg))
+        if retcode == 0:
+            logger.Log("/cgroup directory is successfully mounted.")
+        else:
+            raise Exception("failed to mount /cgroup directory")
+    else:
+        logger.Log("/cgroup directory was already mounted.")
+
+def configure_iptables():
+    if agentUtil.Run("command -v iptables", chk_err=False) == 0:
+        agentUtil.Run("iptables -D INPUT -p tcp --dport 40000 -j ACCEPT", chk_err=False)
+        agentUtil.Run("iptables -D INPUT -p tcp --dport 40002 -j ACCEPT", chk_err=False)
+        agentUtil.Run("iptables -I INPUT -p tcp --dport 40000 -j ACCEPT")
+        agentUtil.Run("iptables -I INPUT -p tcp --dport 40002 -j ACCEPT")
+
+def enable():
+    # Check whether monitor process is running.
+    # If it does, return. Otherwise clear pid file
+    if os.path.isfile(PidFilePath):
+        pid = agentUtil.GetFileContents(PidFilePath)
+        if os.path.isdir(os.path.join("/proc", pid)) and _is_nodemanager_daemon(pid):
+            logger.Log('HPC Linux node manager daemon is already running')
+            return 0
+        os.remove(PidFilePath)
+
+    args = [get_python_executor(), os.path.join(os.getcwd(), __file__), "daemon"]
+    devnull = open(os.devnull, 'w')
+    child = subprocess.Popen(args, stdout=devnull, stderr=devnull, preexec_fn=os.setsid)
+    if child.pid is None or child.pid < 1:
+        logger.Error('Failed to launch HPC Linux node manager daemon')
+        return 1
+    else:
+        # Sleep 3 seconds to check if the process is still running
+        time.sleep(3)
+        if child.poll() is None:
+            agentUtil.SetFileContents(PidFilePath, str(child.pid))
+            logger.Log("Daemon pid: {0}".format(child.pid))
+            logger.Log('HPC Linux node manager daemon is enabled')
+            return 0
+        else:
+            logger.Log('Failed to launch HPC Linux node manager daemon')
+            return 1
+
+def get_dist_info():
+    distroName = ''
+    distroVersion = ''    
+    if 'linux_distribution' in dir(platform):
+        distinfo = platform.linux_distribution(full_distribution_name=0)
+        distroName = distinfo[0].strip()
+        distroVersion = distinfo[1]
+    # if the distroName is empty we get from /etc/*-release
+    if not distroName:
+        errCode, info = agentUtil.RunGetOutput("cat /etc/*-release")
+        if errCode != 0:
+            raise Exception('Failed to get Linux Distro info by running command "cat /etc/*release", error code: {}'.format(errCode))
+        for line in info.splitlines():
+            if line.startswith('PRETTY_NAME='):
+                line = line.lower()
+                if 'ubuntu' in line:
+                    distroName = 'ubuntu'
+                elif 'centos' in line:
+                    distroName = 'centos'
+                elif 'red hat' in line:
+                    distroName = 'redhat'
+                elif 'suse' in line:
+                    distroName = 'suse'
+                elif 'alma' in line:
+                    distroName = 'alma'
+                elif 'rocky' in line:
+                    distroName = 'rocky'
+                elif 'fedora' in line:
+                    distroName = 'fedora'
+                elif 'freebsd' in line:
+                    distroName = 'freebsd'
+                else:
+                    raise Exception('Unknown linux distribution with {}'.format(line))
+            if line.startswith('VERSION_ID='):
+                line = line.strip(' ')
+                quoteIndex = line.index('"')
+                if quoteIndex >= 0:
+                    distroVersion = line[quoteIndex+1:-1]
+    return distroName.lower(), distroVersion
+
+def get_python_executor():
+    cmd = ''
+    if sys.version_info.major == 2:
+        cmd = 'python2'
+    elif sys.version_info.major == 3:
+        cmd = 'python3'
+    if agentUtil.Run("command -v {0}".format(cmd), chk_err=False) != 0:
+        # If a user-installed python isn't available, check for a platform-python. This is typically only used in RHEL 8.0.
+        if agentUtil.Run("command -v /usr/libexec/platform-python", chk_err=False) == 0:
+            cmd = '/usr/libexec/platform-python'
+    return cmd
+
+def daemon():
+    conn_string = config.get_cluster_connectionstring()
+    logger.Log("The connection string is " + conn_string)
+    dns_name = conn_string.split(',')[0].strip()
+    if dns_name.find('.') > 0:
+        # The cluster name is FQDN, extract the domain FQDN
+        domain_fqdn = dns_name.split(".", 1)[1]
+        logger.Log("The domain FQDN is " + domain_fqdn)
+        _add_dns_search(domain_fqdn)
+
+    try:
+        # Mount the directory /cgroup for centos 6.*
+        distroName, distroVersion = get_dist_info()
+        major_version = int(distroVersion.split('.')[0])
+        if (distroName == 'centos' or distroName == 'redhat') and major_version < 7:
+            _mount_cgroup()
+        logger.Log("Configure iptables to allow incoming tcp connection to 40000 and 40002.")
+        configure_iptables()
+        while True:
+            exe_path = os.path.join(InstallRoot, "nodemanager")
+            devnull = open(os.devnull, 'w')
+            child_process = subprocess.Popen(exe_path, stdout=devnull, stderr=devnull, cwd=InstallRoot)
+            if child_process.pid is None or child_process.pid < 1:
+                logger.Log('Failed to start HPC node manager process')
+                return 1
+            else:
+                # Sleep 1 second to check if the process is still running
+                time.sleep(1)
+                if child_process.poll() is None:
+                    logger.Log('HPC node manager process started')
+                    exit_code = child_process.wait()
+                    exit_msg = "HPC node manager process exits: {0}".format(exit_code)
+                    logger.Warn(exit_msg)
+                else:
+                    exit_msg = "HPC node manager process crashes: {0}".format(child_process.returncode)
+                    logger.Error(exit_msg)
+            logger.Log("Restart HPC node manager process after {0} seconds".format(RestartIntervalInSeconds))
+            time.sleep(RestartIntervalInSeconds)
+
+    except Exception as e:
+        logger.Error("Failed to start the daemon with error:{0}, stack trace: {1}".format(e, traceback.format_exc()))
+        return 1
+
+
+def disable():
+    # Check whether daemon process is running.
+    # If it does, kill it. Otherwise clear pid file
+    if os.path.isfile(PidFilePath):
+        pid = agentUtil.GetFileContents(PidFilePath)
+        if os.path.isdir(os.path.join("/proc", pid)) and _is_nodemanager_daemon(pid):
+            logger.Log("Stop HPC node manager daemon: {0}".format(pid))
+            os.killpg(int(pid), 9)
+            logger.Log('HPC node manager daemon is disabled')
+        os.remove(PidFilePath)
+    else:
+        logger.Log('HPC node manager daemon is not running')
+    return 0
+
+
+if __name__ == '__main__':
+    main()

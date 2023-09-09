@@ -1,7 +1,11 @@
-## Compiling and Dependencies
+# nodemanager
 
-### Compile from docker image
-We offer an image to help build artifacts. You can build and get artifacts by running the script `./build_and_get_artifact.sh`.
+### Compilation
+We offer an script to help build artifacts. You can build and get artifacts under `build` by running:
+
+```bash
+docker run -t -i --rm   -v `pwd`/../:/hpcpack-linux-agent   ghcr.io/phusion/holy-build-box/hbb-64 bash /hpcpack-linux-agent/nodemanager/build_and_get_artifact.sh
+```
 
 ## Conding Convention
 
