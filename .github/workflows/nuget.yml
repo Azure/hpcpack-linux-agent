@@ -16,6 +16,8 @@ jobs:
       - uses: actions/checkout@v2
         with:
           submodules: recursive
+          all_commits: true # workaround for a vcpkg error
+          all_tags: true # workaround for a vcpkg error
       - name: Build and push NuGet package
         run: |
           docker run --rm \
