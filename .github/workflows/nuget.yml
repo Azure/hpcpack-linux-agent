@@ -3,7 +3,6 @@
 # https://docs.microsoft.com/en-us/azure/devops/artifacts/nuget/publish?view=azure-devops&tabs=windows#push-packages-to-azure-artifacts
 
 name: NuGet
-description: 'Build and push NuGet package to Azure Artifacts'
 on:
   workflow_dispatch:
     inputs:
