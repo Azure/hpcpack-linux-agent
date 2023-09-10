@@ -11,6 +11,7 @@
   </metadata>
   <files>
     <file src="build/hpcnodeagent.tar.gz" target="" />
+    <file src="build/hpcnodeagent/setup.py" target="" />
     <file src="build/linuxnodeagent2016u1.zip" target="" />
   </files>
 </package>
