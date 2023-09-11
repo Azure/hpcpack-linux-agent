@@ -32,6 +32,7 @@ import hashlib
 
 from Utils.WAAgentUtil import waagent
 import Utils.HandlerUtil as Util
+from azurelinuxagent.common.osutil import get_osutil
 
 #Define global variables
 ExtensionShortName = 'HPCNodeManager'
@@ -40,15 +41,17 @@ InstallRoot = '/opt/hpcnodemanager'
 DistroName = None
 DistroVersion = None
 RestartIntervalInSeconds = 60
+osutil = None
 
 def main():
     waagent.LoggerInit('/var/log/waagent.log','/dev/stdout')
     waagent.Log('Microsoft.HpcPack Linux NodeAgent started to handle.')
     waagent.MyDistro = waagent.GetMyDistro()
-    global DistroName, DistroVersion
+    global DistroName, DistroVersion, osutil
     distro = get_dist_info()
     DistroName = distro[0].lower()
     DistroVersion = distro[1]
+    osutil = get_osutil()
     for a in sys.argv[1:]:        
         if re.match("^([-/]*)(disable)", a):
             disable()
@@ -377,8 +380,8 @@ def install():
         if host_name:
             if host_name.lower() != curhostname.lower():
                 waagent.Log("HostName was set: hostname from {0} to {1}".format(curhostname, host_name))
-                waagent.MyDistro.setHostname(host_name)
-                waagent.MyDistro.publishHostname(host_name)
+                osutil.set_hostname(host_name)
+                osutil.publish_hostname(host_name)
         else:
             host_name = curhostname
         public_settings = hutil._context._config['runtimeSettings'][0]['handlerSettings'].get('publicSettings')
@@ -523,8 +526,8 @@ def daemon():
             if confighostname.lower() != curhostname.lower():
                 cleanup_host_entries()
                 waagent.Log("Correct the hostname from {0} to {1}".format(curhostname, confighostname))
-                waagent.MyDistro.setHostname(confighostname)
-                waagent.MyDistro.publishHostname(confighostname)
+                osutil.set_hostname(confighostname)
+                osutil.publish_hostname(confighostname)
             retry = 0
             while True:
                 nics = get_networkinterfaces()
@@ -608,8 +611,8 @@ def update():
                 curhostname = socket.gethostname().split('.')[0]
                 if confighostname.lower() != curhostname.lower():
                     waagent.Log("Update: Set the hostname from {0} to {1}".format(curhostname, confighostname))
-                    waagent.MyDistro.setHostname(confighostname)
-                    waagent.MyDistro.publishHostname(confighostname)
+                    osutil.set_hostname(confighostname)
+                    osutil.publish_hostname(confighostname)
     hutil.do_exit(0,'Update','success','0', 'Update Succeeded')
 
 def get_python_executor():

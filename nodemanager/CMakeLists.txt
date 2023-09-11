@@ -50,6 +50,7 @@ add_custom_target(
     COMMAND cp ${CMAKE_BINARY_DIR}/nodemanager ${CMAKE_BINARY_DIR}/linuxnodeagent2016u1/bin
     COMMAND cp ${CMAKE_SOURCE_DIR}/config/nodemanager.json ${CMAKE_BINARY_DIR}/linuxnodeagent2016u1/bin/nodemanager.json.sample
     COMMAND cp -r ${CMAKE_SOURCE_DIR}/../VMExtension/* ${CMAKE_BINARY_DIR}/linuxnodeagent2016u1/
+    COMMAND cp -r ${CMAKE_SOURCE_DIR}/../WALinuxAgent/azurelinuxagent ${CMAKE_BINARY_DIR}/linuxnodeagent2016u1/
     COMMAND zip -r ${CMAKE_BINARY_DIR}/linuxnodeagent2016u1.zip *
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}/linuxnodeagent2016u1
     DEPENDS nodemanager linuxnodeagent2016u1_reset
