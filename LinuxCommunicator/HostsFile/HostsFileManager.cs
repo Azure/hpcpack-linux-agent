@@ -144,6 +144,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.HostsFile
 
                     if (ipEntryMatch.Success &&
                         manageByHPC &&
+                        !ipEntryMatch.Groups["ip"].Value.StartsWith(@"169.254") &&
                         ipEntryMatch.Groups["comment"].Value.Equals(HostsFileManager.ManagedEntryKey, StringComparison.OrdinalIgnoreCase) &&
                         HostEntry.TryCreate(ipEntryMatch.Groups["dnsName"].Value, ipEntryMatch.Groups["ip"].Value, out entry))
                     {
@@ -203,10 +204,7 @@ namespace Microsoft.Hpc.Communicators.LinuxCommunicator.HostsFile
         {
             if (isDisposing)
             {
-                if (this.reloadTimer != null)
-                {
-                    this.reloadTimer.Dispose();
-                }
+                this.reloadTimer?.Dispose();
             }
         }
     }
