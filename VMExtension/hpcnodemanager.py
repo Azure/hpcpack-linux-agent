@@ -136,7 +136,10 @@ def _install_cgroup_tool():
     else:
         waagent.Log("Start to install cgroup tools")
         if DistroName == "ubuntu":
-            cg_pkgname = 'cgroup-bin'
+            if re.match("^1", DistroVersion):
+                cg_pkgname = 'cgroup-bin'
+            else:
+                cg_pkgname = 'cgroup-tools'
         elif (DistroName == "centos" or DistroName == "redhat") and re.match("^6", DistroVersion):
             cg_pkgname = 'libcgroup'
         else:
