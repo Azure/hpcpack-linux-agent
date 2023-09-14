@@ -29,6 +29,7 @@ import struct
 import array
 import fcntl
 import hashlib
+import distro
 
 from Utils.WAAgentUtil import waagent
 import Utils.HandlerUtil as Util
@@ -46,7 +47,6 @@ osutil = None
 def main():
     waagent.LoggerInit('/var/log/waagent.log','/dev/stdout')
     waagent.Log('Microsoft.HpcPack Linux NodeAgent started to handle.')
-    waagent.MyDistro = waagent.GetMyDistro()
     global DistroName, DistroVersion, osutil
     distro = get_dist_info()
     DistroName = distro[0].lower()
@@ -632,7 +632,7 @@ def get_python_executor():
 
 def get_dist_info():
     try:
-        return waagent.DistInfo()
+        return distro.linux_distribution()
     except:
         pass
     errCode, info = waagent.RunGetOutput("cat /etc/*-release")
