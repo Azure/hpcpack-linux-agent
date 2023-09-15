@@ -29,11 +29,11 @@ import struct
 import array
 import fcntl
 import hashlib
-import distro
 
 from Utils.WAAgentUtil import waagent
 import Utils.HandlerUtil as Util
 from azurelinuxagent.common.osutil import get_osutil
+from azurelinuxagent.common.version import get_distro
 
 #Define global variables
 ExtensionShortName = 'HPCNodeManager'
@@ -632,7 +632,7 @@ def get_python_executor():
 
 def get_dist_info():
     try:
-        return distro.linux_distribution()
+        return get_distro()
     except:
         pass
     errCode, info = waagent.RunGetOutput("cat /etc/*-release")
