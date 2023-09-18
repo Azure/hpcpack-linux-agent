@@ -154,8 +154,8 @@ def get_dist_info():
                     distroName = 'redhat'
                 elif 'suse' in line:
                     distroName = 'suse'
-                elif 'alma' in line:
-                    distroName = 'alma'
+                elif 'almalinux' in line:
+                    distroName = 'almalinux'
                 elif 'rocky' in line:
                     distroName = 'rocky'
                 elif 'fedora' in line:

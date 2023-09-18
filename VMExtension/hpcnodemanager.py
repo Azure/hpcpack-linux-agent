@@ -77,7 +77,7 @@ def _is_nodemanager_daemon(pid):
     return False
 
 def install_package(package_name):
-    if DistroName in ["centos", "redhat", "alma", "rocky"]:
+    if DistroName in ["centos", "redhat", "almalinux", "rocky"]:
         cmd = "yum -y install " + package_name
     elif DistroName == "ubuntu":
         waagent.Log("Updating apt package lists with command: apt-get -y update")
@@ -340,7 +340,7 @@ def install():
     try:
         cleanup_host_entries()
         _uninstall_nodemanager_files()
-        if DistroName in ["centos", "redhat", "alma", "rocky"]:
+        if DistroName in ["centos", "redhat", "almalinux", "rocky"]:
             waagent.Run("yum-config-manager --setopt=\\*.skip_if_unavailable=1 --save", chk_err=False)
         _install_cgroup_tool()
         _install_sysstat()
