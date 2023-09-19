@@ -6,7 +6,7 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
-#include "Logger.h"
+#include "utils/Logger.h"
 
 namespace hpc
 {
@@ -663,25 +663,29 @@ namespace hpc
 
             static const std::string& GetVersion()
             {
-                try
+                if (!version.empty())
                 {
-                    std::ifstream fs("VERSION", std::ios::in);
-                    std::string version;
-                    std::getline(fs, version);
-                    fs.close();
-                    if (version.length() != 0)
-                    {
-                        return std::string(version);
-                    }
-                    else
-                    {
-                        return GetVersionOld();
-                    }
+                    return version;
                 }
-                catch (std::exception& ex)
+                else
                 {
-                    Logger::Warn("Failed to get version from VERSION file, falling back to hardcoded version. error: {0}", ex.what());
-                    return GetVersionOld();
+                    try
+                    {
+                        std::ifstream fs("VERSION", std::ios::in);
+                        std::getline(fs, version);
+                        fs.close();
+                        if (version.empty())
+                        {
+                            version = GetVersionOld();
+                        }
+                        return version;
+                    }
+                    catch (std::exception& ex)
+                    {
+                        Logger::Warn("Failed to get version from VERSION file, falling back to hardcoded version. error: {0}", ex.what());
+                        version = GetVersionOld();
+                        return version;
+                    }
                 }
             }
 
@@ -712,7 +716,7 @@ namespace hpc
             }
 
         private:
-
+            static std::string version;
     };
 }
 
