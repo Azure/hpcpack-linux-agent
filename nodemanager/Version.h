@@ -663,6 +663,7 @@ namespace hpc
 
             static const std::string& GetVersion()
             {
+                static std::string version;
                 if (!version.empty())
                 {
                     return version;
@@ -682,7 +683,7 @@ namespace hpc
                     }
                     catch (std::exception& ex)
                     {
-                        Logger::Warn("Failed to get version from VERSION file, falling back to hardcoded version. error: {0}", ex.what());
+                        utils::Logger::Warn("Failed to get version from VERSION file, falling back to hardcoded version. error: {0}", ex.what());
                         version = GetVersionOld();
                         return version;
                     }
@@ -716,7 +717,6 @@ namespace hpc
             }
 
         private:
-            static std::string version;
     };
 }
 
