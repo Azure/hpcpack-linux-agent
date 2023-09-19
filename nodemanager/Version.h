@@ -6,6 +6,7 @@
 #include <vector>
 #include <iostream>
 #include <fstream>
+#include "Logger.h"
 
 namespace hpc
 {
@@ -670,7 +671,7 @@ namespace hpc
                     fs.close();
                     if (version.length() != 0)
                     {
-                        return version;
+                        return std::string(version);
                     }
                     else
                     {
