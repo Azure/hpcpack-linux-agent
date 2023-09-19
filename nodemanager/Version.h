@@ -5,6 +5,7 @@
 #include <map>
 #include <vector>
 #include <iostream>
+#include <fstream>
 
 namespace hpc
 {
@@ -649,12 +650,41 @@ namespace hpc
                             "Fix a bug that task statistics may be incorrect",
                         }
                     },                    
+                    { "6.2.0.0",
+                        {
+                            "Fix build setup for compatibility with more linux distros",
+                        }
+                    },                    
                 };
 
                 return versionHistory;
             }
 
             static const std::string& GetVersion()
+            {
+                try
+                {
+                    std::ifstream fs("VERSION", std::ios::in);
+                    std::string version;
+                    std::getline(fs, version);
+                    fs.close();
+                    if (version.length() != 0)
+                    {
+                        return version;
+                    }
+                    else
+                    {
+                        return GetVersionOld();
+                    }
+                }
+                catch (std::exception& ex)
+                {
+                    Logger::Warn("Failed to get version from VERSION file, falling back to hardcoded version. error: {0}", ex.what());
+                    return GetVersionOld();
+                }
+            }
+
+            static const std::string& GetVersionOld()
             {
                 auto& h = GetVersionHistory();
                 auto it = --h.end();
