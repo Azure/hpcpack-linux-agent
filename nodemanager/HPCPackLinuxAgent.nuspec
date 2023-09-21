@@ -11,7 +11,9 @@
   </metadata>
   <files>
     <file src="build/hpcnodeagent/**" target="hpcnodeagent" />
+    <file src="build/hpcnodeagent/lib/" target="hpcnodeagent/lib" />
     <file src="build/hpcnodeagent/setup.py" target="" />
     <file src="build/linuxnodeagent2016u1/**" target="linuxnodeagent2016u1" />
+    <file src="build/linuxnodeagent2016u1/bin/lib/" target="linuxnodeagent2016u1/bin/lib" />
   </files>
 </package>
