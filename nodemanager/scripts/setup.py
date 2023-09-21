@@ -198,11 +198,11 @@ def Usage():
             '    managehosts: Specify that you want the /etc/hosts file managed by HPC\n\n' \
             'Note: This command must be run as root user\n\n' \
             'Examples: \n' \
-            'setup.py -install -connectionstring:\'hn1,hn2,hn3\' -certfile:\'/root/mycert.pfx\' -certpasswd:\'Pa$$word1\' -managehosts\n\n' \
+            'setup.py -install -connectionstring:\'hn1,hn2,hn3\' -certfile:\'/root/mycert.pfx\' -certpasswd:\'certpass\' -managehosts\n\n' \
             'setup.py -install -connectionstring:\'hn1.hpc.local,hn2.hpc.local,hn3.hpc.local\' -keepcert\n\n' \
             'setup.py -uninstall -keepcert\n\n' \
             'setup.py -update\n\n' \
-            'setup.py -updatecert -certfile:\'/root/newcert.pfx\' -certpasswd:\'Pa$$word2\'\n'
+            'setup.py -updatecert -certfile:\'/root/newcert.pfx\' -certpasswd:\'certpass\'\n'
     print(usage)
 
 def is_hpcagent_installed():
