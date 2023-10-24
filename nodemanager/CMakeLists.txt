@@ -2,12 +2,8 @@ cmake_minimum_required(VERSION 3.15)
 
 project(nodemanager CXX)
 
+set(VCPKG_OVERLAY_TRIPLETS "x64-linux-debug.cmake")
 set(VCPKG_LIBRARY_LINKAGE static)
-set(VCPKG_TARGET_TRIPLET x64-linux)
-set(VCPKG_BUILD_TYPE debug)
-set(CMAKE_BUILD_TYPE Debug)
-set(VCPKG_CXX_FLAGS_DEBUG "${VCPKG_CXX_FLAGS_DEBUG} -O0")
-set(VCPKG_C_FLAGS_DEBUG "${VCPKG_C_FLAGS_DEBUG} -O0")
 
 find_package(fmt REQUIRED)
 find_package(spdlog REQUIRED)
