@@ -4,6 +4,10 @@ project(nodemanager CXX)
 
 set(VCPKG_LIBRARY_LINKAGE static)
 set(VCPKG_TARGET_TRIPLET x64-linux)
+set(VCPKG_BUILD_TYPE debug)
+set(CMAKE_BUILD_TYPE Debug)
+set(VCPKG_CXX_FLAGS_DEBUG "${VCPKG_CXX_FLAGS_DEBUG} -O0")
+set(VCPKG_C_FLAGS_DEBUG "${VCPKG_C_FLAGS_DEBUG} -O0")
 
 find_package(fmt REQUIRED)
 find_package(spdlog REQUIRED)
@@ -17,7 +21,6 @@ file(GLOB SOURCES "arguments/*.cpp" "arguements/*.h" "common/*.h" "core/*.cpp" "
 add_executable(nodemanager ${SOURCES})
 
 target_link_libraries(nodemanager PRIVATE fmt::fmt spdlog::spdlog Boost::boost cpprestsdk::cpprest -static-libstdc++)
-target_compile_options(nodemanager PRIVATE -O0 -g)
 
 # pack scripts and compiled executable into hpcnodeagent.tar.gz
 add_custom_target(
