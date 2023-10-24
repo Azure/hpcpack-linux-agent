@@ -3,6 +3,12 @@ set -e
 
 # Activate Holy Build Box environment.
 source /hbb_exe/activate
+export CFLAGS="$CFLAGS -O0"
+export CXXFLAGS="$CXXFLAGS -O0"
+export STATICLIB_CFLAGS="$STATICLIB_CFLAGS -O0"
+export STATICLIB_CXXFLAGS="$STATICLIB_CXXFLAGS -O0"
+export SHLIB_CFLAGS="$SHLIB_CFLAGS -O0"
+export SHLIB_CXXFLAGS="$SHLIB_CXXFLAGS -O0"
 
 set -x
 

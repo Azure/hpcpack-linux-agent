@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.15)
 
 project(nodemanager CXX)
 
-set(VCPKG_OVERLAY_TRIPLETS "x64-linux-debug.cmake")
+set(VCPKG_TARGET_TRIPLET x64-linux)
 set(VCPKG_LIBRARY_LINKAGE static)
 
 find_package(fmt REQUIRED)
