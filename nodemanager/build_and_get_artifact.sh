@@ -14,7 +14,7 @@ curl -o /usr/local/bin/nuget.exe https://dist.nuget.org/win-x86-commandline/late
 
 cd /hpcpack-linux-agent/nodemanager
 ../vcpkg/bootstrap-vcpkg.sh
-cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake -DCMAKE_BUILD_TYPE=Debug
+cmake -B build -S . -DCMAKE_TOOLCHAIN_FILE=../vcpkg/scripts/buildsystems/vcpkg.cmake
 cmake --build build -- -j`nproc`
 
 # publish nuget package if PUBLISH_PACKAGE_FEED is defined

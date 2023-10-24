@@ -17,6 +17,7 @@ file(GLOB SOURCES "arguments/*.cpp" "arguements/*.h" "common/*.h" "core/*.cpp" "
 add_executable(nodemanager ${SOURCES})
 
 target_link_libraries(nodemanager PRIVATE fmt::fmt spdlog::spdlog Boost::boost cpprestsdk::cpprest -static-libstdc++)
+target_compile_options(nodemanager PRIVATE -O0 -g)
 
 # pack scripts and compiled executable into hpcnodeagent.tar.gz
 add_custom_target(
