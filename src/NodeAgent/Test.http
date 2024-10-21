@@ -1,0 +1,10 @@
+@NodeAgent_HostAddress = http://localhost:5153
+
+POST {{NodeAgent_HostAddress}}/api/node1/Ping
+CallbackURI: http://head/path
+
+###
+
+POST {{NodeAgent_HostAddress}}/api/node1/PeekTaskOutput
+
+###
