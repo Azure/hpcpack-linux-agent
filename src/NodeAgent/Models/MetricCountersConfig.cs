@@ -2,5 +2,5 @@
 
 public class MetricCountersConfig
 {
-    public IEnumerable<MetricCounter> MetricCounters { get; set; }
+    public IEnumerable<MetricCounter>? MetricCounters { get; set; }
 }

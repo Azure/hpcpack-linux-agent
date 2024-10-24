@@ -1,12 +1,22 @@
-﻿namespace NodeAgent.Services;
+﻿using NodeAgent.Models;
 
-public interface IMonitorService { }
+namespace NodeAgent.Services;
+
+public interface IMonitorService
+{
+    RegisterInfo GetRegisterInfo();
+}
 
 public class MonitorService : BackgroundService, IMonitorService
 {
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
         return Task.CompletedTask;
+    }
+
+    public RegisterInfo GetRegisterInfo()
+    {
+        throw new NotImplementedException();
     }
 }
 

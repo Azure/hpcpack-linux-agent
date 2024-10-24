@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using NodeAgent.Models;
+using NodeAgent.Services;
 
 namespace NodeAgent.Controllers;
 
@@ -20,7 +21,8 @@ public class ApiController : ControllerBase
     [HttpPost("StartJobAndTask")]
     public IActionResult StartJobAndTask(
         [FromHeader(Name = CallbackURIHeader)] string? callbackURI,
-        [FromBody] StartJobAndTaskArgs args)
+        [FromBody] StartJobAndTaskArgs args,
+        [FromServices] IJobTaskExecutor executor)
     {
         throw new NotImplementedException();
     }
@@ -28,7 +30,8 @@ public class ApiController : ControllerBase
     [HttpPost("EndJob")]
     public IActionResult EndJob(
         [FromHeader(Name = CallbackURIHeader)] string? callbackURI,
-        [FromBody] EndJobArgs args)
+        [FromBody] EndJobArgs args,
+        [FromServices] IJobTaskExecutor executor)
     {
         throw new NotImplementedException();
     }
@@ -36,7 +39,8 @@ public class ApiController : ControllerBase
     [HttpPost("StartTask")]
     public IActionResult StartTask(
         [FromHeader(Name = CallbackURIHeader)] string? callbackURI,
-        [FromBody] StartTaskArgs args)
+        [FromBody] StartTaskArgs args,
+        [FromServices] IJobTaskExecutor executor)
     {
         throw new NotImplementedException();
     }
@@ -44,21 +48,28 @@ public class ApiController : ControllerBase
     [HttpPost("EndTask")]
     public IActionResult EndTask(
         [FromHeader(Name = CallbackURIHeader)] string? callbackURI,
-        [FromBody] EndTaskArgs args)
+        [FromBody] EndTaskArgs args,
+        [FromServices] IJobTaskExecutor executor)
     {
         throw new NotImplementedException();
     }
 
     [HttpPost("PeekTaskOutput")]
-    public IActionResult PeekTaskOutput([FromBody] PeekTaskOutputArgs args)
+    public IActionResult PeekTaskOutput(
+        [FromBody] PeekTaskOutputArgs args,
+        [FromServices] IJobTaskExecutor executor)
     {
         throw new NotImplementedException();
     }
 
+    //TODO/Q: How to trigger a ping request?
     [HttpPost("Ping")]
-    public IActionResult Ping([FromHeader(Name = CallbackURIHeader)] string? callbackURI)
+    public async Task<IActionResult> Ping(
+        [FromHeader(Name = CallbackURIHeader)] string callbackURI,
+        [FromServices] IHeartbeatService heartbeat)
     {
-        throw new NotImplementedException();
+        await heartbeat.PingAsync(callbackURI);
+        return Ok();
     }
 
     [HttpPost("Metric")]
