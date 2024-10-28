@@ -16,7 +16,7 @@ public class ProcessStartInfo
 
     public int TaskRequeueCount { get; set; }
 
-    public IEnumerable<ulong>? Affinity {  get; set; }
+    public IList<ulong>? Affinity {  get; set; }
 
     [Required]
     public IDictionary<string, string> EnvironmentVariables { get; set; } = default!;

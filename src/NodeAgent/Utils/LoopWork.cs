@@ -13,7 +13,7 @@ public static class LoopWork
         public int ErrorRetryMultiplyFactor { get; set; }
 
         //TODO: Make it for logging purpose
-        public override string ToString()
+        public override string? ToString()
         {
             return base.ToString();
         }

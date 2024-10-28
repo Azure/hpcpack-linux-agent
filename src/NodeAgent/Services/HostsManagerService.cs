@@ -50,7 +50,7 @@ public class HostsManagerService : BackgroundService, IHostsManagerService
             ErrorRetryMultiplyFactor = 1,
         };
 
-        _logger.LogInformation("Start looping with options {opts}.", _startOptions);
+        _logger.LogInformation("StartAsync looping with options {opts}.", _startOptions);
         return LoopWork.StartAsync(Work, OnWorkError, stoppingToken, new ChangableOptions<LoopWork.StartOptions>(_startOptions));
     }
 
@@ -60,7 +60,7 @@ public class HostsManagerService : BackgroundService, IHostsManagerService
         try
         {
             uri = _nodeManagerConfigManager.Config.HostsFileUri;
-            uri = _namingClient.ResolveUri(uri!, _nodeManagerConfigManager.Config.DefaultServiceName, stoppingToken);
+            uri = await _namingClient.ResolveUriAsync(uri!, _nodeManagerConfigManager.Config.DefaultServiceName, stoppingToken);
 
             _logger.LogDebug("Request to {uri}", uri);
 

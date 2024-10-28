@@ -8,21 +8,21 @@ public class RegisterService : BackgroundService, IRegisterService
 {
     private ILogger _logger;
     private IHttpClientFactory _httpClientFactory;
-    private INodeManagerConfigManager _nodeManagerConfigManager;
+    private INodeManagerConfigManager _configManager;
     private INamingClient _namingClient;
     private IMonitorService _monitor;
-    private IJobTaskTable _jobTaskTable;
+    private IResyncFlag _resyncFlag;
     private LoopWork.StartOptions? _startOptions;
 
     public RegisterService(ILogger<RegisterService> logger, IHttpClientFactory httpClientFactory,
-        INodeManagerConfigManager configManager, INamingClient namingClient, IMonitorService monitor, IJobTaskTable jobTaskTable)
+        INodeManagerConfigManager configManager, INamingClient namingClient, IMonitorService monitor, IResyncFlag resyncFlag)
     {
         _logger = logger;
         _httpClientFactory = httpClientFactory;
-        _nodeManagerConfigManager = configManager;
+        _configManager = configManager;
         _namingClient = namingClient;
         _monitor = monitor;
-        _jobTaskTable = jobTaskTable;
+        _resyncFlag = resyncFlag;
     }
 
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
@@ -34,7 +34,7 @@ public class RegisterService : BackgroundService, IRegisterService
             ErrorRetryMultiplyFactor = 2,
         };
 
-        _logger.LogInformation("Start looping with options {opts}.", _startOptions);
+        _logger.LogInformation("StartAsync looping with options {opts}.", _startOptions);
         return LoopWork.StartAsync(Work, OnWorkError, stoppingToken, new ChangableOptions<LoopWork.StartOptions>(_startOptions));
     }
 
@@ -44,8 +44,8 @@ public class RegisterService : BackgroundService, IRegisterService
         try
         {
             var value = _monitor.GetRegisterInfo();
-            uri = _nodeManagerConfigManager.Config.RegisterUri;
-            uri = _namingClient.ResolveUri(uri, _nodeManagerConfigManager.Config.DefaultServiceName, stoppingToken);
+            uri = _configManager.Config.RegisterUri;
+            uri = await _namingClient.ResolveUriAsync(uri, _configManager.Config.DefaultServiceName, stoppingToken);
 
             _logger.LogDebug("Report to {uri} with {value}", uri, value);
 
@@ -73,7 +73,7 @@ public class RegisterService : BackgroundService, IRegisterService
         _namingClient.InvalidateCache();
         if (retryCount > 2)
         {
-            _jobTaskTable.RequestResync();
+            _resyncFlag.RequestResync = true;
         }
         return Task.CompletedTask;
     }

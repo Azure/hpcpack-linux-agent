@@ -17,7 +17,7 @@ public class NodeManagerConfig
     [Required]
     public string HeartbeatUri { get; set; } = default!;
 
-    public string TaskCompletionUri { get; set; } = default!;
+    public string? TaskCompletionUri { get; set; }
 
     public string MetricInstanceIdsUri { get; set; } = default!;
 

@@ -22,8 +22,9 @@ public class Program
         builder.Services.AddSingleton<INodeManagerConfigManager, NodeManagerConfigManager>();
         //TODO: Should INamingClient be transient?
         builder.Services.AddSingleton<INamingClient, NamingClient>();
-        builder.Services.AddSingleton<IJobTaskTable, JobTaskTable>();
         builder.Services.AddSingleton<IJobTaskExecutor, JobTaskExecutor>();
+        builder.Services.AddSingleton<IJobTaskFilter, JobTaskFilter>();
+        builder.Services.AddSingleton<IResyncFlag, ResyncFlag>();
 
         var app = builder.Build();
 

@@ -19,47 +19,79 @@ public class ApiController : ControllerBase
     }
 
     [HttpPost("StartJobAndTask")]
-    public IActionResult StartJobAndTask(
-        [FromHeader(Name = CallbackURIHeader)] string? callbackURI,
-        [FromBody] StartJobAndTaskArgs args,
+    public async Task<IActionResult> StartJobAndTask(
+        [FromHeader(Name = CallbackURIHeader)] string callbackURI,
+        [FromBody] StartJobAndTaskArgsTuple argsTuple,
+        [FromServices] IJobTaskFilter filter,
         [FromServices] IJobTaskExecutor executor)
     {
-        throw new NotImplementedException();
+        //TODO: Make sure the log can only be read by system admin like root since it may contain password.
+        _logger.LogDebug("StartJobAndTask: before filter: {args}", argsTuple);
+
+        /*
+         * NOTE
+         *
+         * Here we pass the deserialized args object instead of the original JSON string to the filter.
+         * In the filter, the object will be serialized again to string and the string is passed to a
+         * user defined filter. This implies the user filter must tolerate the subtlety between different
+         * JSON deserializers, that is, the one on the head node and the one used here in agent. The
+         * subtlety is the property name casing. A user filter should ignore the case of property name.
+         * This is by design. So is for StartTask.
+         */
+        argsTuple = await filter.OnJobStart(argsTuple);
+        _logger.LogDebug("StartJobAndTask: after filter: {args}", argsTuple);
+
+        await executor.StartJobAndTaskAsync(argsTuple.ToStartJobAndTaskArgs(), callbackURI);
+        return Ok();
     }
 
     [HttpPost("EndJob")]
-    public IActionResult EndJob(
-        [FromHeader(Name = CallbackURIHeader)] string? callbackURI,
+    public async Task<IActionResult> EndJob(
         [FromBody] EndJobArgs args,
+        [FromServices] IJobTaskFilter filter,
         [FromServices] IJobTaskExecutor executor)
     {
-        throw new NotImplementedException();
+        args = await filter.OnJobEnd(args);
+        _logger.LogDebug("EndJob: before filter: {args}", args);
+
+        var result = await executor.EndJobAsync(args);
+        _logger.LogDebug("EndJob: after filter: {args}", args);
+
+        return Ok(result);
     }
 
     [HttpPost("StartTask")]
-    public IActionResult StartTask(
-        [FromHeader(Name = CallbackURIHeader)] string? callbackURI,
-        [FromBody] StartTaskArgs args,
+    public async Task<IActionResult> StartTask(
+        [FromHeader(Name = CallbackURIHeader)] string callbackURI,
+        [FromBody] StartTaskArgsTuple argsTuple,
+        [FromServices] IJobTaskFilter filter,
         [FromServices] IJobTaskExecutor executor)
     {
-        throw new NotImplementedException();
+        _logger.LogDebug("StartTask: before filter: {args}", argsTuple);
+        argsTuple = await filter.OnTaskStart(argsTuple);
+        _logger.LogDebug("StartTask: after filter: {args}", argsTuple);
+
+        await executor.StartTaskAsync(argsTuple.ToStartTaskArgs(), callbackURI);
+        return Ok();
     }
 
     [HttpPost("EndTask")]
-    public IActionResult EndTask(
-        [FromHeader(Name = CallbackURIHeader)] string? callbackURI,
+    public async Task<IActionResult> EndTask(
+        [FromHeader(Name = CallbackURIHeader)] string callbackURI,
         [FromBody] EndTaskArgs args,
         [FromServices] IJobTaskExecutor executor)
     {
-        throw new NotImplementedException();
+        var result = await executor.EndTaskAsync(args, callbackURI);
+        return Ok(result);
     }
 
     [HttpPost("PeekTaskOutput")]
-    public IActionResult PeekTaskOutput(
+    public async Task<IActionResult> PeekTaskOutput(
         [FromBody] PeekTaskOutputArgs args,
         [FromServices] IJobTaskExecutor executor)
     {
-        throw new NotImplementedException();
+        var result = await executor.PeekTaskOutputAsync(args);
+        return Ok(result);
     }
 
     //TODO/Q: How to trigger a ping request?

@@ -2,6 +2,7 @@
 
 namespace NodeAgent.Services;
 
+//All methods of the interface are thread-safe.
 public interface IMonitorService
 {
     RegisterInfo GetRegisterInfo();

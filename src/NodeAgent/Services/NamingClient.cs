@@ -1,15 +1,16 @@
 ﻿namespace NodeAgent.Services;
 
+//All methods of the interface are thread-safe.
 public interface INamingClient
 {
-    string GetServiceLocation(string serviceName, CancellationToken cancellationToken);
+    Task<string> GetServiceLocationAsync(string serviceName, CancellationToken cancellationToken);
 
     void InvalidateCache();
 }
 
 public class NamingClient : INamingClient
 {
-    public string GetServiceLocation(string serviceName, CancellationToken cancellationToken)
+    public Task<string> GetServiceLocationAsync(string serviceName, CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
     }
@@ -22,7 +23,7 @@ public class NamingClient : INamingClient
 
 public static class INamingClientExtensions
 {
-    public static string ResolveUri(this INamingClient client, string uri, string serviceName, CancellationToken cancellationToken)
+    public static Task<string> ResolveUriAsync(this INamingClient client, string uri, string serviceName, CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
     }
