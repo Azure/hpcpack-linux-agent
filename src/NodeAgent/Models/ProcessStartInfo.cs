@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-
-namespace NodeAgent.Models;
+﻿namespace NodeAgent.Models;
 
 public class ProcessStartInfo
 {
@@ -16,8 +14,7 @@ public class ProcessStartInfo
 
     public int TaskRequeueCount { get; set; }
 
-    public IList<ulong>? Affinity {  get; set; }
+    public IEnumerable<ulong>? Affinity {  get; set; }
 
-    [Required]
-    public IDictionary<string, string> EnvironmentVariables { get; set; } = default!;
+    public IDictionary<string, string>? EnvironmentVariables { get; set; }
 }

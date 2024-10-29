@@ -74,3 +74,11 @@ extends:
               targetType: 'inline'
               workingDirectory: $(Build.SourcesDirectory)/src
               script: dotnet build --no-restore
+
+          - task: Bash@3
+            displayName: 'Test'
+            inputs:
+              targetType: 'inline'
+              workingDirectory: $(Build.SourcesDirectory)/src
+              script: dotnet test --no-restore
+

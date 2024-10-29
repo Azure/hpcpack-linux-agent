@@ -60,7 +60,7 @@ public class TaskInfo
     public IList<int>? ProcessIds { get; set; }
 
     [JsonIgnore]
-    public IList<ulong>? Affinity { get; set; }
+    public IEnumerable<ulong>? Affinity { get; set; }
 
     [JsonIgnore]
     public ulong ProcessKey { set; get; }

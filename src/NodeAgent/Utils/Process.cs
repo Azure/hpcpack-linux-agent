@@ -10,14 +10,14 @@ public class Process
         int requeueCount,
         string taskExecutionName,
         string cmdLine,
-        string standardOut,
-        string standardErr,
-        string standardIn,
-        string workDir,
+        string? standardOut,
+        string? standardErr,
+        string? standardIn,
+        string? workDir,
         string user,
         bool dumpStdoutToExecutionMessage,
-        IList<ulong> cpuAffinity,
-        IDictionary<string, string> env,
+        IEnumerable<ulong>? cpuAffinity,
+        IDictionary<string, string>? env,
         Action<int, string, ProcessStatistics> onComplete)
     {
         throw new NotImplementedException();

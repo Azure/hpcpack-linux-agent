@@ -14,7 +14,7 @@ public interface IJobTaskExecutor
 
     Task<JobInfo?> EndJobAsync(EndJobArgs args);
 
-    Task<string> PeekTaskOutputAsync(PeekTaskOutputArgs args);
+    Task<string?> PeekTaskOutputAsync(PeekTaskOutputArgs args);
 
     int GetJobCount();
 
@@ -27,7 +27,7 @@ public interface IJobTaskExecutor
 
 /*
  * TODO
- * 
+ *
  * Review locks in JobTaskExecutor and JobTaskTable for thread-safety, deadlock and performance.
  */
 public class JobTaskExecutor : IJobTaskExecutor
@@ -68,6 +68,15 @@ public class JobTaskExecutor : IJobTaskExecutor
         {
             var msg = $"Job '{jobId}', Task '{TaskId}.{requeue}': {fmt}";
             _logger.LogError(ex, msg, args);
+        }
+    }
+
+    private void LogWarning(Exception ex, int jobId, int? TaskId, int? requeue, string fmt, params object?[] args)
+    {
+        if (_logger.IsEnabled(LogLevel.Warning))
+        {
+            var msg = $"Job '{jobId}', Task '{TaskId}.{requeue}': {fmt}";
+            _logger.LogWarning(ex, msg, args);
         }
     }
 
@@ -139,9 +148,20 @@ public class JobTaskExecutor : IJobTaskExecutor
                     //Let the following lambda capture the copy instead of the original object.
                     var taskInfoCopy = taskInfo.Copy();
 
-                    var process = new Process(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount, "Task",
-                        args.StartInfo.CommandLine, args.StartInfo.StdOutFile, args.StartInfo.StdErrFile, args.StartInfo.StdInFile,
-                        args.StartInfo.WorkDirectory, userName, true, args.StartInfo.Affinity, args.StartInfo.EnvironmentVariables,
+                    var process = new Process(
+                        taskInfo.JobId,
+                        taskInfo.TaskId,
+                        taskInfo.TaskRequeueCount,
+                        "Task",
+                        args.StartInfo.CommandLine,
+                        args.StartInfo.StdOutFile,
+                        args.StartInfo.StdErrFile,
+                        args.StartInfo.StdInFile,
+                        args.StartInfo.WorkDirectory,
+                        userName,
+                        true,
+                        args.StartInfo.Affinity,
+                        args.StartInfo.EnvironmentVariables,
                         (exitCode, message, stat) =>
                         {
                             System.Diagnostics.Debug.Assert(!taskInfo.Exited, "Task already exited.");
@@ -150,7 +170,7 @@ public class JobTaskExecutor : IJobTaskExecutor
 
                     _processes[taskInfo.ProcessKey] = process;
 
-                    Log(LogLevel.Debug, taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount, 
+                    Log(LogLevel.Debug, taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
                         "Start process with ProcessKey {key} and process count {count}", taskInfo.ProcessKey, _processes.Count);
 
                     return process.StartAsync().ContinueWith(task => {
@@ -291,7 +311,7 @@ public class JobTaskExecutor : IJobTaskExecutor
     }
 
     //NOTE: The caller must have lock to _lock object already.
-    private ProcessStatistics? TerminateTask(int jobId, int taskId, int requeueCount, ulong processKey, 
+    private ProcessStatistics? TerminateTask(int jobId, int taskId, int requeueCount, ulong processKey,
         int exitCode, bool forced, bool mpiDockerTask)
     {
         if (mpiDockerTask)
@@ -322,7 +342,7 @@ public class JobTaskExecutor : IJobTaskExecutor
 
             if (!stat.IsTerminated)
             {
-                Log(LogLevel.Warning, jobId, taskId, requeueCount, 
+                Log(LogLevel.Warning, jobId, taskId, requeueCount,
                     "The task didn't exit within 1s. Process Ids: {ids}", string.Join(' ', stat.ProcessIds));
             }
             return stat;
@@ -381,7 +401,7 @@ public class JobTaskExecutor : IJobTaskExecutor
                 foreach (var taskInfo in jobInfo.Tasks.Values)
                 {
                     Log(LogLevel.Debug, taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount, "EnbJob: Terminating task.");
-                    var stat = TerminateTask(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount, 
+                    var stat = TerminateTask(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
                         taskInfo.ProcessKey, (int)ErrorCodes.EndJobExitCode, true, !taskInfo.PrimaryTask);
                     if (stat != null)
                     {
@@ -430,9 +450,32 @@ public class JobTaskExecutor : IJobTaskExecutor
         }
     }
 
-    public Task<string> PeekTaskOutputAsync(PeekTaskOutputArgs args)
+    public Task<string?> PeekTaskOutputAsync(PeekTaskOutputArgs args)
     {
-        throw new NotImplementedException();
+        Log(LogLevel.Information, args.JobId, args.TaskId, null, "PeekTaskOutput");
+        lock (_lock)
+        {
+            var taskInfo = _jobTaskTable.GetTask(args.JobId, args.TaskId);
+            if (taskInfo != null)
+            {
+                Log(LogLevel.Debug, taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
+                    "PeekTaskOutput for ProcessKey {key}, process count {count}", taskInfo.ProcessKey, _processes.Count);
+
+                if (_processes.TryGetValue(taskInfo.ProcessKey, out var process))
+                {
+                    try
+                    {
+                        return Task.FromResult<string?>(process.PeekOutput());
+                    }
+                    catch (Exception ex) {
+                        LogWarning(ex, taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
+                            "PeekTaskOutput got an exception when calling process' PeekOutput.");
+                    }
+                }
+            }
+        }
+
+        return Task.FromResult<string?>(null);
     }
 
     public int GetJobCount()
