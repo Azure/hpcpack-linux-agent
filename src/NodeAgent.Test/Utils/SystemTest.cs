@@ -11,15 +11,7 @@ public class SystemTest
     {
         var (code, stdout, stderr) = ExecuteInShell("echo -n back");
         Assert.Equal(0, code);
-
-        /*
-         * NOTE
-         *
-         * I don't know why there's a trailing "\n", though "-n" is specified.
-         * It seems a character by the .NET API.
-         */
-        Assert.Equal("back\n", stdout);
-
+        Assert.Equal("back", stdout);
         Assert.Equal("", stderr);
     }
 }

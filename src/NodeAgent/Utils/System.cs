@@ -46,13 +46,13 @@ public static class System
         process.OutputDataReceived += (sender, args) => {
             if (args.Data != null)
             {
-                stdoutBuilder.AppendLine(args.Data);
+                stdoutBuilder.Append(args.Data);
             }
         };
         process.ErrorDataReceived += (sender, args) => {
             if (args.Data != null)
             {
-                stderrBuilder.AppendLine(args.Data);
+                stderrBuilder.Append(args.Data);
             }
         };
 
