@@ -19,7 +19,7 @@ public class Program
         builder.Services.AddHostsManagerService();
         builder.Services.AddMetricsService();
 
-        builder.Services.AddSingleton<INodeManagerConfigManager, NodeManagerConfigManager>();
+        builder.Services.AddSingleton<IConfigManager, ConfigManager>();
         //TODO: Should INamingClient be transient?
         builder.Services.AddSingleton<INamingClient, NamingClient>();
         builder.Services.AddSingleton<IJobTaskExecutor, JobTaskExecutor>();

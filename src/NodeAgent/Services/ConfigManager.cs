@@ -3,14 +3,14 @@
 namespace NodeAgent.Services;
 
 //All methods of the interface are thread-safe.
-public interface INodeManagerConfigManager
+public interface IConfigManager
 {
     NodeManagerConfig Config { get; }
 
     Task SaveConfigAsync();
 }
 
-public class NodeManagerConfigManager : INodeManagerConfigManager
+public class ConfigManager : IConfigManager
 {
     public const string DefaultConfigFile = "nodemanager.json";
 
@@ -19,7 +19,7 @@ public class NodeManagerConfigManager : INodeManagerConfigManager
     private string _configFile;
 
     //TODO: We may need configFilePath instead of configFile ...
-    public NodeManagerConfigManager(ILogger<NodeManagerConfigManager> logger, string? configFile = null)
+    public ConfigManager(ILogger<ConfigManager> logger, string? configFile = null)
     {
         _logger = logger;
         _configFile = configFile ?? DefaultConfigFile;

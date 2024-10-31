@@ -34,7 +34,7 @@ public class JobTaskExecutor : IJobTaskExecutor
 {
     private ILogger _logger;
     private INamingClient _namingClient;
-    private INodeManagerConfigManager _configManager;
+    private IConfigManager _configManager;
     private IHttpClientFactory _httpClientFactory;
     private IResyncFlag _resyncFlag;
     private ISystemService _systemService;
@@ -49,7 +49,7 @@ public class JobTaskExecutor : IJobTaskExecutor
     public JobTaskExecutor(
         ILogger<JobTaskExecutor> logger,
         INamingClient namingClient,
-        INodeManagerConfigManager configManager,
+        IConfigManager configManager,
         IHttpClientFactory httpClientFactory,
         IResyncFlag resyncFlag,
         ISystemService systemService,

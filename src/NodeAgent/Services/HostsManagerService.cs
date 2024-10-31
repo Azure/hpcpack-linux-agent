@@ -13,7 +13,7 @@ public class HostsManagerService : BackgroundService, IHostsManagerService
 
     private ILogger _logger;
     private IHttpClientFactory _httpClientFactory;
-    private INodeManagerConfigManager _nodeManagerConfigManager;
+    private IConfigManager _configManager;
     private INamingClient _namingClient;
     private LoopWork.StartOptions? _startOptions;
     private string? _updateId;
@@ -21,26 +21,26 @@ public class HostsManagerService : BackgroundService, IHostsManagerService
     public HostsManagerService(
         ILogger<RegisterService> logger,
         IHttpClientFactory httpClientFactory,
-        INodeManagerConfigManager configManager,
+        IConfigManager configManager,
         INamingClient namingClient)
     {
         _logger = logger;
         _httpClientFactory = httpClientFactory;
-        _nodeManagerConfigManager = configManager;
+        _configManager = configManager;
         _namingClient = namingClient;
     }
 
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
         //TODO/Q: When is the service required?
-        var uri = _nodeManagerConfigManager.Config.HostsFileUri;
+        var uri = _configManager.Config.HostsFileUri;
         if (string.IsNullOrWhiteSpace(uri))
         {
             _logger.LogWarning("HostsFileUri is not specified. HostsManagerService is exiting.");
             return Task.CompletedTask;
         }
 
-        int interval = _nodeManagerConfigManager.Config.HostsFetchInterval ?? 300;
+        int interval = _configManager.Config.HostsFetchInterval ?? 300;
         if (interval < MinHostsFetchInterval)
         {
             interval = MinHostsFetchInterval;
@@ -62,8 +62,8 @@ public class HostsManagerService : BackgroundService, IHostsManagerService
         string? uri = null;
         try
         {
-            uri = _nodeManagerConfigManager.Config.HostsFileUri;
-            uri = await _namingClient.ResolveUriAsync(uri!, _nodeManagerConfigManager.Config.DefaultServiceName, stoppingToken);
+            uri = _configManager.Config.HostsFileUri;
+            uri = await _namingClient.ResolveUriAsync(uri!, _configManager.Config.DefaultServiceName, stoppingToken);
 
             _logger.LogDebug("Request to {uri}", uri);
 

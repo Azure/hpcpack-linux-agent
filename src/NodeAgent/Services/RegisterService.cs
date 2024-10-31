@@ -8,7 +8,7 @@ public class RegisterService : BackgroundService, IRegisterService
 {
     private ILogger _logger;
     private IHttpClientFactory _httpClientFactory;
-    private INodeManagerConfigManager _configManager;
+    private IConfigManager _configManager;
     private INamingClient _namingClient;
     private IMonitorService _monitor;
     private IResyncFlag _resyncFlag;
@@ -17,7 +17,7 @@ public class RegisterService : BackgroundService, IRegisterService
     public RegisterService(
         ILogger<RegisterService> logger,
         IHttpClientFactory httpClientFactory,
-        INodeManagerConfigManager configManager,
+        IConfigManager configManager,
         INamingClient namingClient,
         IMonitorService monitor,
         IResyncFlag resyncFlag)

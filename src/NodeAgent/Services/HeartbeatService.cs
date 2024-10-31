@@ -13,7 +13,7 @@ public class HeartbeatService : BackgroundService, IHeartbeatService
 {
     private ILogger _logger;
     private IHttpClientFactory _httpClientFactory;
-    private INodeManagerConfigManager _configManager;
+    private IConfigManager _configManager;
     private INamingClient _namingClient;
     private IJobTaskExecutor _jobTaskExecutor;
     private IResyncFlag _resyncFlag;
@@ -23,7 +23,7 @@ public class HeartbeatService : BackgroundService, IHeartbeatService
     public HeartbeatService(
         ILogger<RegisterService> logger,
         IHttpClientFactory httpClientFactory,
-        INodeManagerConfigManager configManager,
+        IConfigManager configManager,
         INamingClient namingClient,
         IJobTaskExecutor jobTaskExecutor,
         IResyncFlag resyncFlag,
