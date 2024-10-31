@@ -106,7 +106,7 @@ public class HeartbeatService : BackgroundService, IHeartbeatService
         return Task.CompletedTask;
     }
 
-    public async Task PingAsync(string callbackUri)
+    public Task PingAsync(string callbackUri)
     {
         if (callbackUri is null)
         {
@@ -119,8 +119,9 @@ public class HeartbeatService : BackgroundService, IHeartbeatService
         {
             //NOTE: The operation "change and save" is not atomic by design.
             _configManager.Config.HeartbeatUri = callbackUri;
-            await _configManager.SaveConfigAsync();
+            _configManager.SaveConfig();
         }
+        return Task.CompletedTask;
     }
 }
 
