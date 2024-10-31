@@ -21,7 +21,7 @@ public interface ISystemService
      * Return the content of generated key.
      * Throw an exception if anything wrong.
      */
-    Task<string> GenerateSshPublicKeyAsync(string privateKeyFilePath);
+    Task<string> GenerateSshPublicKeyAsync(string privateKeyFilePath, CancellationToken cancellationToken = default);
 
     /*
      * Return an absolute path of the key file.
@@ -54,7 +54,7 @@ public class SystemService : ISystemService
         throw new NotImplementedException();
     }
 
-    public Task<string> GenerateSshPublicKeyAsync(string privateKeyFilePath)
+    public Task<string> GenerateSshPublicKeyAsync(string privateKeyFilePath, CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
     }

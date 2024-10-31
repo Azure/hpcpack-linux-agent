@@ -43,16 +43,24 @@ public static class System
         var stdoutBuilder = new StringBuilder();
         var stderrBuilder = new StringBuilder();
 
+        /*
+         * NOTE
+         *
+         * The args.Data doesn't include the EOL if any. So you cannot tell if there's an EOL for
+         * a line of output. Here an EOL is always appended by "AppendLine" to our stdout/stderr
+         * variable. That means if the original output doesn't end with an EOL, our stdout/stderr
+         * still ends with it. This is by design.
+         */
         process.OutputDataReceived += (sender, args) => {
             if (args.Data != null)
             {
-                stdoutBuilder.Append(args.Data);
+                stdoutBuilder.AppendLine(args.Data);
             }
         };
         process.ErrorDataReceived += (sender, args) => {
             if (args.Data != null)
             {
-                stderrBuilder.Append(args.Data);
+                stderrBuilder.AppendLine(args.Data);
             }
         };
 

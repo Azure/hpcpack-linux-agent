@@ -9,9 +9,16 @@ public class SystemTest
     [Fact]
     public void TestExecuteInShellAsync()
     {
-        var (code, stdout, stderr) = ExecuteInShell("echo -n back");
+        //Output a multi-line string with a EOL
+        var (code, stdout, stderr) = ExecuteInShell(@"printf 'a\nb\n\nc\n'");
         Assert.Equal(0, code);
-        Assert.Equal("back", stdout);
+        Assert.Equal("a\nb\n\nc\n", stdout);
+        Assert.Equal("", stderr);
+
+        //Output a multi-line string without a EOL
+        (code, stdout, stderr) = ExecuteInShell(@"printf 'a\nb\n\nc'");
+        Assert.Equal(0, code);
+        Assert.Equal("a\nb\n\nc\n", stdout);
         Assert.Equal("", stderr);
     }
 }
