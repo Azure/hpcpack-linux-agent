@@ -11,7 +11,8 @@ public class StartJobAndTaskArgsTuple
     [Required]
     public ProcessStartInfo m_item2 { get; set; } = default!;
 
-    public string? m_item3 { get; set; }
+    [Required]
+    public string m_item3 { get; set; } = default!;
 
     public string? m_item4 { get; set; }
 

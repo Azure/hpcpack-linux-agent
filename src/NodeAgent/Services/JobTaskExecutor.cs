@@ -37,20 +37,31 @@ public class JobTaskExecutor : IJobTaskExecutor
     private INodeManagerConfigManager _configManager;
     private IHttpClientFactory _httpClientFactory;
     private IResyncFlag _resyncFlag;
+    private ISystemService _systemService;
+    private ITaskProcessFactory _processFactory;
+
     private JobTaskTable _jobTaskTable = new JobTaskTable();
     private IDictionary<int, UserInfo> _jobUsers = new Dictionary<int, UserInfo>();
     private IDictionary<string, ISet<int>> _userJobs = new Dictionary<string, ISet<int>>();
-    private IDictionary<ulong, Process> _processes = new Dictionary<ulong, Process>();
+    private IDictionary<ulong, ITaskProcess> _processes = new Dictionary<ulong, ITaskProcess>();
     private object _lock = new object();
 
-    public JobTaskExecutor(ILogger<JobTaskExecutor> logger, INamingClient namingClient,
-        INodeManagerConfigManager configManager, IHttpClientFactory httpClientFactory, IResyncFlag resyncFlag)
+    public JobTaskExecutor(
+        ILogger<JobTaskExecutor> logger,
+        INamingClient namingClient,
+        INodeManagerConfigManager configManager,
+        IHttpClientFactory httpClientFactory,
+        IResyncFlag resyncFlag,
+        ISystemService systemService,
+        ITaskProcessFactory processFactory)
     {
         _logger = logger;
         _namingClient = namingClient;
         _configManager = configManager;
         _httpClientFactory = httpClientFactory;
         _resyncFlag = resyncFlag;
+        _systemService = systemService;
+        _processFactory = processFactory;
     }
 
     private void Log(LogLevel level, int jobId, int? TaskId, int? requeue, string fmt, params object?[] args)
@@ -80,14 +91,144 @@ public class JobTaskExecutor : IJobTaskExecutor
         }
     }
 
-    private UserInfo SetupUserAccount(StartJobAndTaskArgs args)
+    private string GetUserNameFromDomainUser(string domainUser)
     {
-        throw new NotImplementedException();
+        var tokens = domainUser.Split('\\');
+        return tokens.Length > 1 ? tokens[tokens.Length - 1] : domainUser;
     }
 
-    private void CleanupUserAccount(UserInfo userInfo)
+    private async Task<UserInfo> SetupUserAccountAsync(StartJobAndTaskArgs args)
     {
-        throw new NotImplementedException();
+        string? isAdminValue = null;
+        string? mapAdminUserValue = null;
+        args.StartInfo?.EnvironmentVariables?.TryGetValue("CCP_ISADMIN", out isAdminValue);
+        args.StartInfo?.EnvironmentVariables?.TryGetValue("CCP_MAP_ADMIN_USER", out mapAdminUserValue);
+
+        var isAdmin = string.Equals(isAdminValue, "1");
+        var mapAdminUser = string.Equals(mapAdminUserValue, "1");
+        var mapAdminToRoot = isAdmin && !mapAdminUser;
+        var mapAdminToUser = isAdmin && mapAdminUser;
+
+        var WindowsSystemUser = "NT AUTHORITY\\SYSTEM";
+        var isWindowsSystemAccount = string.Equals(args.UserName, WindowsSystemUser, StringComparison.OrdinalIgnoreCase);
+
+        string? userName = null;
+        bool existed = false;
+
+        // Use root user in 3 scenarios:
+        // 1. This is old image, username is empty, we use root.
+        // 2. User is Windows or HPC Administrator and CCP_MAP_ADMIN_USER is not set
+        // 3. User is Windows local system account, which is mapped to Linux root user.
+        if (string.IsNullOrEmpty(args.UserName) || mapAdminToRoot || isWindowsSystemAccount)
+        {
+            userName = "root";
+            existed = true;
+        }
+        else
+        {
+            string? preserveDomainValue = null;
+            args.StartInfo?.EnvironmentVariables?.TryGetValue("CCP_PRESERVE_DOMAIN", out preserveDomainValue);
+
+            var preserveDomain = string.Equals(preserveDomainValue, "1");
+            userName = preserveDomain ? args.UserName : GetUserNameFromDomainUser(args.UserName);
+            if (string.Equals(userName, "root"))
+            {
+                userName = "hpc_faked_root";
+            }
+
+            existed = await _systemService.CreateUserAsync(userName, args.Password, isAdmin).ConfigureAwait(false);
+
+            Log(LogLevel.Debug, args.JobId, args.TaskId, null,
+                "User '{user}' is {op} on node.", userName, existed ? "found" : "created");
+        }
+
+        bool privateKeyAdded = false;
+        bool publicKeyAdded = false;
+        bool authKeyAdded = false;
+
+        // Set SSH keys in 3 scenarios:
+        // 1. User is not a Windows or HPC Administrator.
+        // 2. User is Windows or HPC Administrator and it is mapped to non-root user in Linux.
+        // 3. User is Windows local system account, which is mapped to Linux root user.
+        if (!string.IsNullOrEmpty(args.PrivateKey) && (!isAdmin || mapAdminToUser || isWindowsSystemAccount))
+        {
+            //TODO/refactor: Consider a single shell script for all the SSH key operations for better performance.
+            try
+            {
+                var privateKeyFile = await _systemService.AddSshKeyAsync(userName, args.PrivateKey, true).ConfigureAwait(false);
+                privateKeyAdded = true;
+
+                if (string.IsNullOrEmpty(args.PublicKey))
+                {
+                    args.PublicKey = await _systemService.GenerateSshPublicKeyAsync(privateKeyFile).ConfigureAwait(false);
+                }
+
+                await _systemService.AddSshKeyAsync(userName, args.PublicKey, false).ConfigureAwait(false);
+                publicKeyAdded = true;
+
+                await _systemService.AddAuthorizedKeyAsync(userName, args.PublicKey).ConfigureAwait(false);
+                authKeyAdded = true;
+            }
+            catch (Exception ex)
+            {
+                LogError(ex, args.JobId, args.TaskId, null, "Error when adding SSH key for user {user}.", userName);
+            }
+
+            Log(LogLevel.Debug, args.JobId, args.TaskId, null,
+                "Add SSH key for user {user} result: private {private}, public {public}, auth {auth}",
+                userName, privateKeyAdded, publicKeyAdded, authKeyAdded);
+        }
+        else
+        {
+            Log(LogLevel.Debug, args.JobId, args.TaskId, null, "Do not add SSH key for user {user}", userName);
+        }
+
+        return new UserInfo(userName, existed, privateKeyAdded , publicKeyAdded, authKeyAdded, args.PublicKey);
+    }
+
+    private async Task CleanupUserAccountAsync(UserInfo userInfo, int jobId)
+    {
+        var (userName, existed, privateKeyAdded, publicKeyAdded, authKeyAdded, publicKey) = userInfo;
+
+        Log(LogLevel.Debug, jobId, null, null,
+            "Remove SSH key for user {user}: private {private}, public {public}, auth {auth}",
+            userName, privateKeyAdded, publicKeyAdded, authKeyAdded);
+
+        if (privateKeyAdded)
+        {
+            try
+            {
+                await _systemService.RemoveSshKeyAsync(userName, true).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                LogError(ex, jobId, null, null, "Error when removing SSH private key");
+            }
+        }
+
+        if (publicKeyAdded)
+        {
+            try
+            {
+                await _systemService.RemoveSshKeyAsync(userName, false).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                LogError(ex, jobId, null, null, "Error when removing SSH public key");
+            }
+        }
+
+        if (authKeyAdded)
+        {
+            try
+            {
+                await _systemService.RemoveAuthorizedKeyAsync(userName, publicKey!).ConfigureAwait(false);
+            }
+            catch (Exception ex)
+            {
+                LogError(ex, jobId, null, null, "Error when removing SSH authorized key");
+            }
+        }
     }
 
     //TODO: Force task yield to unblock thread that is awaiting it?
@@ -95,7 +236,7 @@ public class JobTaskExecutor : IJobTaskExecutor
     {
         lock (_lock)
         {
-            var user = SetupUserAccount(args);
+            var user = SetupUserAccountAsync(args).Result;
             var userName = user.Item1;
 
             var added = _jobUsers.TryAdd(args.JobId, user);
@@ -148,7 +289,7 @@ public class JobTaskExecutor : IJobTaskExecutor
                     //Let the following lambda capture the copy instead of the original object.
                     var taskInfoCopy = taskInfo.Copy();
 
-                    var process = new Process(
+                    var process = _processFactory.CreateProcess(
                         taskInfo.JobId,
                         taskInfo.TaskId,
                         taskInfo.TaskRequeueCount,
@@ -292,20 +433,25 @@ public class JobTaskExecutor : IJobTaskExecutor
                 }
                 taskInfo.CancelGracefulPeriod = new CancellationTokenSource();
 
-                //Let the following lambda capture the copy instead of the original taskInfo.
-                var taskInfoCopy = taskInfo.Copy();
+                //Let the following lambda capture this variable instead of the original taskInfo.
+                var capture = new
+                {
+                    JobId = taskInfo.JobId,
+                    TaskId = taskInfo.TaskId,
+                    TaskRequeueCount = taskInfo.TaskRequeueCount,
+                    ProcessKey = taskInfo.ProcessKey,
+                };
 
                 Task.Delay(args.TaskCancelGracePeriodSeconds * 1000, taskInfo.CancelGracefulPeriod.Token)
                     .ContinueWith(_ =>
                     {
-                        TerminateTaskAfterGracefulPeriod(taskInfoCopy.JobId, taskInfoCopy.TaskId, taskInfoCopy.TaskRequeueCount,
-                            taskInfoCopy.ProcessKey, callbackUri);
+                        TerminateTaskAfterGracefulPeriod(capture.JobId, capture.TaskId, capture.TaskRequeueCount,
+                            capture.ProcessKey, callbackUri);
                     }, TaskContinuationOptions.OnlyOnRanToCompletion);
             }
 
             Log(LogLevel.Information, taskInfo.JobId, taskInfo.TaskId, null, "EndTask: Ended with result: {task}", taskInfo);
 
-            //TODO: Avoid copy/"copy twice"?
             return Task.FromResult<TaskInfo?>(taskInfo.Copy());
         }
     }
@@ -329,15 +475,15 @@ public class JobTaskExecutor : IJobTaskExecutor
             }
 
             Log(LogLevel.Debug, jobId, taskId, requeueCount, "Try to kill the process. Forced: {forced}", forced);
-            process.Kill(exitCode, forced);
+            process.KillAsync(exitCode, forced).Wait();
 
-            var stat = process.GetStatisticsFromCGroup();
+            var stat = process.GetStatisticsFromCGroupAsync().Result;
             var times = 10;
 
             while (!stat.IsTerminated && times-- > 0)
             {
                 Task.Delay(100).Wait();
-                stat = process.GetStatisticsFromCGroup();
+                stat = process.GetStatisticsFromCGroupAsync().Result;
             }
 
             if (!stat.IsTerminated)
@@ -442,7 +588,7 @@ public class JobTaskExecutor : IJobTaskExecutor
 
                 if (cleanupUser)
                 {
-                    CleanupUserAccount(jobUser);
+                    CleanupUserAccountAsync(jobUser, args.JobId).Wait();
                 }
             }
 
@@ -465,7 +611,7 @@ public class JobTaskExecutor : IJobTaskExecutor
                 {
                     try
                     {
-                        return Task.FromResult<string?>(process.PeekOutput());
+                        return Task.FromResult<string?>(process.PeekOutputAsync().Result);
                     }
                     catch (Exception ex) {
                         LogWarning(ex, taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
@@ -519,7 +665,7 @@ public class JobTaskExecutor : IJobTaskExecutor
             {
                 if (_processes.TryGetValue(taskInfo.ProcessKey, out var process))
                 {
-                    taskInfo.AssignFromStat(process.GetStatisticsFromCGroup());
+                    taskInfo.AssignFromStat(process.GetStatisticsFromCGroupAsync().Result);
                 }
                 else
                 {

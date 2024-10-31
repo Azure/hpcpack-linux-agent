@@ -25,6 +25,8 @@ public class Program
         builder.Services.AddSingleton<IJobTaskExecutor, JobTaskExecutor>();
         builder.Services.AddSingleton<IJobTaskFilter, JobTaskFilter>();
         builder.Services.AddSingleton<IResyncFlag, ResyncFlag>();
+        builder.Services.AddSingleton<ISystemService, SystemService>();
+        builder.Services.AddSingleton<ITaskProcessFactory, TaskProcessFactory>();
 
         var app = builder.Build();
 

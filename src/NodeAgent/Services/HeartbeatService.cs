@@ -17,10 +17,17 @@ public class HeartbeatService : BackgroundService, IHeartbeatService
     private INamingClient _namingClient;
     private IJobTaskExecutor _jobTaskExecutor;
     private IResyncFlag _resyncFlag;
+    private ISystemService _systemService;
     private LoopWork.StartOptions? _startOptions;
 
-    public HeartbeatService(ILogger<RegisterService> logger, IHttpClientFactory httpClientFactory,
-        INodeManagerConfigManager configManager, INamingClient namingClient, IJobTaskExecutor jobTaskExecutor, IResyncFlag resyncFlag)
+    public HeartbeatService(
+        ILogger<RegisterService> logger,
+        IHttpClientFactory httpClientFactory,
+        INodeManagerConfigManager configManager,
+        INamingClient namingClient,
+        IJobTaskExecutor jobTaskExecutor,
+        IResyncFlag resyncFlag,
+        ISystemService systemService)
     {
         _logger = logger;
         _httpClientFactory = httpClientFactory;
@@ -28,6 +35,7 @@ public class HeartbeatService : BackgroundService, IHeartbeatService
         _namingClient = namingClient;
         _jobTaskExecutor = jobTaskExecutor;
         _resyncFlag = resyncFlag;
+        _systemService = systemService;
     }
 
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
@@ -52,8 +60,8 @@ public class HeartbeatService : BackgroundService, IHeartbeatService
             var _nodeInfo = new NodeInfo()
             {
                 JustStarted = _resyncFlag.RequestResync,
-                Jobs = _jobTaskExecutor.GetJobs()
-                //TODO: Populate other fields ...
+                Jobs = _jobTaskExecutor.GetJobs(),
+                Name = _systemService.HostName,
             };
 
             uri = _configManager.Config.HeartbeatUri;

@@ -18,8 +18,11 @@ public class HostsManagerService : BackgroundService, IHostsManagerService
     private LoopWork.StartOptions? _startOptions;
     private string? _updateId;
 
-    public HostsManagerService(ILogger<RegisterService> logger, IHttpClientFactory httpClientFactory,
-        INodeManagerConfigManager configManager, INamingClient namingClient)
+    public HostsManagerService(
+        ILogger<RegisterService> logger,
+        IHttpClientFactory httpClientFactory,
+        INodeManagerConfigManager configManager,
+        INamingClient namingClient)
     {
         _logger = logger;
         _httpClientFactory = httpClientFactory;

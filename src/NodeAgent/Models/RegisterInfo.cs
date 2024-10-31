@@ -18,9 +18,9 @@ public class RegisterInfo
 
     public string? CcpVersion { get; set; }
 
-    public NetworkInfo[]? NetworksInfo { get; set; }
+    public IEnumerable<NetworkInfo>? NetworksInfo { get; set; }
 
-    public GpuInfo[]? GpuInfo { get; set; }
+    public IEnumerable<GpuInfo>? GpuInfo { get; set; }
 
     //TODO: Make it for logging purpose
     public override string? ToString()

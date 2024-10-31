@@ -14,8 +14,13 @@ public class RegisterService : BackgroundService, IRegisterService
     private IResyncFlag _resyncFlag;
     private LoopWork.StartOptions? _startOptions;
 
-    public RegisterService(ILogger<RegisterService> logger, IHttpClientFactory httpClientFactory,
-        INodeManagerConfigManager configManager, INamingClient namingClient, IMonitorService monitor, IResyncFlag resyncFlag)
+    public RegisterService(
+        ILogger<RegisterService> logger,
+        IHttpClientFactory httpClientFactory,
+        INodeManagerConfigManager configManager,
+        INamingClient namingClient,
+        IMonitorService monitor,
+        IResyncFlag resyncFlag)
     {
         _logger = logger;
         _httpClientFactory = httpClientFactory;
