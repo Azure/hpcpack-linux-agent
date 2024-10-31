@@ -1,4 +1,6 @@
-﻿namespace NodeAgent.Services;
+﻿using System.Runtime.Versioning;
+
+namespace NodeAgent.Services;
 
 public interface ISystemService
 {
@@ -42,11 +44,12 @@ public interface ISystemService
 
 public class SystemService : ISystemService
 {
-    public string HostName => throw new NotImplementedException();
+    public string HostName => Utils.System.HostName;
 
+    [SupportedOSPlatform("linux")]
     public Task<Tuple<int, string, string>> ExecuteInShellAsync(string cmd, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        return Utils.System.ExecuteInShellAsync(cmd, cancellationToken);
     }
 
     public Task<bool> CreateUserAsync(string username, string? password, bool isAdmin, CancellationToken cancellationToken = default)

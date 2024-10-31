@@ -1,4 +1,5 @@
 ﻿using System.Diagnostics;
+using System.Net;
 using System.Runtime.Versioning;
 using System.Text;
 
@@ -8,6 +9,8 @@ namespace NodeAgent.Utils;
 
 public static class System
 {
+    public static string HostName => Dns.GetHostName();
+
     [SupportedOSPlatform("linux")]
     public static Tuple<int, string, string> ExecuteInShell(string cmd)
     {
