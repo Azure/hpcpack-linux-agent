@@ -36,6 +36,7 @@ public class ConfigManager : IConfigManager
         ReadConfig();
     }
 
+    //TODO: Raise exception when a required property is empty?
     private void ReadConfig()
     {
         var content = File.ReadAllText(_configFilePath);

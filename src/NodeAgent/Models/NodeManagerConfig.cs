@@ -2,10 +2,9 @@
 
 namespace NodeAgent.Models;
 
+//TODO: Review the nullability of the properties
 public class NodeManagerConfig
 {
-    //TODO: Review the nullability of properties
-
     public string TrustedCAFile { get; set; } = default!;
 
     public string TrustedCAPath { get; set; } = default!;
