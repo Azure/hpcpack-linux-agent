@@ -20,8 +20,8 @@ public class Program
         builder.Services.AddMetricsService();
 
         builder.Services.AddSingleton<IConfigManager, ConfigManager>();
-        //TODO: Should INamingClient be transient?
         builder.Services.AddSingleton<INamingClient, NamingClient>();
+        builder.Services.AddSingleton<ISchedulerApiClient, SchedulerApiClient>();
         builder.Services.AddSingleton<IJobTaskExecutor, JobTaskExecutor>();
         builder.Services.AddSingleton<IJobTaskFilter, JobTaskFilter>();
         builder.Services.AddSingleton<IResyncFlag, ResyncFlag>();

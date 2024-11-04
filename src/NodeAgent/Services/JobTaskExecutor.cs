@@ -33,9 +33,7 @@ public interface IJobTaskExecutor
 public class JobTaskExecutor : IJobTaskExecutor
 {
     private ILogger _logger;
-    private INamingClient _namingClient;
-    private IConfigManager _configManager;
-    private IHttpClientFactory _httpClientFactory;
+    private ISchedulerApiClient _schedulerApiClient;
     private IResyncFlag _resyncFlag;
     private ISystemService _systemService;
     private ITaskProcessFactory _processFactory;
@@ -48,17 +46,13 @@ public class JobTaskExecutor : IJobTaskExecutor
 
     public JobTaskExecutor(
         ILogger<JobTaskExecutor> logger,
-        INamingClient namingClient,
-        IConfigManager configManager,
-        IHttpClientFactory httpClientFactory,
+        ISchedulerApiClient schedulerApiClient,
         IResyncFlag resyncFlag,
         ISystemService systemService,
         ITaskProcessFactory processFactory)
     {
         _logger = logger;
-        _namingClient = namingClient;
-        _configManager = configManager;
-        _httpClientFactory = httpClientFactory;
+        _schedulerApiClient = schedulerApiClient;
         _resyncFlag = resyncFlag;
         _systemService = systemService;
         _processFactory = processFactory;
@@ -359,35 +353,18 @@ public class JobTaskExecutor : IJobTaskExecutor
     {
         try
         {
-            if (!string.IsNullOrEmpty(_configManager.Config.TaskCompletionUri))
-            {
-                uri = _configManager.Config.TaskCompletionUri;
-            }
-            uri = await _namingClient.ResolveUriAsync(uri, _configManager.Config.DefaultServiceName, cancelToken);
-            Log(LogLevel.Debug, args.JobId, args.TaskInfo.TaskId, args.TaskInfo.TaskRequeueCount,
-                "Report task completion to {uri} with {args}", uri, args);
-
-            var httpClient = _httpClientFactory.CreateClient();
-            var response = await httpClient.PostAsJsonAsync(uri, args, cancelToken);
+            await _schedulerApiClient.ReportTaskCompletionAsync(uri, args, cancelToken).ConfigureAwait(false);
 
             Log(LogLevel.Information, args.JobId, args.TaskInfo.TaskId, args.TaskInfo.TaskRequeueCount,
-                "Report task completion to {uri}. Response code: {code}", uri, response.StatusCode);
-
-            response.EnsureSuccessStatusCode();
+                "Report task completion to {uri}. OK", uri);
         }
         catch (Exception ex)
         {
             LogError(ex, args.JobId, args.TaskInfo.TaskId, args.TaskInfo.TaskRequeueCount,
-                "Failed when reporting task completion to {uri}", uri);
+                "Error when reporting task completion to {uri}", uri);
 
-            ResyncAndInvalidateCache();
+            _resyncFlag.RequestResync = true;
         }
-    }
-
-    private void ResyncAndInvalidateCache()
-    {
-        _namingClient.InvalidateCache();
-        _resyncFlag.RequestResync = true;
     }
 
     public Task<TaskInfo?> EndTaskAsync(EndTaskArgs args, string callbackUri)

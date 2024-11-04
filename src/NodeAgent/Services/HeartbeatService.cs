@@ -12,9 +12,8 @@ public interface IHeartbeatService
 public class HeartbeatService : BackgroundService, IHeartbeatService
 {
     private ILogger _logger;
-    private IHttpClientFactory _httpClientFactory;
+    private ISchedulerApiClient _schedulerApiClient;
     private IConfigManager _configManager;
-    private INamingClient _namingClient;
     private IJobTaskExecutor _jobTaskExecutor;
     private IResyncFlag _resyncFlag;
     private ISystemService _systemService;
@@ -22,17 +21,15 @@ public class HeartbeatService : BackgroundService, IHeartbeatService
 
     public HeartbeatService(
         ILogger<RegisterService> logger,
-        IHttpClientFactory httpClientFactory,
+        ISchedulerApiClient schedulerApiClient,
         IConfigManager configManager,
-        INamingClient namingClient,
         IJobTaskExecutor jobTaskExecutor,
         IResyncFlag resyncFlag,
         ISystemService systemService)
     {
         _logger = logger;
-        _httpClientFactory = httpClientFactory;
+        _schedulerApiClient = schedulerApiClient;
         _configManager = configManager;
-        _namingClient = namingClient;
         _jobTaskExecutor = jobTaskExecutor;
         _resyncFlag = resyncFlag;
         _systemService = systemService;
@@ -54,7 +51,6 @@ public class HeartbeatService : BackgroundService, IHeartbeatService
     private async Task<bool> Work(CancellationToken stoppingToken)
     {
         bool sent = false;
-        string? uri = null;
         try
         {
             var _nodeInfo = new NodeInfo()
@@ -63,26 +59,16 @@ public class HeartbeatService : BackgroundService, IHeartbeatService
                 Jobs = _jobTaskExecutor.GetJobs(),
                 Name = _systemService.HostName,
             };
-
-            uri = _configManager.Config.HeartbeatUri;
-            uri = await _namingClient.ResolveUriAsync(uri, _configManager.Config.DefaultServiceName, stoppingToken);
-
-            _logger.LogDebug("Report to {uri} with {value}", uri, _nodeInfo);
-
-            var httpClient = _httpClientFactory.CreateClient();
-            var response = await httpClient.PostAsJsonAsync(uri, _nodeInfo, stoppingToken).ConfigureAwait(false);
-            response.EnsureSuccessStatusCode();
-            sent = true;
-
-            var intervalMS = await response.Content.ReadFromJsonAsync<int>(stoppingToken).ConfigureAwait(false);
+            var intervalMS = await _schedulerApiClient.ReportHeartbeatAsync(_nodeInfo, stoppingToken).ConfigureAwait(false);
             if (intervalMS > 0)
             {
                 _startOptions!.IntervalSeconds = intervalMS / 1000;
             }
+            sent = true;
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error when reporting to '{uri}'!", uri);
+            _logger.LogError(ex, "Error when reporting heartbeat!");
             return false;
         }
         finally
@@ -92,13 +78,11 @@ public class HeartbeatService : BackgroundService, IHeartbeatService
                 _resyncFlag.RequestResync = false;
             }
         }
-
         return true;
     }
 
     private Task OnWorkError(int retryCount, CancellationToken stoppingToken)
     {
-        _namingClient.InvalidateCache();
         if (retryCount > 2)
         {
             _resyncFlag.RequestResync = true;

@@ -7,25 +7,19 @@ public interface IRegisterService { }
 public class RegisterService : BackgroundService, IRegisterService
 {
     private ILogger _logger;
-    private IHttpClientFactory _httpClientFactory;
-    private IConfigManager _configManager;
-    private INamingClient _namingClient;
+    private ISchedulerApiClient _schedulerApiClient;
     private IMonitorService _monitor;
     private IResyncFlag _resyncFlag;
     private LoopWork.StartOptions? _startOptions;
 
     public RegisterService(
         ILogger<RegisterService> logger,
-        IHttpClientFactory httpClientFactory,
-        IConfigManager configManager,
-        INamingClient namingClient,
+        ISchedulerApiClient schedulerApiClient,
         IMonitorService monitor,
         IResyncFlag resyncFlag)
     {
         _logger = logger;
-        _httpClientFactory = httpClientFactory;
-        _configManager = configManager;
-        _namingClient = namingClient;
+        _schedulerApiClient = schedulerApiClient;
         _monitor = monitor;
         _resyncFlag = resyncFlag;
     }
@@ -45,20 +39,10 @@ public class RegisterService : BackgroundService, IRegisterService
 
     private async Task<bool> Work(CancellationToken stoppingToken)
     {
-        string? uri = null;
         try
         {
             var value = _monitor.GetRegisterInfo();
-            uri = _configManager.Config.RegisterUri;
-            uri = await _namingClient.ResolveUriAsync(uri, _configManager.Config.DefaultServiceName, stoppingToken);
-
-            _logger.LogDebug("Report to {uri} with {value}", uri, value);
-
-            var httpClient = _httpClientFactory.CreateClient();
-            var response = await httpClient.PostAsJsonAsync(uri, value, stoppingToken).ConfigureAwait(false);
-            response.EnsureSuccessStatusCode();
-
-            var intervalMS = await response.Content.ReadFromJsonAsync<int>(stoppingToken).ConfigureAwait(false);
+            var intervalMS = await _schedulerApiClient.RegisterAsync(value, stoppingToken).ConfigureAwait(false);
             if (intervalMS > 0)
             {
                 _startOptions!.IntervalSeconds = intervalMS / 1000;
@@ -66,16 +50,14 @@ public class RegisterService : BackgroundService, IRegisterService
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error when reporting to '{uri}'!", uri);
+            _logger.LogError(ex, "Error when registering!");
             return false;
         }
-
         return true;
     }
 
     private Task OnWorkError(int retryCount, CancellationToken stoppingToken)
     {
-        _namingClient.InvalidateCache();
         if (retryCount > 2)
         {
             _resyncFlag.RequestResync = true;

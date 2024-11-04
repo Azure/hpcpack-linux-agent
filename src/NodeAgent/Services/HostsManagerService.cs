@@ -12,22 +12,19 @@ public class HostsManagerService : BackgroundService, IHostsManagerService
     public const string UpdateIdHeaderName = "UpdateId";
 
     private ILogger _logger;
-    private IHttpClientFactory _httpClientFactory;
+    private ISchedulerApiClient _schedulerApiClient;
     private IConfigManager _configManager;
-    private INamingClient _namingClient;
     private LoopWork.StartOptions? _startOptions;
     private string? _updateId;
 
     public HostsManagerService(
         ILogger<RegisterService> logger,
-        IHttpClientFactory httpClientFactory,
-        IConfigManager configManager,
-        INamingClient namingClient)
+        ISchedulerApiClient schedulerApiClient,
+        IConfigManager configManager)
     {
         _logger = logger;
-        _httpClientFactory = httpClientFactory;
+        _schedulerApiClient = schedulerApiClient;
         _configManager = configManager;
-        _namingClient = namingClient;
     }
 
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
@@ -62,33 +59,18 @@ public class HostsManagerService : BackgroundService, IHostsManagerService
         string? uri = null;
         try
         {
-            uri = _configManager.Config.HostsFileUri;
-            uri = await _namingClient.ResolveUriAsync(uri!, _configManager.Config.DefaultServiceName, stoppingToken);
-
-            _logger.LogDebug("Request to {uri}", uri);
-
-            var httpClient = _httpClientFactory.CreateClient();
-            var request = new HttpRequestMessage(HttpMethod.Get, uri);
-            if (!string.IsNullOrEmpty(_updateId))
+            var result = await _schedulerApiClient.GetHostsAsync(_updateId, stoppingToken).ConfigureAwait(false);
+            if (result != null)
             {
-                request.Headers.Add(UpdateIdHeaderName, _updateId);
+                /*
+                 * NOTE
+                 *
+                 * Here _updateId is updated, even if the result.Item2 is null/empty. I'm not sure if this is
+                 * by design, but the C++ version does so.
+                 */
+                var (hostEntries, _updateId) = result;
+                UpdateHostsFile(hostEntries);
             }
-
-            var response = await httpClient.SendAsync(request).ConfigureAwait(false);
-            response.EnsureSuccessStatusCode();
-
-            if (response.StatusCode == HttpStatusCode.NoContent)
-            {
-                _logger.LogInformation("No update from server.");
-                return true;
-            }
-
-            var values= response.Headers.GetValues(UpdateIdHeaderName);
-            _updateId = values.First();
-            _logger.LogInformation("Received update id {id}", _updateId);
-
-            var hostEntries = await response.Content.ReadFromJsonAsync<IEnumerable<HostEntry>>(stoppingToken).ConfigureAwait(false);
-            UpdateHostsFile(hostEntries);
         }
         catch (Exception ex)
         {
@@ -101,7 +83,6 @@ public class HostsManagerService : BackgroundService, IHostsManagerService
 
     private Task OnWorkError(int _, CancellationToken stoppingToken)
     {
-        _namingClient.InvalidateCache();
         return Task.CompletedTask;
     }
 
