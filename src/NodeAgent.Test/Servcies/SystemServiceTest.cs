@@ -1,10 +1,12 @@
 ﻿using NodeAgent.Services;
+using System.Runtime.Versioning;
 
 namespace NodeAgent.Test.Servcies;
 
+[SupportedOSPlatform("linux")]
 public class SystemServiceTest
 {
-    private ISystemService _system = new SystemService();
+    private SystemService _system = new SystemService();
 
     [Fact]
     public async Task TestHostName()
