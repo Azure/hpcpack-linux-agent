@@ -68,7 +68,7 @@ public class HostsManagerService : BackgroundService, IHostsManagerService
                  * Here _updateId is updated, even if the result.Item2 is null/empty. I'm not sure if this is
                  * by design, but the C++ version does so.
                  */
-                var (hostEntries, _updateId) = result;
+                (var hostEntries, _updateId) = result;
                 UpdateHostsFile(hostEntries);
             }
         }

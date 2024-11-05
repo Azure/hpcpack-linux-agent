@@ -61,6 +61,12 @@ public class NamingClient : INamingClient
                 {
                     throw;
                 }
+                /*
+                 * NOTE/TODO
+                 *
+                 * what if serviceName is invalid, or the server never returns OK? It will be a infinite loop then,
+                 * unless being cancelled. This behavior inherites the one from the C++ version.
+                 */
             }
 
             await Task.Delay(intervalSeconds * 1000, cancellationToken).ConfigureAwait(false);
