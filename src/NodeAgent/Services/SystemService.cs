@@ -1,9 +1,16 @@
-﻿using System.Diagnostics;
+using System.Diagnostics;
 using System.Net;
 using System.Runtime.Versioning;
 using System.Text;
 
 namespace NodeAgent.Services;
+
+public class SystemException : ApplicationException
+{
+    public SystemException() : base() { }
+
+    public SystemException(string message) : base(message) { }
+}
 
 public interface ISystemService
 {
@@ -14,13 +21,14 @@ public interface ISystemService
      * Return a tuple of exit code, stdout and stderr of the command.
      * Throw an exception if anyting wrong (the exit code of the command is not considered for raising exception).
      */
-    Task<Tuple<int, string, string>> ExecuteInShellAsync(string cmd, CancellationToken cancellationToken = default);
+    Task<Tuple<int, string, string>> ExecuteInShellAsync(string cmd, IEnumerable<string>? args = null, string? stdin = null,
+        CancellationToken cancellationToken = default);
 
     /*
      * Return true when a new user is created, false when the user already exists.
      * Throw an exception if anything wrong.
      */
-    Task<bool> CreateUserAsync(string username, string? password, bool isAdmin, CancellationToken cancellationToken = default);
+    Task<bool> CreateUserAsync(string username, string password, bool isAdmin, CancellationToken cancellationToken = default);
 
     /*
      * Return the content of generated key.
@@ -47,11 +55,27 @@ public interface ISystemService
 
 public class SystemService : ISystemService
 {
+    private ILogger _logger;
+
+    public SystemService(ILogger<SystemService> logger)
+    {
+        _logger = logger;
+    }
+
+
     public string HostName => Dns.GetHostName();
 
     [SupportedOSPlatform("linux")]
-    public async Task<Tuple<int, string, string>> ExecuteInShellAsync(string cmd, CancellationToken cancellationToken = default)
+    public async Task<Tuple<int, string, string>> ExecuteInShellAsync(string cmd, IEnumerable<string>? args = null, string? stdin = null,
+        CancellationToken cancellationToken = default)
     {
+        if (string.IsNullOrWhiteSpace(cmd))
+        {
+            throw new ArgumentException("Invalid commnad.", nameof(cmd));
+        }
+        //NOTE: This is critical for a multi-line command!
+        cmd = cmd.Replace("\r\n", "\n");
+
         int exitCode = 0;
         var stdout = string.Empty;
         var stderr = string.Empty;
@@ -63,8 +87,19 @@ public class SystemService : ISystemService
             RedirectStandardError = true,
             FileName = "/bin/sh",
         };
+        if (stdin != null)
+        {
+            startInfo.RedirectStandardInput = true;
+        }
         startInfo.ArgumentList.Add("-c");
         startInfo.ArgumentList.Add(cmd);
+        if (args != null)
+        {
+            foreach (var arg in args)
+            {
+                startInfo.ArgumentList.Add(arg);
+            }
+        }
 
         using var process = new Process()
         {
@@ -100,6 +135,14 @@ public class SystemService : ISystemService
         };
 
         process.Start();
+
+        if (stdin != null)
+        {
+            var stdinWriter = process.StandardInput;
+            stdinWriter.Write(stdin);
+            stdinWriter.Close();
+        }
+
         process.BeginOutputReadLine();
         process.BeginErrorReadLine();
 
@@ -112,9 +155,71 @@ public class SystemService : ISystemService
         return new(exitCode, stdout, stderr);
     }
 
-    public Task<bool> CreateUserAsync(string username, string? password, bool isAdmin, CancellationToken cancellationToken = default)
+    [SupportedOSPlatform("linux")]
+    public async Task<bool> CreateUserAsync(string username, string password, bool isAdmin, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        if (string.IsNullOrWhiteSpace(username))
+        {
+            throw new ArgumentException($"Invalid username '{username}'!");
+        }
+
+        if (string.IsNullOrWhiteSpace(password) || password.Contains('\n'))
+        {
+            throw new ArgumentException($"Invalid password!", nameof(password));
+        }
+
+        var script = @"
+set -ex
+
+user=$1
+admin=$2
+
+if id -u ""$user"" ; then
+    exit 100
+fi
+
+useradd -m -s /bin/bash ""$user""
+passwd ""$user""
+
+if ((admin == 1)) ; then
+    usermod -aG sudo ""$user"" || usermod -aG wheel ""$user""
+fi
+";
+        var stdin = $"{password}\n{password}\n";
+        var (code, stdout, stderr) = await ExecuteInShellAsync(
+            script, [nameof(CreateUserAsync), username, isAdmin ? "1" : "0"], stdin, cancellationToken).ConfigureAwait(false);
+
+        _logger.LogDebug("CreateUserAsync result:\nExit code: {code}\nStdOut:\n{stdout}\nStdErr:\n{stderr}", code, stdout, stderr);
+
+        if (code != 0 && code != 100)
+        {
+            throw new SystemException($"Error when creating user '{username}'. Exit code: {code}\nStdOut:\n{stdout}\nStdErr:\n{stderr}");
+        }
+
+        return code == 0;
+    }
+
+    /*
+     * NOTE
+     *
+     * The method is only supposed to be used in test, not for production, for it doesn't stop the user's processes,
+     * if any, before deleting the user.
+     */
+    [SupportedOSPlatform("linux")]
+    public async Task DeleteUserAsync(string username, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(username))
+        {
+            throw new ArgumentException($"Invalid username '{username}'!");
+        }
+
+        var cmd = @"userdel -r ""$1""";
+        var (code, stdout, stderr) = await ExecuteInShellAsync(cmd, [nameof(DeleteUserAsync), username], null, cancellationToken);
+
+        if (code != 0)
+        {
+            throw new SystemException($"Error when deleting user '{username}'. Exit code: {code}\nStdOut:\n{stdout}\nStdErr:\n{stderr}");
+        }
     }
 
     public Task<string> GenerateSshPublicKeyAsync(string privateKeyFilePath, CancellationToken cancellationToken = default)

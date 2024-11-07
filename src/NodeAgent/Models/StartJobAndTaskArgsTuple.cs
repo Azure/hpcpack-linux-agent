@@ -14,7 +14,8 @@ public class StartJobAndTaskArgsTuple
     [Required]
     public string m_item3 { get; set; } = default!;
 
-    public string? m_item4 { get; set; }
+    [Required]
+    public string m_item4 { get; set; } = default!;
 
     public string? m_item5 { get; set; }
 

@@ -14,7 +14,8 @@ public class StartJobAndTaskArgs
     [Required]
     public string UserName { get; set; } = default!;
 
-    public string? Password { get; set; }
+    [Required]
+    public string Password { get; set; } = default!;
 
     public string? PrivateKey { get; set; }
 

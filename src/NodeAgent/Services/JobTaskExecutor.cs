@@ -130,7 +130,7 @@ public class JobTaskExecutor : IJobTaskExecutor
                 userName = "hpc_faked_root";
             }
 
-            existed = await _systemService.CreateUserAsync(userName, args.Password, isAdmin).ConfigureAwait(false);
+            existed = !(await _systemService.CreateUserAsync(userName, args.Password, isAdmin).ConfigureAwait(false));
 
             Log(LogLevel.Debug, args.JobId, args.TaskId, null,
                 "User '{user}' is {op} on node.", userName, existed ? "found" : "created");
