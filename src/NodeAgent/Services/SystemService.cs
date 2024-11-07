@@ -51,6 +51,14 @@ public interface ISystemService
     Task RemoveSshKeyAsync(string username, bool isPrivateKey, CancellationToken cancellationToken = default);
 
     Task RemoveAuthorizedKeyAsync(string username, string key, CancellationToken cancellationToken = default);
+
+    Task<Tuple<ulong, ulong>> GetCpuUsageAsync(CancellationToken cancellationToken = default);
+
+    Task<Tuple<ulong, ulong>> GetMemoryUsageAsync(CancellationToken cancellationToken = default);
+
+    Task<Tuple<float, float>> GetVirtualMemoryStatAsync(CancellationToken cancellationToken = default);
+
+    float GetFreeSpacePercentage();
 }
 
 public class SystemService : ISystemService
@@ -243,6 +251,26 @@ fi
     }
 
     public Task RemoveAuthorizedKeyAsync(string username, string key, CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<Tuple<ulong, ulong>> GetCpuUsageAsync(CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<Tuple<ulong, ulong>> GetMemoryUsageAsync(CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    public Task<Tuple<float, float>> GetVirtualMemoryStatAsync(CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    public float GetFreeSpacePercentage()
     {
         throw new NotImplementedException();
     }
