@@ -1,17 +1,27 @@
 ﻿using Microsoft.Extensions.Logging;
 using NodeAgent.Services;
+using System.Reflection;
 using System.Runtime.Versioning;
+using Xunit.Abstractions;
 
 namespace NodeAgent.Test.Servcies;
 
+/*
+ * NOTE
+ *
+ * Linux OS permissons are required for some test methods, so that you may need
+ * "sodo dotnet test ..." for SystemServiceTest.
+ */
 [SupportedOSPlatform("linux")]
 public class SystemServiceTest : IDisposable
 {
+    private readonly ITestOutputHelper _output;
     private ILoggerFactory _loggerFactory;
     private SystemService _system;
 
-    public SystemServiceTest()
+    public SystemServiceTest(ITestOutputHelper output)
     {
+        _output = output;
         _loggerFactory = LoggerFactory.Create(_ => { });
         var logger = _loggerFactory.CreateLogger<SystemService>();
         _system = new SystemService(logger);
@@ -20,6 +30,18 @@ public class SystemServiceTest : IDisposable
     public void Dispose()
     {
         _loggerFactory.Dispose();
+    }
+
+    private async Task DeleteUserAsync(string username)
+    {
+        var cmd = @"userdel -rf ""$1""";
+        var (code, stdout, stderr) = await _system.ExecuteInShellAsync(cmd, [nameof(DeleteUserAsync), username]).ConfigureAwait(false);
+
+        if (code != 0)
+        {
+            var msg = $"Error when deleting user '{username}'. Exit code: {code}\nStdOut:\n{stdout}\nStdErr:\n{stderr}";
+            _output.WriteLine(msg);
+        }
     }
 
     [Fact]
@@ -76,11 +98,6 @@ echo $1
         Assert.Equal($"{input}\n", stdout);
     }
 
-    /*
-     * NOTE
-     *
-     * Linux OS permissons on user operations are required to do the test.
-     */
     [Theory]
     [InlineData("testuser1", "testpw", true)]
     [InlineData("testuser2", "testpw", false)]
@@ -112,8 +129,323 @@ fi
         }
         finally
         {
-            await _system.DeleteUserAsync(username);
+            await DeleteUserAsync(username);
         }
     }
 
+    [Theory]
+    [InlineData("test user1", "testpw", true)]
+    [InlineData("test user2", "testpw", false)]
+    public async Task TestCreateUserAsyncError(string username, string password, bool isAdmin)
+    {
+        try
+        {
+            await Assert.ThrowsAsync<Services.SystemException>(async () =>
+            {
+                await _system.CreateUserAsync(username, password, isAdmin);
+            });
+        }
+        finally
+        {
+            await DeleteUserAsync(username);
+        }
+    }
+
+    [Theory]
+    [InlineData("testuser1", true)]
+    [InlineData("testuser1", false)]
+    public async Task TestAddSshKeyAsync(string username, bool isPrivateKey)
+    {
+        var key = @"
+1
+2
+3
+";
+        try
+        {
+            var isNew = await _system.CreateUserAsync(username, "password", false);
+            Assert.True(isNew);
+
+            var fileName = isPrivateKey ? "id_rsa" : "id_rsa.pub";
+            var keyFilePath = await _system.AddSshKeyAsync(username, key, isPrivateKey);
+            Assert.EndsWith(fileName, keyFilePath);
+            Assert.Contains(username, keyFilePath);
+
+            var content = File.ReadAllText(keyFilePath);
+            Assert.Equal(key, content);
+
+            //Should be OK if the same key is added again.
+            var keyFilePath2 = await _system.AddSshKeyAsync(username, key, isPrivateKey);
+            Assert.Equal(keyFilePath, keyFilePath2);
+
+            var content2 = File.ReadAllText(keyFilePath2);
+            Assert.Equal(key, content2);
+
+            //TODO: Test key file ownership and permission ...
+        }
+        finally
+        {
+            //The key file should be deleted since it's inside the user's home.
+            await DeleteUserAsync(username);
+        }
+    }
+    [Fact]
+    public async Task TestAddSshKeyAsync2()
+    {
+        var key = @"
+1
+2
+3
+";
+        var username = "testuser1";
+        try
+        {
+            var isNew = await _system.CreateUserAsync(username, "password", false);
+            Assert.True(isNew);
+
+            //Add a private key
+            var keyFilePath = await _system.AddSshKeyAsync(username, key, true);
+            Assert.EndsWith("id_rsa", keyFilePath);
+
+            var content = File.ReadAllText(keyFilePath);
+            Assert.Equal(key, content);
+
+            //Followed by a public key
+            keyFilePath = await _system.AddSshKeyAsync(username, key, false);
+            Assert.EndsWith("id_rsa.pub", keyFilePath);
+
+            content = File.ReadAllText(keyFilePath);
+            Assert.Equal(key, content);
+        }
+        finally
+        {
+            //The key files should be deleted since they're inside the user's home.
+            await DeleteUserAsync(username);
+        }
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task TestAddSshKeyAsyncError(bool isPrivateKey)
+    {
+        var key = "123";
+        var username = "testuser1";
+        await Assert.ThrowsAsync<Services.SystemException>(async () =>
+        {
+            await _system.AddSshKeyAsync(username, key, isPrivateKey);
+        });
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task TestRemoveSshKeyAsync(bool isPrivateKey)
+    {
+        var key = @"
+1
+2
+3
+";
+        var username = "testuser1";
+        try
+        {
+            var isNew = await _system.CreateUserAsync(username, "password", false);
+            Assert.True(isNew);
+
+            var keyFilePath = await _system.AddSshKeyAsync(username, key, isPrivateKey);
+            Assert.True(File.Exists(keyFilePath));
+
+            var path = await _system.RemoveSshKeyAsync(username, isPrivateKey);
+            Assert.Equal(keyFilePath, path);
+            Assert.False(File.Exists(keyFilePath));
+
+            //Remove it again
+            path = await _system.RemoveSshKeyAsync(username, isPrivateKey);
+            Assert.Null(path);
+            Assert.False(File.Exists(keyFilePath));
+        }
+        finally
+        {
+            await DeleteUserAsync(username);
+        }
+    }
+
+    [Theory]
+    [InlineData(true)]
+    [InlineData(false)]
+    public async Task TestRemoveSshKeyAsyncError(bool isPrivateKey)
+    {
+        await Assert.ThrowsAsync<Services.SystemException>(async () =>
+        {
+            var username = "testuser1";
+            var path = await _system.RemoveSshKeyAsync(username, isPrivateKey);
+            Assert.Null(path);
+        });
+    }
+
+    [Theory]
+    [InlineData("key")]
+    [InlineData("key2\n")]
+    [InlineData("key3\n\n")]
+    public async Task TestAddAuthorizedKeyAsync(string key)
+    {
+        var username = "testuser1";
+        try
+        {
+            var isNew = await _system.CreateUserAsync(username, "password", false);
+            Assert.True(isNew);
+
+            var keyFile = await _system.AddAuthorizedKeyAsync(username, key);
+            var lines = await File.ReadAllLinesAsync(keyFile);
+            Assert.NotNull(lines);
+            Assert.Single(lines);
+            Assert.Equal(key.TrimEnd(), lines[0]);
+        }
+        finally
+        {
+            await DeleteUserAsync(username);
+        }
+    }
+
+    [Fact]
+    public async Task TestAddAuthorizedKeyAsync2()
+    {
+        var username = "testuser1";
+        try
+        {
+            var isNew = await _system.CreateUserAsync(username, "password", false);
+            Assert.True(isNew);
+
+            string? keyFile = null;
+            var keys = new string[] { "key1", "key2\n", "key3\n\n" };
+            foreach (var key in keys)
+            {
+                keyFile = await _system.AddAuthorizedKeyAsync(username, key);
+            }
+
+            var lines = await File.ReadAllLinesAsync(keyFile!);
+            Assert.NotNull(lines);
+            Assert.Equal(keys.Length, lines.Length);
+
+            for (var i = 0; i < keys.Length; i++)
+            {
+                Assert.Equal(keys[i].TrimEnd(), lines[i]);
+            }
+        }
+        finally
+        {
+            await DeleteUserAsync(username);
+        }
+    }
+
+    [Fact]
+    public async Task TestRemoveAuthorizedKeyAsync()
+    {
+        var username = "testuser1";
+        try
+        {
+            var isNew = await _system.CreateUserAsync(username, "password", false);
+            Assert.True(isNew);
+
+            //Remove a key while the authorized key file doesn't exist yet.
+            var keyFile0 = await _system.RemoveAuthorizedKeyAsync(username, "NonExistedKey");
+            Assert.Null(keyFile0);
+
+            string? keyFile = null;
+            var keys = new string[] { "key1", "key2", "key3" };
+            foreach (var key in keys)
+            {
+                keyFile = await _system.AddAuthorizedKeyAsync(username, key);
+            }
+            var keyFileContent = await File.ReadAllTextAsync(keyFile!);
+
+            //Remove a non-existed key
+            var keyFile2 = await _system.RemoveAuthorizedKeyAsync(username, "NonExistedKey");
+            Assert.Equal(keyFile, keyFile2);
+
+            var keyFileContent2 = await File.ReadAllTextAsync(keyFile2!);
+            Assert.Equal(keyFileContent, keyFileContent2);
+
+            //Remove existed keys
+            var indexes = new int[] { 1, 0, 2 };
+            var count = indexes.Length;
+            foreach (var i in indexes)
+            {
+                var key = keys[i];
+                var file = await _system.RemoveAuthorizedKeyAsync(username, key);
+                count--;
+                Assert.Equal(keyFile, file);
+
+                var fileLines = await File.ReadAllLinesAsync(file!);
+                Assert.NotNull(fileLines);
+                Assert.Equal(count, fileLines.Length);
+                Assert.DoesNotContain(key, fileLines);
+            }
+        }
+        finally
+        {
+            await DeleteUserAsync(username);
+        }
+    }
+
+    [Fact]
+    public async Task TestRemoveAuthorizedKeyAsyncError()
+    {
+        await Assert.ThrowsAsync<Services.SystemException>(async () =>
+        {
+            var username = "testuser1";
+            var key = "key";
+            await _system.RemoveAuthorizedKeyAsync(username, key);
+        });
+    }
+
+    [Fact]
+    public async Task TestGenerateSshPublicKeyAsync()
+    {
+        try
+        {
+            var test = @"
+ssh-keygen -f /tmp/id_rsa -N ''
+";
+            var (code, _, _) = await _system.ExecuteInShellAsync(test, null, "\n\n");
+            Assert.Equal(0, code);
+
+            var publicKeyExpected = await File.ReadAllTextAsync("/tmp/id_rsa.pub");
+            var publicKey = await _system.GenerateSshPublicKeyAsync("/tmp/id_rsa");
+            Assert.Equal(publicKeyExpected, publicKey);
+        }
+        finally
+        {
+            File.Delete("/tmp/id_rsa");
+            File.Delete("/tmp/id_rsa.pub");
+        }
+    }
+
+    [Fact]
+    public async Task TestGenerateSshPublicKeyAsyncError()
+    {
+        try
+        {
+            var test = @"
+echo abc > /tmp/xyz
+";
+            var (code, _, _) = await _system.ExecuteInShellAsync(test);
+            Assert.Equal(0, code);
+
+            await Assert.ThrowsAsync<Services.SystemException>(async () =>
+            {
+                await _system.GenerateSshPublicKeyAsync("/tmp/xyz");
+            });
+        }
+        finally
+        {
+            File.Delete("/tmp/xyz");
+        }
+
+        await Assert.ThrowsAsync<ArgumentException>(async () =>
+        {
+            await _system.GenerateSshPublicKeyAsync("/invalid/path");
+        });
+    }
 }

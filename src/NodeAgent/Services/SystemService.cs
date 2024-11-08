@@ -37,20 +37,28 @@ public interface ISystemService
     Task<string> GenerateSshPublicKeyAsync(string privateKeyFilePath, CancellationToken cancellationToken = default);
 
     /*
-     * Return an absolute path of the key file.
+     * Return the absolute path of the key file.
      * Throw an exception if anything wrong.
      */
     Task<string> AddSshKeyAsync(string username, string key, bool isPrivateKey, CancellationToken cancellationToken = default);
 
     /*
-     * Return an absolute path of the key file.
+     * Return the absolute path of the removed key file, or null if the file doesn't exist.
      * Throw an exception if anything wrong.
      */
-    Task AddAuthorizedKeyAsync(string username, string key, CancellationToken cancellationToken = default);
+    Task<string?> RemoveSshKeyAsync(string username, bool isPrivateKey, CancellationToken cancellationToken = default);
 
-    Task RemoveSshKeyAsync(string username, bool isPrivateKey, CancellationToken cancellationToken = default);
+    /*
+     * Return an absolute path of the authorized key file.
+     * Throw an exception if anything wrong.
+     */
+    Task<string> AddAuthorizedKeyAsync(string username, string key, CancellationToken cancellationToken = default);
 
-    Task RemoveAuthorizedKeyAsync(string username, string key, CancellationToken cancellationToken = default);
+    /*
+     * Return the absolute path of the authorized key file, or null if the file doesn't exist.
+     * Throw an exception if anything wrong.
+     */
+    Task<string?> RemoveAuthorizedKeyAsync(string username, string key, CancellationToken cancellationToken = default);
 
     Task<Tuple<ulong, ulong>> GetCpuUsageAsync(CancellationToken cancellationToken = default);
 
@@ -93,7 +101,7 @@ public class SystemService : ISystemService
             UseShellExecute = false, //This means the Windows GUI shell, not the Linux shell
             RedirectStandardOutput = true,
             RedirectStandardError = true,
-            FileName = "/bin/sh",
+            FileName = "/bin/bash",
         };
         if (stdin != null)
         {
@@ -201,58 +209,243 @@ fi
 
         if (code != 0 && code != 100)
         {
-            throw new SystemException($"Error when creating user '{username}'. Exit code: {code}\nStdOut:\n{stdout}\nStdErr:\n{stderr}");
+            var msg = $"Error when creating user '{username}'. Exit code: {code}\nStdOut:\n{stdout}\nStdErr:\n{stderr}";
+            throw new SystemException(msg);
         }
-
         return code == 0;
     }
 
-    /*
-     * NOTE
-     *
-     * The method is only supposed to be used in test, not for production, for it doesn't stop the user's processes,
-     * if any, before deleting the user.
-     */
     [SupportedOSPlatform("linux")]
-    public async Task DeleteUserAsync(string username, CancellationToken cancellationToken = default)
+    public async Task<string> GenerateSshPublicKeyAsync(string privateKeyFilePath, CancellationToken cancellationToken = default)
+    {
+        if (!File.Exists(privateKeyFilePath))
+        {
+            throw new ArgumentException($"File '{privateKeyFilePath}' doesn't exist.", nameof(privateKeyFilePath));
+        }
+
+        var script = @"
+set -ex
+
+keyfile=$1
+ssh-keygen -y -f ""$keyfile""
+";
+        var (code, stdout, stderr) = await ExecuteInShellAsync(
+            script, [nameof(GenerateSshPublicKeyAsync), privateKeyFilePath], null, cancellationToken).ConfigureAwait(false);
+
+        _logger.LogDebug("GenerateSshPublicKeyAsync result:\nExit code: {code}\nStdOut:\n{stdout}\nStdErr:\n{stderr}", code, stdout, stderr);
+
+        if (code != 0 && code != 100)
+        {
+            var msg = $"Error when generating SSH public key from file '{privateKeyFilePath}'. Exit code: {code}\nStdOut:\n{stdout}\nStdErr:\n{stderr}";
+            throw new SystemException(msg);
+        }
+        //NOTE: The ending '\n' is kept.
+        return stdout;
+    }
+
+    [SupportedOSPlatform("linux")]
+    public async Task<string> AddSshKeyAsync(string username, string key, bool isPrivateKey, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(username))
         {
             throw new ArgumentException($"Invalid username '{username}'!");
         }
 
-        var cmd = @"userdel -r ""$1""";
-        var (code, stdout, stderr) = await ExecuteInShellAsync(cmd, [nameof(DeleteUserAsync), username], null, cancellationToken);
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            throw new ArgumentException($"Invalid key!");
+        }
+
+        var script = @"
+set -ex
+
+user=$1
+private=$2
+
+home_dir=$(eval printf ""~$user"")
+ssh_dir=$home_dir/.ssh
+if [[ ! -d ""$ssh_dir"" ]]; then
+    mkdir ""$ssh_dir""
+    chown ""$user"" ""$ssh_dir""
+    chmod 700 ""$ssh_dir""
+fi
+
+if ((private == 1)); then
+    key_file=id_rsa
+    key_file_mode=600
+else
+    key_file=id_rsa.pub
+    key_file_mode=644
+fi
+
+key_path=$ssh_dir/$key_file
+if [[ -a ""$key_path"" ]]; then
+    printf ""$key_path""
+    exit 100
+fi
+
+cp /dev/stdin ""$key_path""
+chown ""$user"" ""$key_path""
+chmod $key_file_mode ""$key_path""
+
+printf ""$key_path""
+";
+        var (code, stdout, stderr) = await ExecuteInShellAsync(
+            script, [nameof(AddSshKeyAsync), username, isPrivateKey ? "1" : "0"], key, cancellationToken).ConfigureAwait(false);
+
+        _logger.LogDebug("AddSshKeyAsync result:\nExit code: {code}\nStdOut:\n{stdout}\nStdErr:\n{stderr}", code, stdout, stderr);
+
+        if (code != 0 && code != 100)
+        {
+            var msg = $"Error when adding {(isPrivateKey ? "private" : "public")} SSH key for user '{username}'. Exit code: {code}\nStdOut:\n{stdout}\nStdErr:\n{stderr}";
+            throw new SystemException(msg);
+        }
+        return stdout.TrimEnd();
+    }
+
+    [SupportedOSPlatform("linux")]
+    public async Task<string?> RemoveSshKeyAsync(string username, bool isPrivateKey, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(username))
+        {
+            throw new ArgumentException($"Invalid username '{username}'!");
+        }
+
+        var script = @"
+set -ex
+
+user=$1
+private=$2
+
+# Test exsitance before we go
+id ""$user"" >/dev/null 2>&1
+
+home_dir=$(eval printf ""~$user"")
+ssh_dir=$home_dir/.ssh
+
+if ((private == 1)); then
+    key_file=id_rsa
+else
+    key_file=id_rsa.pub
+fi
+
+key_path=$ssh_dir/$key_file
+if [[ ! -a ""$key_path"" ]]; then
+    exit 0
+fi
+
+rm -rf ""$key_path""
+printf ""$key_path""
+";
+        var (code, stdout, stderr) = await ExecuteInShellAsync(
+            script, [nameof(RemoveSshKeyAsync), username, isPrivateKey ? "1" : "0"], null, cancellationToken).ConfigureAwait(false);
+
+        _logger.LogDebug("RemoveSshKeyAsync result:\nExit code: {code}\nStdOut:\n{stdout}\nStdErr:\n{stderr}", code, stdout, stderr);
 
         if (code != 0)
         {
-            throw new SystemException($"Error when deleting user '{username}'. Exit code: {code}\nStdOut:\n{stdout}\nStdErr:\n{stderr}");
+            var msg = $"Error when removing {(isPrivateKey ? "private" : "public")} SSH key for user '{username}'. Exit code: {code}\nStdOut:\n{stdout}\nStdErr:\n{stderr}";
+            throw new SystemException(msg);
         }
+
+        var path = stdout.TrimEnd();
+        return string.IsNullOrEmpty(path) ? null : path;
     }
 
-    public Task<string> GenerateSshPublicKeyAsync(string privateKeyFilePath, CancellationToken cancellationToken = default)
+    [SupportedOSPlatform("linux")]
+    public async Task<string> AddAuthorizedKeyAsync(string username, string key, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        if (string.IsNullOrWhiteSpace(username))
+        {
+            throw new ArgumentException($"Invalid username '{username}'!");
+        }
+
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            throw new ArgumentException($"Invalid key!");
+        }
+
+        var script = @"
+set -ex
+
+user=$1
+
+home_dir=$(eval printf ""~$user"")
+ssh_dir=$home_dir/.ssh
+if [[ ! -d ""$ssh_dir"" ]]; then
+    mkdir ""$ssh_dir""
+    chown ""$user"" ""$ssh_dir""
+    chmod 700 ""$ssh_dir""
+fi
+
+key_file=$ssh_dir/authorized_keys
+
+# Read key from subshell. In this way, the trailing line endings are removed.
+key=$(cat /dev/stdin)
+echo ""$key"" >> ""$key_file""
+chown ""$user"" ""$key_file""
+chmod 600 ""$key_file""
+printf ""$key_file""
+";
+        var (code, stdout, stderr) = await ExecuteInShellAsync(
+            script, [nameof(AddAuthorizedKeyAsync), username], key, cancellationToken).ConfigureAwait(false);
+
+        _logger.LogDebug("AddAuthorizedKeyAsync result:\nExit code: {code}\nStdOut:\n{stdout}\nStdErr:\n{stderr}", code, stdout, stderr);
+
+        if (code != 0)
+        {
+            var msg = $"Error when adding authorized key for user '{username}'. Exit code: {code}\nStdOut:\n{stdout}\nStdErr:\n{stderr}";
+            throw new SystemException(msg);
+        }
+        return stdout.TrimEnd();
     }
 
-    public Task<string> AddSshKeyAsync(string userName, string key, bool isPrivateKey, CancellationToken cancellationToken = default)
+    [SupportedOSPlatform("linux")]
+    public async Task<string?> RemoveAuthorizedKeyAsync(string username, string key, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
-    }
+        if (string.IsNullOrWhiteSpace(username))
+        {
+            throw new ArgumentException($"Invalid username '{username}'!");
+        }
 
-    public Task AddAuthorizedKeyAsync(string username, string key, CancellationToken cancellationToken = default)
-    {
-        throw new NotImplementedException();
-    }
+        if (string.IsNullOrWhiteSpace(key))
+        {
+            throw new ArgumentException($"Invalid key!");
+        }
 
-    public Task RemoveSshKeyAsync(string username, bool isPrivateKey, CancellationToken cancellationToken = default)
-    {
-        throw new NotImplementedException();
-    }
+        var script = @"
+set -ex
 
-    public Task RemoveAuthorizedKeyAsync(string username, string key, CancellationToken cancellationToken = default)
-    {
-        throw new NotImplementedException();
+user=$1
+
+# Test exsitance before we go
+id ""$user"" >/dev/null 2>&1
+
+home_dir=$(eval printf ""~$user"")
+ssh_dir=$home_dir/.ssh
+key_file=$ssh_dir/authorized_keys
+
+if [[ ! -a ""$key_file"" ]]; then
+    exit 0
+fi
+
+key=$(cat /dev/stdin)
+sed -i /^""$key""$/d ""$key_file""
+printf ""$key_file""
+";
+        var (code, stdout, stderr) = await ExecuteInShellAsync(
+    script, [nameof(RemoveAuthorizedKeyAsync), username], key, cancellationToken).ConfigureAwait(false);
+
+        _logger.LogDebug("RemoveAuthorizedKeyAsync result:\nExit code: {code}\nStdOut:\n{stdout}\nStdErr:\n{stderr}", code, stdout, stderr);
+
+        if (code != 0)
+        {
+            var msg = $"Error when removing authorized key for user '{username}'. Exit code: {code}\nStdOut:\n{stdout}\nStdErr:\n{stderr}";
+            throw new SystemException(msg);
+        }
+
+        var path = stdout.TrimEnd();
+        return string.IsNullOrEmpty(path) ? null : path;
     }
 
     public Task<Tuple<ulong, ulong>> GetCpuUsageAsync(CancellationToken cancellationToken = default)
