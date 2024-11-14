@@ -388,10 +388,14 @@ def install():
         else:
             host_name = curhostname
         public_settings = hutil._context._config['runtimeSettings'][0]['handlerSettings'].get('publicSettings')
+        protect_settings = hutil._context._config['runtimeSettings'][0]['handlerSettings'].get('protectedSettings')
+        authentication_key = ""
+        if protect_settings is not None:
+            authentication_key = protect_settings.get('AuthenticationKey')
+            authentication_key = authentication_key if authentication_key is not None else ""
         cluster_connstring = public_settings.get('ClusterConnectionString')
         if not cluster_connstring:
             waagent.Log("ClusterConnectionString is not specified")
-            protect_settings = hutil._context._config['runtimeSettings'][0]['handlerSettings'].get('protectedSettings')
             cluster_connstring = protect_settings.get('ClusterName')
             if not cluster_connstring:
                 error_msg = "neither ClusterConnectionString nor ClusterName is specified."
@@ -456,6 +460,8 @@ def install():
             configjson["TrustedCAFile"] = os.path.join(certsdir, "nodemanager.pem")
             configjson["CertificateChainFile"] = os.path.join(certsdir, "nodemanager.crt")
             configjson["PrivateKeyFile"] = os.path.join(certsdir, "nodemanager.key")
+        if authentication_key:
+            configjson["ClusterAuthenticationKey"] = authentication_key
         configfile = os.path.join(InstallRoot, 'nodemanager.json')
         waagent.SetFileContents(configfile, json.dumps(configjson))
         shutil.copy2(configfile, backup_configfile)
@@ -465,18 +471,13 @@ def install():
         hutil.do_exit(1, 'Install','error','1', '{0}'.format(e))
 
 def enable():
-    #Check whether monitor process is running.
-    #If it does, return. Otherwise clear pid file
+    #Always restart daemon and clear PID file
     hutil = parse_context('Enable')
     if os.path.isfile(DaemonPidFilePath):
         pid = waagent.GetFileContents(DaemonPidFilePath)
         if os.path.isdir(os.path.join("/proc", pid)) and _is_nodemanager_daemon(pid):
-            if hutil.is_seq_smaller():
-                hutil.do_exit(0, 'Enable', 'success', '0', 
-                              'HPC Linux node manager daemon is already running')
-            else:
-                waagent.Log("Stop old daemon: {0}".format(pid))
-                os.killpg(int(pid), 9)
+            waagent.Log("Stop old daemon: {0}".format(pid))
+            os.killpg(int(pid), 9)
         os.remove(DaemonPidFilePath)
 
     args = [get_python_executor(), os.path.join(os.getcwd(), __file__), "daemon"]

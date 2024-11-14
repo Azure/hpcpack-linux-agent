@@ -181,7 +181,7 @@ def copy_direcotry(src, dest):
 def Usage():
     usage = 'Usage: \n' \
             '*Fresh new install the HPC node agent:\n' \
-            '    setup.py -install -connectionstring:<connectionstring> -certfile:<certfile> -certpasswd:<certpass> [-managehosts]\n\n' \
+            '    setup.py -install -connectionstring:<connectionstring> -certfile:<certfile> -certpasswd:<certpass> -authenticationkey:<authenticationkey> [-managehosts]\n\n' \
             '*Install the HPC node agent with currently existing certificate:\n' \
             '    setup.py -install -connectionstring:<connectionstring> -keepcert [-managehosts]\n\n' \
             '*Uninstall the HPC node agent:\n' \
@@ -189,20 +189,21 @@ def Usage():
             '*Update the binaries of HPC node agent:\n' \
             '    setup.py -update\n\n' \
             '*Update the certificate used to communicate with head node:\n' \
-            '    setup.py -updatecert -certfile:<certfile> -certpasswd:<certpass>\n\n' \
+            '    setup.py -updatecert -certfile:<certfile> -certpasswd:<certpass> -authenticationkey:<authenticationkey>\n\n' \
             'Description of the parameters:\n' \
             '    connectionstring: The connection string of the HPC cluster, typically a list of head node hostnames or full qualified domain names.\n' \
             '    certfile: The PFX certificate file used to communicate with head node\n' \
             '    certpasswd: The protection password of the PFX certificate\n' \
+            '    authenticationkey: same as ClusterAuthenticationKey registry setting on the head node, used to secure communication between head node and compute nodes.\n\n' \
             '    keepcert: Keep the currently existing certificates\n' \
             '    managehosts: Specify that you want the /etc/hosts file managed by HPC\n\n' \
             'Note: This command must be run as root user\n\n' \
             'Examples: \n' \
-            'setup.py -install -connectionstring:\'hn1,hn2,hn3\' -certfile:\'/root/mycert.pfx\' -certpasswd:\'certpass\' -managehosts\n\n' \
+            'setup.py -install -connectionstring:\'hn1,hn2,hn3\' -certfile:\'/root/mycert.pfx\' -certpasswd:\'certpass\' -managehosts -authenticationkey:\'authenticationkey\'\n\n' \
             'setup.py -install -connectionstring:\'hn1.hpc.local,hn2.hpc.local,hn3.hpc.local\' -keepcert\n\n' \
             'setup.py -uninstall -keepcert\n\n' \
             'setup.py -update\n\n' \
-            'setup.py -updatecert -certfile:\'/root/newcert.pfx\' -certpasswd:\'certpass\'\n'
+            'setup.py -updatecert -certfile:\'/root/newcert.pfx\' -certpasswd:\'certpass\' -authenticationkey:\'authenticationkey\'\n'
     print(usage)
 
 def is_hpcagent_installed():
@@ -346,11 +347,14 @@ def updatecert():
 
     certfile = None
     certpasswd = None
+    authenticationkey = None
     for a in sys.argv[2:]:
         if re.match("^[-/]certfile:.+", a):
             certfile = get_argvalue(a)
         elif re.match("^[-/]certpasswd:.+", a):
             certpasswd = get_argvalue(a)
+        elif re.match("^[-/]authenticationkey:.+", a):
+            authenticationkey = get_argvalue(a)
         else:
             print("Invalid argument: %s" % a)
             Usage()
@@ -359,12 +363,22 @@ def updatecert():
     if not os.path.isfile(certfile):
         print("certfile not found: %s" % certfile)
         sys.exit(1)
-    while not certpasswd:
+    if not certpasswd:
         certpasswd = getpass.getpass(prompt='Please input the certificate protection password:')
 
     try:
         generatekeypair(certfile, certpasswd)
-        print("The certificate was successfully updated")
+        if authenticationkey is not None:
+            configfile = os.path.join(InstallRoot, 'nodemanager.json')
+            if not os.path.isfile(configfile):
+                Log("nodemanager.json not found")
+                sys.exit(1)
+            with open(configfile, 'r') as F:
+                configjson = json.load(F)
+                configjson['ClusterAuthenticationKey'] = authenticationkey
+            SetFileContents(configfile, json.dumps(configjson))
+            os.chmod(configfile, 0o640)
+        print("The credentials were successfully updated")
         if SupportSystemd:
             Run("systemctl restart hpcagent")
         else:
@@ -380,6 +394,7 @@ def install():
     connectionstring = None
     certfile = None
     certpasswd = None
+    authenticationkey = None
     for a in sys.argv[2:]:
         if re.match(r"^[-/](help|usage|\?)", a):
             Usage()
@@ -390,6 +405,8 @@ def install():
             certfile = get_argvalue(a)
         elif re.match("^[-/]certpasswd:.+", a):
             certpasswd = get_argvalue(a)
+        elif re.match("^[-/]authenticationkey:.+", a):
+            authenticationkey = get_argvalue(a)
         elif re.match("^[-/]keepcert", a):
             keepcert = True
         elif re.match("^[-/]managehosts", a):
@@ -404,8 +421,8 @@ def install():
         Usage()
         sys.exit(1)
 
-    if keepcert and (certfile or certpasswd):
-        print("The parameter keepcert cannot be specified with the parameter certfile or certpass")
+    if keepcert and (certfile or certpasswd or authenticationkey):
+        print("The parameter keepcert cannot be specified with the parameter certfile, certpass or authenticationkey")
         Usage()
         sys.exit(1)
 
@@ -415,11 +432,18 @@ def install():
         if not os.path.isfile(pemfile) or not os.path.isfile(rsakeyfile):
             Log("nodemanager.pem or nodemanager_rsa.key not found")
             sys.exit(1)
+        configfiletemp = os.path.join(InstallRoot, 'nodemanager.json')
+        if not os.path.isfile(configfiletemp):
+            Log("nodemanager.json not found")
+            sys.exit(1)
+        with open(configfiletemp, 'r') as F:
+            configjsontemp = json.load(F)
+            authenticationkey = configjsontemp.get('ClusterAuthenticationKey')
     else:
         if not os.path.isfile(certfile):
             print("certfile not found: %s" % certfile)
             sys.exit(1)
-        while not certpasswd:
+        if not certpasswd:
             certpasswd = getpass.getpass(prompt='Please input the certificate protection password:')
 
     srcpkgdir = os.path.dirname(__file__)
@@ -456,7 +480,8 @@ def install():
           "PrivateKeyFile": os.path.join(certsdir, "nodemanager.key"),
           "ListeningUri": "https://0.0.0.0:40002",
           "DefaultServiceName": "SchedulerStatefulService",
-          "UdpMetricServiceName": "MonitoringStatefulService"
+          "UdpMetricServiceName": "MonitoringStatefulService",
+          "ClusterAuthenticationKey": authenticationkey if authenticationkey else "",
         }
         if managehosts:
             configjson['HostsFileUri'] = api_prefix + "hostsfile"
