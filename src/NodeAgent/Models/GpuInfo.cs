@@ -1,4 +1,5 @@
-﻿namespace NodeAgent.Models;
+﻿
+namespace NodeAgent.Models;
 
 public class GpuInfo
 {

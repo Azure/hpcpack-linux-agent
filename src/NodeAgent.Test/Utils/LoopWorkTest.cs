@@ -1,4 +1,5 @@
-﻿using NodeAgent.Test.Mocks;
+﻿
+using NodeAgent.Test.Mocks;
 using NodeAgent.Utils;
 using static NodeAgent.Utils.LoopWork;
 
