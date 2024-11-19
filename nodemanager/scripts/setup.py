@@ -175,6 +175,8 @@ def install_chkconfig():
         Log("chkconfig was already installed")
     else:
         Log("Start to install chkconfig")
+        if os.path.isdir("/etc/init.d"):
+            shutil.rmtree("/etc/init.d")
         install_package('chkconfig')
         Log("chkconfig was successfully installed")
 
