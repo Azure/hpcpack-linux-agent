@@ -1,30 +1,37 @@
-# TSA bug filing
+# Linux Node Agent
 
-TSA bug filing file has been configured: tsaoptions.json. Official builds are required to have TSA bug filing enabled by default. [Learn more](https://aka.ms/OBTSA)
+## Notes on file EOL
 
-# Introduction
+File EOL is critical for a cross-platform project like this, which is developed on Windows with Visual Studio but run on Linux.
 
-TODO: Give a short introduction of your project. Let this section explain the objectives or the motivation behind this project.
+Basically, it's required that
 
-# Getting Started
+* All text files except .sh files (for Bash script) have CRLF as EOL.
+* .sh files have LF as EOL.
+* No mixed EOL (some lines end with LF, while others end with CRLF) is allowed.
 
-TODO: Guide users through getting your code up and running on their own system. In this section you can talk about:
+To mandate this, a [.gitattributes file](./.gitattributes) is present, and you're also required to make the following Git settings
 
-1. Installation process
-2. Software dependencies
-3. Latest releases
-4. API references
+* `git config set core.safecrlf true`
+* `git config set core.autocrlf false`
 
-# Build and Test
+You can check your file EOL by executing `git ls-files --eol` under the project root directory. An example result is like
 
-TODO: Describe and show how to build your code and run the tests.
+```
+i/lf    w/crlf  attr/text=auto eol=crlf .config/tsaoptions.json
+i/lf    w/crlf  attr/text=auto eol=crlf .gitattributes
+i/lf    w/crlf  attr/text=auto eol=crlf .gitignore
+i/lf    w/crlf  attr/text=auto eol=crlf README.md
+i/lf    w/crlf  attr/text=auto eol=crlf nuget.config
+i/lf    w/crlf  attr/text=auto eol=crlf owners.txt
+i/lf    w/crlf  attr/text=auto eol=crlf pipelines/OneBranch.Buddy.CrossPlat.yml
+i/lf    w/crlf  attr/text=auto eol=crlf pipelines/OneBranch.Official.CrossPlat.yml
+i/lf    w/crlf  attr/text=auto eol=crlf src/NodeAgent.Test/Mocks/MockConfigManager.cs
+...
+i/lf    w/crlf  attr/text=auto eol=crlf src/NodeAgent/appsettings.json
+i/lf    w/crlf  attr/text=auto eol=crlf src/NodeAgent/nodemanager.json
+```
 
-# Contribute
+Make sure the first column is always `i/lf` for all types of text files. This means all text files are saved with LF as EOF in the Git index tree. But for the Git working tree (in the second column), it depends. It can be `w/crlf` (for all text files except .sh files) or `w/lf` (for .sh files only).
 
-TODO: Explain how other users and developers can contribute to make your code better.
-
-If you want to learn more about creating good readme files then refer the following [guidelines](https://docs.microsoft.com/en-us/azure/devops/repos/git/create-a-readme?view=azure-devops). You can also seek inspiration from the below readme files:
-
-- [ASP.NET Core](https://github.com/aspnet/Home)
-- [Visual Studio Code](https://github.com/Microsoft/vscode)
-- [Chakra Core](https://github.com/Microsoft/ChakraCore)
+When in doubt of EOL, check it with the command.
