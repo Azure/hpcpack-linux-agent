@@ -512,7 +512,7 @@ def install():
         install_cgroup_tools()
         install_sysstat()
         install_pstree()
-        if DistroName in ["centos", "redhat", "alma", "almalinux", "rocky", "rockylinux"] and float(DistroVersion) >= 8:
+        if DistroName in ["centos", "redhat", "alma", "almalinux", "rocky", "rockylinux"]:
             install_chkconfig()
 
         if Run("command -v setsebool", chk_err=False) == 0:
