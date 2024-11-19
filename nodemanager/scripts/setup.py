@@ -32,6 +32,7 @@ import string
 import traceback
 import tempfile
 import tarfile
+import inspect
 
 # Define global variables
 InstallRoot = '/opt/hpcnodemanager'
@@ -103,7 +104,7 @@ def extract_hpcagent_files(src):
     srctar = tarfile.open(src, 'r:gz')
     try:
         Run("rm -rf {0}/nodemanager {0}/hpcagent {0}/*.sh {0}/*.py {0}/lib {0}/Utils".format(InstallRoot))
-        if DistroName in ["centos", "redhat", "alma", "almalinux", "rocky", "rockylinux"] and float(DistroVersion) >= 8:
+        if 'filter' in inspect.signature(srctar.extractall).parameters.keys():
             srctar.extractall(path=InstallRoot, filter="fully_trusted")
         else:
             srctar.extractall(InstallRoot)
