@@ -16,5 +16,5 @@ public class ProcessStartInfo
 
     public IEnumerable<ulong>? Affinity {  get; set; }
 
-    public IDictionary<string, string>? EnvironmentVariables { get; set; }
+    public IDictionary<string, string?>? EnvironmentVariables { get; set; }
 }

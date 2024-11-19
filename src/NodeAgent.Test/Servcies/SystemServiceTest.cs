@@ -17,7 +17,7 @@ public class SystemServiceTest : IDisposable
 {
     private readonly ITestOutputHelper _output;
     private ILoggerFactory _loggerFactory;
-    private SystemService _system;
+    private ISystemService _system;
 
     public SystemServiceTest(ITestOutputHelper output)
     {
@@ -96,6 +96,20 @@ echo $1
         (code, stdout, _) = await _system.ExecuteInShellAsync(@"cat", null, input);
         Assert.Equal(0, code);
         Assert.Equal($"{input}\n", stdout);
+        Assert.Equal("", stderr);
+    }
+
+    [Fact]
+    public async Task TestExecuteFileInShellAsync()
+    {
+        var dir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
+        var file = Path.Join(dir, "Assets", "test.sh");
+        var arg = "abc";
+        var input = "input";
+        var (code, stdout, stderr) = await _system.ExecuteFileInShellAsync(file, [arg], input);
+        Assert.Equal(100, code);
+        Assert.Equal($"{arg}\n", stdout);
+        Assert.Equal($"{input}\n", stderr);
     }
 
     [Theory]

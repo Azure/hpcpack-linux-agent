@@ -17,11 +17,25 @@ public interface ISystemService
     string HostName { get; }
 
     /*
-     * Execute a command line in "/bin/sh".
+     * Execute a command in "/bin/sh". The command is a string of single or multiple lines.
+     * The first arg (args[0]), if provided, is passed as "$0" for the command.
      * Return a tuple of exit code, stdout and stderr of the command.
      * Throw an exception if anyting wrong (the exit code of the command is not considered for raising exception).
      */
     Task<Tuple<int, string, string>> ExecuteInShellAsync(string cmd, IEnumerable<string>? args = null, string? stdin = null,
+        CancellationToken cancellationToken = default);
+
+    /*
+     * Execute a command in "/bin/sh". The command is a file path.
+     * The first arg (args[0]), if provided, is passed as "$1" for the file.
+     * Return a tuple of exit code, stdout and stderr of the command.
+     * Throw an exception if anyting wrong (the exit code of the command is not considered for raising exception).
+     */
+    Task<Tuple<int, string, string>> ExecuteFileInShellAsync(string filePath, IEnumerable<string>? args = null, string? stdin = null,
+        string? workingDir = null, CancellationToken cancellationToken = default);
+
+    Task<int> ExecuteFileInShellExAsync(string filePath, IEnumerable<string>? args = null, string? stdin = null, string? workingDir = null,
+        IDictionary<string, string?>? env = null, Action<string>? onStdOut = null, Action<string>? onStdErr = null, Action<Process>? onStart = null,
         CancellationToken cancellationToken = default);
 
     /*
@@ -60,6 +74,8 @@ public interface ISystemService
      */
     Task<string?> RemoveAuthorizedKeyAsync(string username, string key, CancellationToken cancellationToken = default);
 
+    Task<string> MakeTempDirectoryAsync(string template, string username);
+
     Task<Tuple<ulong, ulong>> GetCpuUsageAsync(CancellationToken cancellationToken = default);
 
     Task<Tuple<ulong, ulong>> GetMemoryUsageAsync(CancellationToken cancellationToken = default);
@@ -85,29 +101,96 @@ public class SystemService : ISystemService
     public async Task<Tuple<int, string, string>> ExecuteInShellAsync(string cmd, IEnumerable<string>? args = null, string? stdin = null,
         CancellationToken cancellationToken = default)
     {
+        var stdoutBuilder = new StringBuilder();
+        var stderrBuilder = new StringBuilder();
+        var onStdOut = (string line) =>
+        {
+            stdoutBuilder.AppendLine(line);
+        };
+        var onStdErr = (string line) =>
+        {
+            stderrBuilder.AppendLine(line);
+        };
+        var code = await ExecuteInShellExAsync(cmd, args, stdin, false, null, null, onStdOut, onStdErr, null, cancellationToken);
+        return new Tuple<int, string, string>(code, stdoutBuilder.ToString(), stderrBuilder.ToString());
+    }
+
+    [SupportedOSPlatform("linux")]
+    public async Task<Tuple<int, string, string>> ExecuteFileInShellAsync(string filePath, IEnumerable<string>? args = null, string? stdin = null,
+        string? workingDir = null, CancellationToken cancellationToken = default)
+    {
+        var stdoutBuilder = new StringBuilder();
+        var stderrBuilder = new StringBuilder();
+        var onStdOut = (string line) =>
+        {
+            stdoutBuilder.AppendLine(line);
+        };
+        var onStdErr = (string line) =>
+        {
+            stderrBuilder.AppendLine(line);
+        };
+        var code = await ExecuteInShellExAsync(filePath, args, stdin, true, workingDir, null, onStdOut, onStdErr, null, cancellationToken);
+        return new Tuple<int, string, string>(code, stdoutBuilder.ToString(), stderrBuilder.ToString());
+    }
+
+    [SupportedOSPlatform("linux")]
+    public Task<int> ExecuteFileInShellExAsync(string filePath, IEnumerable<string>? args = null, string? stdin = null,
+        string? workingDir = null, IDictionary<string, string?>? env = null, Action<string>? onStdOut = null, Action<string>? onStdErr = null,
+        Action<Process>? onStart = null, CancellationToken cancellationToken = default)
+    {
+        return ExecuteInShellExAsync(filePath, args, stdin, true, workingDir, env, onStdOut, onStdErr, null, cancellationToken);
+    }
+
+    [SupportedOSPlatform("linux")]
+    private async Task<int> ExecuteInShellExAsync(string cmd, IEnumerable<string>? args = null, string? stdin = null, bool isFileCmd = false,
+        string ? workingDir = null, IDictionary<string, string?>? env = null, Action<string>? onStdOut = null, Action<string>? onStdErr = null,
+        Action<Process>? onStart = null, CancellationToken cancellationToken = default)
+    {
         if (string.IsNullOrWhiteSpace(cmd))
         {
             throw new ArgumentException("Invalid commnad.", nameof(cmd));
         }
-        //NOTE: This is critical for a multi-line command!
-        cmd = cmd.Replace("\r\n", "\n");
 
-        int exitCode = 0;
-        var stdout = string.Empty;
-        var stderr = string.Empty;
+        if (!isFileCmd)
+        {
+            //NOTE: This is critical for a multi-line command on Linux.
+            //TODO: Maybe we should not do it inside this method, but in the caller.
+            cmd = cmd.Replace("\r\n", "\n");
+        }
 
         var startInfo = new ProcessStartInfo()
         {
             UseShellExecute = false, //This means the Windows GUI shell, not the Linux shell
-            RedirectStandardOutput = true,
-            RedirectStandardError = true,
             FileName = "/bin/bash",
         };
+
+        if (workingDir != null)
+        {
+            startInfo.WorkingDirectory = workingDir;
+        }
+        if (env != null)
+        {
+            foreach (var (key, val) in env)
+            {
+                startInfo.Environment.Add(key, val);
+            }
+        }
+        if (onStdOut != null)
+        {
+            startInfo.RedirectStandardOutput = true;
+        }
+        if (onStdErr != null)
+        {
+            startInfo.RedirectStandardError = true;
+        }
         if (stdin != null)
         {
             startInfo.RedirectStandardInput = true;
         }
-        startInfo.ArgumentList.Add("-c");
+        if (!isFileCmd)
+        {
+            startInfo.ArgumentList.Add("-c");
+        }
         startInfo.ArgumentList.Add(cmd);
         if (args != null)
         {
@@ -126,31 +209,36 @@ public class SystemService : ISystemService
             EnableRaisingEvents = true,
         };
 
-        var stdoutBuilder = new StringBuilder();
-        var stderrBuilder = new StringBuilder();
+        if (onStdOut != null)
+        {
+            /*
+             * NOTE
+             *
+             * The args.Data doesn't include the EOL if any. So you cannot tell if there's an EOL for
+             * a line of output. Here an EOL is always appended by "AppendLine" to our stdout/stderr
+             * variable. That means if the original output doesn't end with an EOL, our stdout/stderr
+             * still ends with it. This is by design.
+             */
+            process.OutputDataReceived += (sender, args) => {
+                if (args.Data != null)
+                {
+                    onStdOut(args.Data);
+                }
+            };
+        }
 
-        /*
-         * NOTE
-         *
-         * The args.Data doesn't include the EOL if any. So you cannot tell if there's an EOL for
-         * a line of output. Here an EOL is always appended by "AppendLine" to our stdout/stderr
-         * variable. That means if the original output doesn't end with an EOL, our stdout/stderr
-         * still ends with it. This is by design.
-         */
-        process.OutputDataReceived += (sender, args) => {
-            if (args.Data != null)
-            {
-                stdoutBuilder.AppendLine(args.Data);
-            }
-        };
-        process.ErrorDataReceived += (sender, args) => {
-            if (args.Data != null)
-            {
-                stderrBuilder.AppendLine(args.Data);
-            }
-        };
+        if (onStdErr != null)
+        {
+            process.ErrorDataReceived += (sender, args) => {
+                if (args.Data != null)
+                {
+                    onStdErr(args.Data);
+                }
+            };
+        }
 
         process.Start();
+        onStart?.Invoke(process);
 
         if (stdin != null)
         {
@@ -159,16 +247,18 @@ public class SystemService : ISystemService
             stdinWriter.Close();
         }
 
-        process.BeginOutputReadLine();
-        process.BeginErrorReadLine();
+        if (onStdOut != null)
+        {
+            process.BeginOutputReadLine();
+        }
+
+        if (onStdErr != null)
+        {
+            process.BeginErrorReadLine();
+        }
 
         await process.WaitForExitAsync(cancellationToken).ConfigureAwait(false);
-
-        exitCode = process.ExitCode;
-        stdout = stdoutBuilder.ToString();
-        stderr = stderrBuilder.ToString();
-
-        return new(exitCode, stdout, stderr);
+        return process.ExitCode;
     }
 
     [SupportedOSPlatform("linux")]
@@ -446,6 +536,11 @@ printf ""$key_file""
 
         var path = stdout.TrimEnd();
         return string.IsNullOrEmpty(path) ? null : path;
+    }
+
+    public Task<string> MakeTempDirectoryAsync(string template, string username)
+    {
+        throw new NotImplementedException();
     }
 
     public Task<Tuple<ulong, ulong>> GetCpuUsageAsync(CancellationToken cancellationToken = default)

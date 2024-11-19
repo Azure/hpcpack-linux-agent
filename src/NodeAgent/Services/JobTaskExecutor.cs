@@ -58,33 +58,6 @@ public class JobTaskExecutor : IJobTaskExecutor
         _processFactory = processFactory;
     }
 
-    private void Log(LogLevel level, int jobId, int? TaskId, int? requeue, string fmt, params object?[] args)
-    {
-        if (_logger.IsEnabled(level))
-        {
-            var msg = $"Job '{jobId}', Task '{TaskId}.{requeue}': {fmt}";
-            _logger.Log(level, msg, args);
-        }
-    }
-
-    private void LogError(Exception ex, int jobId, int? TaskId, int? requeue, string fmt, params object?[] args)
-    {
-        if (_logger.IsEnabled(LogLevel.Error))
-        {
-            var msg = $"Job '{jobId}', Task '{TaskId}.{requeue}': {fmt}";
-            _logger.LogError(ex, msg, args);
-        }
-    }
-
-    private void LogWarning(Exception ex, int jobId, int? TaskId, int? requeue, string fmt, params object?[] args)
-    {
-        if (_logger.IsEnabled(LogLevel.Warning))
-        {
-            var msg = $"Job '{jobId}', Task '{TaskId}.{requeue}': {fmt}";
-            _logger.LogWarning(ex, msg, args);
-        }
-    }
-
     private string GetUserNameFromDomainUser(string domainUser)
     {
         var tokens = domainUser.Split('\\');
@@ -132,7 +105,7 @@ public class JobTaskExecutor : IJobTaskExecutor
 
             existed = !(await _systemService.CreateUserAsync(userName, args.Password, isAdmin).ConfigureAwait(false));
 
-            Log(LogLevel.Debug, args.JobId, args.TaskId, null,
+            _logger.LogDebug(args.JobId, args.TaskId, null,
                 "User '{user}' is {op} on node.", userName, existed ? "found" : "created");
         }
 
@@ -165,16 +138,16 @@ public class JobTaskExecutor : IJobTaskExecutor
             }
             catch (Exception ex)
             {
-                LogError(ex, args.JobId, args.TaskId, null, "Error when adding SSH key for user {user}.", userName);
+                _logger.LogError(ex, args.JobId, args.TaskId, null, "Error when adding SSH key for user {user}.", userName);
             }
 
-            Log(LogLevel.Debug, args.JobId, args.TaskId, null,
+            _logger.LogDebug(args.JobId, args.TaskId, null,
                 "Add SSH key for user {user} result: private {private}, public {public}, auth {auth}",
                 userName, privateKeyAdded, publicKeyAdded, authKeyAdded);
         }
         else
         {
-            Log(LogLevel.Debug, args.JobId, args.TaskId, null, "Do not add SSH key for user {user}", userName);
+            _logger.LogDebug(args.JobId, args.TaskId, null, "Do not add SSH key for user {user}", userName);
         }
 
         return new UserInfo(userName, existed, privateKeyAdded , publicKeyAdded, authKeyAdded, args.PublicKey);
@@ -184,7 +157,7 @@ public class JobTaskExecutor : IJobTaskExecutor
     {
         var (userName, existed, privateKeyAdded, publicKeyAdded, authKeyAdded, publicKey) = userInfo;
 
-        Log(LogLevel.Debug, jobId, null, null,
+        _logger.LogDebug(jobId, null, null,
             "Remove SSH key for user {user}: private {private}, public {public}, auth {auth}",
             userName, privateKeyAdded, publicKeyAdded, authKeyAdded);
 
@@ -196,7 +169,7 @@ public class JobTaskExecutor : IJobTaskExecutor
             }
             catch (Exception ex)
             {
-                LogError(ex, jobId, null, null, "Error when removing SSH private key");
+                _logger.LogError(ex, jobId, null, null, "Error when removing SSH private key");
             }
         }
 
@@ -208,7 +181,7 @@ public class JobTaskExecutor : IJobTaskExecutor
             }
             catch (Exception ex)
             {
-                LogError(ex, jobId, null, null, "Error when removing SSH public key");
+                _logger.LogError(ex, jobId, null, null, "Error when removing SSH public key");
             }
         }
 
@@ -220,21 +193,21 @@ public class JobTaskExecutor : IJobTaskExecutor
             }
             catch (Exception ex)
             {
-                LogError(ex, jobId, null, null, "Error when removing SSH authorized key");
+                _logger.LogError(ex, jobId, null, null, "Error when removing SSH authorized key");
             }
         }
     }
 
-    //TODO: Force task yield to unblock thread that is awaiting it?
-    public Task StartJobAndTaskAsync(StartJobAndTaskArgs args, string callbackUri)
+    public async Task StartJobAndTaskAsync(StartJobAndTaskArgs args, string callbackUri)
     {
+        await Task.Yield();
         lock (_lock)
         {
             var user = SetupUserAccountAsync(args).Result;
             var userName = user.Item1;
 
             var added = _jobUsers.TryAdd(args.JobId, user);
-            Log(LogLevel.Debug, args.JobId, args.TaskId, null, "User '{user}' is added to jobUsers table.", userName);
+            _logger.LogDebug(args.JobId, args.TaskId, null, "User '{user}' is added to jobUsers table.", userName);
 
             var hasValue = _userJobs.TryGetValue(userName, out var jobs);
             if (hasValue)
@@ -247,7 +220,7 @@ public class JobTaskExecutor : IJobTaskExecutor
                 _userJobs.Add(userName, jobs);
             }
         }
-        return StartTaskAsync(args.ToStartTaskArgs(), callbackUri);
+        await StartTaskAsync(args.ToStartTaskArgs(), callbackUri).ConfigureAwait(false);
     }
 
     public Task StartTaskAsync(StartTaskArgs args, string callbackUri)
@@ -267,20 +240,20 @@ public class JobTaskExecutor : IJobTaskExecutor
 
             if (string.IsNullOrEmpty(args.StartInfo.CommandLine))
             {
-                Log(LogLevel.Information, taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
+                _logger.LogInformation(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
                     "MPI non-master task found, skip creating the process.");
 
-                return Task.FromException(new NotImplementedException());
+                throw new NotImplementedException();
             }
             else
             {
                 if (!isNewEntry || _processes.ContainsKey(taskInfo.ProcessKey))
                 {
-                    Log(LogLevel.Warning, taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount, "The task has already started.");
+                    _logger.LogWarning(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount, "The task has already started.");
                 }
                 else
                 {
-                    //Let the following lambda capture the copy instead of the original object.
+                    //Let the following lambdas capture the copy instead of the original object.
                     var taskInfoCopy = taskInfo.Copy();
 
                     var process = _processFactory.CreateProcess(
@@ -305,21 +278,10 @@ public class JobTaskExecutor : IJobTaskExecutor
 
                     _processes[taskInfo.ProcessKey] = process;
 
-                    Log(LogLevel.Debug, taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
+                    _logger.LogDebug(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
                         "Start process with ProcessKey {key} and process count {count}", taskInfo.ProcessKey, _processes.Count);
 
-                    return process.StartAsync().ContinueWith(task => {
-                        if (task.IsCompletedSuccessfully)
-                        {
-                            var (pid, tid) = task.Result;
-                            Log(LogLevel.Debug, taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
-                                "Process started with pid {0} and tid {1}", pid, tid);
-                        }
-                        else
-                        {
-                            LogError(task.Exception!, taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount, "Failed starting process.");
-                        }
-                    });
+                    return process.StartAsync();
                 }
             }
             return Task.CompletedTask;
@@ -334,7 +296,6 @@ public class JobTaskExecutor : IJobTaskExecutor
         taskInfo.Message = processMessage;
         taskInfo.AssignFromStat(stat);
 
-        //TODO: Fire and forget?
         ReportTaskCompletionAsync(taskInfo.ToTaskCompletionEventArgs(), callbackUri).Wait();
 
         lock (_lock)
@@ -342,7 +303,7 @@ public class JobTaskExecutor : IJobTaskExecutor
             //This won't remove the task entry added later as attempt id doesn't match
             _jobTaskTable.RemoveTask(taskInfo.JobId, taskInfo.TaskId, taskInfo.AttemptId);
 
-            Log(LogLevel.Debug, taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
+            _logger.LogDebug(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
                 "Remove task process: ProcessKey {key}, AttemptId {id}", taskInfo.ProcessKey, taskInfo.AttemptId);
 
             _processes.Remove(taskInfo.ProcessKey);
@@ -355,12 +316,12 @@ public class JobTaskExecutor : IJobTaskExecutor
         {
             await _schedulerApiClient.ReportTaskCompletionAsync(uri, args, cancelToken).ConfigureAwait(false);
 
-            Log(LogLevel.Information, args.JobId, args.TaskInfo.TaskId, args.TaskInfo.TaskRequeueCount,
+            _logger.LogInformation(args.JobId, args.TaskInfo.TaskId, args.TaskInfo.TaskRequeueCount,
                 "Report task completion to {uri}. OK", uri);
         }
         catch (Exception ex)
         {
-            LogError(ex, args.JobId, args.TaskInfo.TaskId, args.TaskInfo.TaskRequeueCount,
+            _logger.LogError(ex, args.JobId, args.TaskInfo.TaskId, args.TaskInfo.TaskRequeueCount,
                 "Error when reporting task completion to {uri}", uri);
 
             _resyncFlag.RequestResync = true;
@@ -369,17 +330,17 @@ public class JobTaskExecutor : IJobTaskExecutor
 
     public Task<TaskInfo?> EndTaskAsync(EndTaskArgs args, string callbackUri)
     {
-        Log(LogLevel.Information, args.JobId, args.TaskId, null, "EndTask: Started.");
+        _logger.LogInformation(args.JobId, args.TaskId, null, "EndTask: Started.");
         lock (_lock)
         {
             var taskInfo = _jobTaskTable.GetTask(args.JobId, args.TaskId);
             if (taskInfo == null)
             {
-                Log(LogLevel.Warning, args.JobId, args.TaskId, null, "EndTask: Task is already finished.");
+                _logger.LogWarning(args.JobId, args.TaskId, null, "EndTask: Task is already finished.");
                 return Task.FromResult<TaskInfo?>(null);
             }
 
-            Log(LogLevel.Debug, taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
+            _logger.LogDebug(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
                 "EndTask for ProcessKey {key}, processes count {count}", taskInfo.ProcessKey, _processes.Count);
 
             var stat = TerminateTask(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount, taskInfo.ProcessKey,
@@ -403,11 +364,7 @@ public class JobTaskExecutor : IJobTaskExecutor
             {
                 taskInfo.Exited = false;
                 taskInfo.AssignFromStat(stat);
-
-                if (taskInfo.CancelGracefulPeriod != null && !taskInfo.CancelGracefulPeriod.IsCancellationRequested)
-                {
-                    taskInfo.CancelGracefulPeriod.Cancel();
-                }
+                taskInfo.CancelGracefulPeriod?.Cancel();
                 taskInfo.CancelGracefulPeriod = new CancellationTokenSource();
 
                 //Let the following lambda capture this variable instead of the original taskInfo.
@@ -427,7 +384,7 @@ public class JobTaskExecutor : IJobTaskExecutor
                     }, TaskContinuationOptions.OnlyOnRanToCompletion);
             }
 
-            Log(LogLevel.Information, taskInfo.JobId, taskInfo.TaskId, null, "EndTask: Ended with result: {task}", taskInfo);
+            _logger.LogInformation(taskInfo.JobId, taskInfo.TaskId, null, "EndTask: Ended with result: {task}", taskInfo);
 
             return Task.FromResult<TaskInfo?>(taskInfo.Copy());
         }
@@ -447,25 +404,24 @@ public class JobTaskExecutor : IJobTaskExecutor
 
             if (process == null)
             {
-                Log(LogLevel.Warning, jobId, taskId, requeueCount, "No process is found for the task.");
+                _logger.LogWarning(jobId, taskId, requeueCount, "No process is found for the task.");
                 return null;
             }
 
-            Log(LogLevel.Debug, jobId, taskId, requeueCount, "Try to kill the process. Forced: {forced}", forced);
+            _logger.LogDebug(jobId, taskId, requeueCount, "Try to kill the process. Forced: {forced}", forced);
             process.KillAsync(exitCode, forced).Wait();
 
-            var stat = process.GetStatisticsFromCGroupAsync().Result;
             var times = 10;
-
-            while (!stat.IsTerminated && times-- > 0)
+            var stat = process.GetStatisticsFromCGroupAsync().Result;
+            while (stat != null && !stat.IsTerminated && times-- > 0)
             {
                 Task.Delay(100).Wait();
                 stat = process.GetStatisticsFromCGroupAsync().Result;
             }
 
-            if (!stat.IsTerminated)
+            if (stat != null && !stat.IsTerminated)
             {
-                Log(LogLevel.Warning, jobId, taskId, requeueCount,
+                _logger.LogWarning(jobId, taskId, requeueCount,
                     "The task didn't exit within 1s. Process Ids: {ids}", string.Join(' ', stat.ProcessIds));
             }
             return stat;
@@ -474,14 +430,14 @@ public class JobTaskExecutor : IJobTaskExecutor
 
     private void TerminateTaskAfterGracefulPeriod(int jobId, int taskId, int requeueCount, ulong processKey, string callbackUri)
     {
-        Log(LogLevel.Information, jobId, taskId, null, "TerminateTaskAfterGracefulPeriod: Started.");
+        _logger.LogInformation(jobId, taskId, null, "TerminateTaskAfterGracefulPeriod: Started.");
 
         lock (_lock)
         {
             var taskInfo = _jobTaskTable.GetTask(jobId, taskId);
             if (taskInfo == null)
             {
-                Log(LogLevel.Warning, jobId, taskId, null, "TerminateTaskAfterGracefulPeriod: Task is already finished.");
+                _logger.LogWarning(jobId, taskId, null, "TerminateTaskAfterGracefulPeriod: Task is already finished.");
             }
             else
             {
@@ -495,14 +451,13 @@ public class JobTaskExecutor : IJobTaskExecutor
 
                     _jobTaskTable.RemoveTask(taskInfo.JobId, taskInfo.TaskId, taskInfo.AttemptId);
 
-                    Log(LogLevel.Information, jobId, taskId, null, "TerminateTaskAfterGracefulPeriod: Ended with result: {task}", taskInfo);
+                    _logger.LogInformation(jobId, taskId, null, "TerminateTaskAfterGracefulPeriod: Ended with result: {task}", taskInfo);
 
-                    //TODO: Move this out of the lock?
                     ReportTaskCompletionAsync(taskInfo.ToTaskCompletionEventArgs(), callbackUri).Wait();
                 }
                 else
                 {
-                    //Log?
+                    _logger.LogWarning(jobId, taskId, null, "TerminateTaskAfterGracefulPeriod: TerminateTask returns null. TaskInfo: {task}", taskInfo);
                 }
             }
         }
@@ -510,20 +465,20 @@ public class JobTaskExecutor : IJobTaskExecutor
 
     public Task<JobInfo?> EndJobAsync(EndJobArgs args)
     {
-        Log(LogLevel.Information, args.JobId, null, null, "EndJob: Started.");
+        _logger.LogInformation(args.JobId, null, null, "EndJob: Started.");
 
         lock (_lock)
         {
             var jobInfo = _jobTaskTable.RemoveJob(args.JobId);
             if (jobInfo == null)
             {
-                Log(LogLevel.Warning, args.JobId, null, null, "EndJob: Job is already finished.");
+                _logger.LogWarning(args.JobId, null, null, "EndJob: Job is already finished.");
             }
             else if (jobInfo.Tasks != null)
             {
                 foreach (var taskInfo in jobInfo.Tasks.Values)
                 {
-                    Log(LogLevel.Debug, taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount, "EnbJob: Terminating task.");
+                    _logger.LogDebug(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount, "EnbJob: Terminating task.");
                     var stat = TerminateTask(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
                         taskInfo.ProcessKey, (int)ErrorCodes.EndJobExitCode, true, !taskInfo.PrimaryTask);
                     if (stat != null)
@@ -541,7 +496,7 @@ public class JobTaskExecutor : IJobTaskExecutor
                 var cleanupUser = false;
                 var username = jobUser.Item1;
 
-                Log(LogLevel.Information, args.JobId, null, null, "EndJob: Clean up user {user}.", username);
+                _logger.LogInformation(args.JobId, null, null, "EndJob: Clean up user {user}.", username);
 
                 if (!_userJobs.TryGetValue(username, out var jobs))
                 {
@@ -552,7 +507,7 @@ public class JobTaskExecutor : IJobTaskExecutor
                     jobs.Remove(args.JobId);
                     var jobCount = jobs.Count();
 
-                    Log(LogLevel.Information, args.JobId, null, null, "EndJob: {0} jobs associated with the user {1}", jobCount, username);
+                    _logger.LogInformation(args.JobId, null, null, "EndJob: {0} jobs associated with the user {1}", jobCount, username);
 
                     if (jobCount == 0)
                     {
@@ -575,13 +530,13 @@ public class JobTaskExecutor : IJobTaskExecutor
 
     public Task<string?> PeekTaskOutputAsync(PeekTaskOutputArgs args)
     {
-        Log(LogLevel.Information, args.JobId, args.TaskId, null, "PeekTaskOutput");
+        _logger.LogInformation(args.JobId, args.TaskId, null, "PeekTaskOutput");
         lock (_lock)
         {
             var taskInfo = _jobTaskTable.GetTask(args.JobId, args.TaskId);
             if (taskInfo != null)
             {
-                Log(LogLevel.Debug, taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
+                _logger.LogDebug(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
                     "PeekTaskOutput for ProcessKey {key}, process count {count}", taskInfo.ProcessKey, _processes.Count);
 
                 if (_processes.TryGetValue(taskInfo.ProcessKey, out var process))
@@ -591,7 +546,7 @@ public class JobTaskExecutor : IJobTaskExecutor
                         return Task.FromResult<string?>(process.PeekOutputAsync().Result);
                     }
                     catch (Exception ex) {
-                        LogWarning(ex, taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
+                        _logger.LogWarning(ex, taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
                             "PeekTaskOutput got an exception when calling process' PeekOutput.");
                     }
                 }
@@ -642,13 +597,15 @@ public class JobTaskExecutor : IJobTaskExecutor
             {
                 if (_processes.TryGetValue(taskInfo.ProcessKey, out var process))
                 {
-                    taskInfo.AssignFromStat(process.GetStatisticsFromCGroupAsync().Result);
+                    var stat = process.GetStatisticsFromCGroupAsync().Result;
+                    if (stat != null)
+                    {
+                        taskInfo.AssignFromStat(stat);
+                        continue;
+                    }
                 }
-                else
-                {
-                    Log(LogLevel.Warning, taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
-                        "No process object is found when updating task statistics.");
-                }
+                _logger.LogWarning(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
+                    "No process object is found when updating task statistics.");
             }
         }
     }

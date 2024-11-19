@@ -1,9 +1,11 @@
 using NodeAgent.Services;
+using System.Runtime.Versioning;
 
 namespace NodeAgent;
 
 public class Program
 {
+    [SupportedOSPlatform("linux")]
     public static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
@@ -27,6 +29,7 @@ public class Program
         builder.Services.AddSingleton<IResyncFlag, ResyncFlag>();
         builder.Services.AddSingleton<ISystemService, SystemService>();
         builder.Services.AddSingleton<ITaskProcessFactory, TaskProcessFactory>();
+        builder.Services.AddSingleton<IOutputSenderFactory, OutputSenderFactory>();
 
         var app = builder.Build();
 
