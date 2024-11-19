@@ -14,7 +14,51 @@ taskFolder=$4
 
 isDockerTask=$(CheckDockerEnvFileExist $taskFolder)
 cgDisabled=$(CheckCgroupDisabledInFlagFile $taskFolder)
-if $CGInstalled && ! $cgDisabled; then
+if ! CGroupV1 && ! $cgDisabled; then
+	if $isDockerTask; then
+		containerId=$(GetContainerId $taskFolder)
+		groupName=$(GetCGroupNameOfDockerTaskV2 $containerId)
+	else
+		groupName=$(GetCGroupName "$taskId")
+	fi
+
+	if [ "$forced" == "1" ]; then
+		killTrigger=$(GetKillTriggerFileV2 "$groupName")
+		echo 1 > "$killTrigger"
+	else
+		tasks=$(GetCpusetTasksFileV2 "$groupName")
+		freezeTrigger=$(GetFreezeTriggerFileV2 "$groupName")
+		freezerState=$(GetFreezerStateFileV2 "$groupName")
+		
+		[ ! -f "$tasks" ] && echo "$tasks doesn't exist" && exit 200
+
+		# freeze the task
+		echo 1 > "$freezeTrigger"
+
+		maxLoop=20
+		while [ -f "$freezerState" ] && ! grep -Fxq "frozen 1" "$freezerState" && [ $maxLoop -gt 0 ]
+		do
+			sleep .1
+			((maxLoop--))
+		done
+
+		# kill all tasks
+		while read pid || [ -n "$pid" ]
+		do
+			[ -d "/proc/$pid" ] && kill -SIGINT "$pid"
+		done < "$tasks"
+
+		# resume tasks
+		echo 0 > "$freezeTrigger"
+
+		maxLoop=20
+		while [ -f "$freezerState" ] && ! grep -Fxq "frozen 0" "$freezerState" && [ $maxLoop -gt 0 ]
+		do
+			sleep .1
+			((maxLoop--))
+		done
+	fi
+elif $CGInstalled && ! $cgDisabled; then
 	if $isDockerTask; then
 		containerId=$(GetContainerId $taskFolder)
 		groupName=$(GetCGroupNameOfDockerTask $containerId)

@@ -103,7 +103,10 @@ def extract_hpcagent_files(src):
     srctar = tarfile.open(src, 'r:gz')
     try:
         Run("rm -rf {0}/nodemanager {0}/hpcagent {0}/*.sh {0}/*.py {0}/lib {0}/Utils".format(InstallRoot))
-        srctar.extractall(InstallRoot)
+        if DistroName in ["centos", "redhat", "alma", "almalinux", "rocky", "rockylinux"] and float(DistroVersion) >= 8:
+            srctar.extractall(path=InstallRoot, filter="fully_trusted")
+        else:
+            srctar.extractall(InstallRoot)
         libdir = os.path.join(InstallRoot, 'lib')
         os.chmod(libdir, 0o644)
         os.chmod(os.path.join(InstallRoot, 'Utils'), 0o644)
@@ -133,7 +136,9 @@ def remove_hpcagent_files(keep_log=True, keep_cert=True):
                 os.remove(tmppath)
 
 def install_cgroup_tools():
-    if Run("command -v cgexec", chk_err=False) == 0:
+    if os.path.exists("/sys/fs/cgroup/cgroup.controllers"):
+        Log("cgroup v2 enabled, skip cgroup tools installation")
+    elif Run("command -v cgexec", chk_err=False) == 0:
         Log("cgroup tools was already installed")
     else:
         Log("Start to install cgroup tools")
@@ -164,6 +169,14 @@ def install_pstree():
         Log("Start to install pstree")
         install_package('psmisc')
         Log("pstree was successfully installed")
+
+def install_chkconfig():
+    if os.path.isfile("/usr/lib/systemd/systemd-sysv-install"):
+        Log("chkconfig was already installed")
+    else:
+        Log("Start to install chkconfig")
+        install_package('chkconfig')
+        Log("chkconfig was successfully installed")
 
 def copy_direcotry(src, dest):
     if not os.path.exists(dest):
@@ -496,6 +509,8 @@ def install():
         install_cgroup_tools()
         install_sysstat()
         install_pstree()
+        if DistroName in ["centos", "redhat", "alma", "almalinux", "rocky", "rockylinux"] and float(DistroVersion) >= 8:
+            install_chkconfig()
 
         if Run("command -v setsebool", chk_err=False) == 0:
             Log("Set SELinux boolean value httpd_can_network_connect and allow_httpd_anon_write to true")

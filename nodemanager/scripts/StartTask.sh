@@ -32,7 +32,17 @@ if $isDockerTask; then
 fi
 
 cgDisabled=$(CheckCgroupDisabledInFlagFile $taskFolder)
-if $CGInstalled && ! $cgDisabled; then
+if ! $CGroupV1 && ! $cgDisabled; then
+    groupName=$(GetCGroupName "$taskId")
+    procsFile=$(GetCpusetTasksFileV2 "$groupName")
+    echo $$ > "$procsFile"
+    /bin/bash $taskFolder/TestMutualTrust.sh "$taskId" "$taskFolder" "$userName" || exit
+    if [ "$CCP_SWITCH_USER" == "1" ]; then
+        su $userName -m -c "/bin/bash $runPath"
+    else
+        sudo -H -E -u $userName env "PATH=$PATH" /bin/bash $runPath
+    fi
+elif $CGInstalled && ! $cgDisabled; then
     groupName=$(GetCGroupName "$taskId")
     group=$CGroupSubSys:$groupName
     cgexec -g "$group" /bin/bash $taskFolder/TestMutualTrust.sh "$taskId" "$taskFolder" "$userName" || exit

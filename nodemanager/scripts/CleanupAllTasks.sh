@@ -16,7 +16,16 @@ if [ $? -eq 0 ]; then
 	fi	
 fi
 
-if $CGInstalled; then
+if ! $CGroupV1; then
+	echo "Cleaning up tasks in CGroupV2..."
+	taskIds=$(GetExistingTaskIdsInCGroupV2)
+	for taskId in $taskIds;
+	do
+		echo "$taskId"
+		/bin/bash ./CleanupTask.sh "$taskId" "0"
+	done
+	exit 0
+elif $CGInstalled; then
 	echo "Cleaning up tasks in CGroup..."
 	taskIds=$(GetExistingTaskIdsInCGroup)
 	for taskId in $taskIds;

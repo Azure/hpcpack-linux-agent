@@ -1,8 +1,16 @@
 #!/bin/bash
 
 CGroupSubSys=cpuacct,cpuset,memory,freezer
+
 CGInstalled=false
 command -v cgexec > /dev/null 2>&1 && CGInstalled=true
+
+CGroupV1=true
+if [ "$(stat -fc %T /sys/fs/cgroup/)" == "cgroup2fs" ]; then
+    CGroupV1=false
+fi
+
+CGroupV2Root="/sys/fs/cgroup"
 
 function GetCGroupName
 {
@@ -15,12 +23,23 @@ function GetExistingTaskIdsInCGroup
 	lscgroup | grep 'cpuset:/nmgroup_.*' | sed -e 's/.*nmgroup_\(.*\)/\1/' | uniq
 }
 
+function GetExistingTaskIdsInCGroupV2
+{
+	ls $CGroupV2Root | grep 'nmgroup_.*' | sed -e 's/.*nmgroup_\(.*\)/\1/' | uniq
+}
+
 function GetGroupPath
 {
 	local groupName=$1
 	local subsys=$2
 	local groupPath=$(lssubsys -am | grep $subsys | cut -d' ' -f2)
 	echo $groupPath/$groupName
+}
+
+function GetGroupPathV2
+{
+	local groupName=$1
+	echo $CGroupV2Root/$groupName
 }
 
 function GetGroupFile
@@ -31,10 +50,23 @@ function GetGroupFile
 	echo "$(GetGroupPath "$groupName" "$subsys")"/"$fileName"
 }
 
+function GetGroupFileV2
+{
+	local groupName=$1
+	local fileName=$2
+	echo "$(GetGroupPathV2 "$groupName")"/"$fileName"
+}
+
 function GetCpusFile
 {
 	local groupName=$1
 	GetGroupFile "$groupName" cpuset cpuset.cpus
+}
+
+function GetCpusFileV2
+{
+	local groupName=$1
+	GetGroupFileV2 "$groupName" cpuset.cpus
 }
 
 function GetMemsFile
@@ -43,16 +75,46 @@ function GetMemsFile
 	GetGroupFile "$groupName" cpuset cpuset.mems
 }
 
+function GetMemsFileV2
+{
+	local groupName=$1
+	GetGroupFileV2 "$groupName" cpuset.mems
+}
+
 function GetCpusetTasksFile
 {
 	local groupName=$1
 	GetGroupFile "$groupName" cpuset tasks
 }
 
+function GetCpusetTasksFileV2
+{
+	local groupName=$1
+	GetGroupFileV2 "$groupName" cgroup.procs
+}
+
 function GetFreezerStateFile
 {
 	local groupName=$1
 	GetGroupFile "$groupName" freezer freezer.state
+}
+
+function GetFreezeTriggerFileV2
+{
+	local groupName=$1
+	GetGroupFileV2 "$groupName" cgroup.freeze
+}
+
+function GetKillTriggerFileV2
+{
+	local groupName=$1
+	GetGroupFileV2 "$groupName" cgroup.kill
+}
+
+function GetFreezerStateFileV2
+{
+	local groupName=$1
+	GetGroupFileV2 "$groupName" cgroup.events
 }
 
 MpiContainerSuffix="MPI"
@@ -71,6 +133,19 @@ function GetCGroupNameOfDockerTask
 	local cgroupfsName="docker/$containerId"
 	local systemdName="system.slice/docker-$containerId.scope"
 	local testFile=$(GetCpusetTasksFile $cgroupfsName)
+	if [ -f $testFile ]; then
+		echo $cgroupfsName
+	else
+		echo $systemdName
+	fi
+}
+
+function GetCGroupNameOfDockerTaskV2
+{
+	local containerId=$1
+	local cgroupfsName="docker/$containerId"
+	local systemdName="system.slice/docker-$containerId.scope"
+	local testFile=$(GetCpusetTasksFileV2 $cgroupfsName)
 	if [ -f $testFile ]; then
 		echo $cgroupfsName
 	else

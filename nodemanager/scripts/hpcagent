@@ -193,6 +193,10 @@ def daemon():
         logger.Log("The domain FQDN is " + domain_fqdn)
         _add_dns_search(domain_fqdn)
 
+    if os.path.exists("/sys/fs/cgroup/cgroup.controllers"):
+        agentUtil.Run("echo \"+cpu +cpuset +memory\" > /sys/fs/cgroup/cgroup.subtree_control")
+        logger.Log("Cgroup v2 subsystem enabled: cpu, cpuset, memory")
+
     try:
         # Mount the directory /cgroup for centos 6.*
         distroName, distroVersion = get_dist_info()
