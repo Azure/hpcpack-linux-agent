@@ -25,7 +25,6 @@ public interface ITaskProcess : IAsyncDisposable
 
 //TODO: Review _messageBuffer: what to add and when. The original logic in C++ is confusing.
 //TODO: Review cancellationToken param for methods.
-[SupportedOSPlatform("linux")]
 public class TaskProcess : ITaskProcess
 {
     private ILogger _logger;
@@ -525,6 +524,37 @@ echo after >{0}/after1.txt 2>{0}/after2.txt || ([ ""$?"" = ""1"" ] && exit 253)
         }
     }
 
+    private static int ParseInt(string value)
+    {
+        if (value.Length == 0)
+        {
+            return 0;
+        }
+        return int.Parse(value);
+    }
+
+    public static ProcessStatistics ParseStatisticsResult(string result)
+    {
+        var stat = new ProcessStatistics();
+        var lines = result.Split('\n', 4);
+
+        if (lines.Length != 4)
+        {
+            throw new FormatException($"Result is less than 4 lines:\n{result}");
+        }
+
+        stat.UserTimeMs = (ulong)(ParseInt(lines[0]) * 10);
+        stat.KernelTimeMs = (ulong)(ParseInt(lines[1]) * 10);
+        stat.WorkingSetKb = (ulong)(ParseInt(lines[2]) / 1024);
+
+        var tokens = lines[3].Split(['\n', '\t', ' '], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        foreach (var token in tokens)
+        {
+            stat.ProcessIds.Add(int.Parse(token));
+        }
+        return stat;
+    }
+
     public async Task<ProcessStatistics?> GetStatisticsFromCGroupAsync(CancellationToken cancellationToken = default)
     {
         Debug.Assert(!string.IsNullOrEmpty(_taskDirectory));
@@ -539,10 +569,7 @@ echo after >{0}/after1.txt 2>{0}/after2.txt || ([ ""$?"" = ""1"" ] && exit 253)
             {
                 throw new ApplicationException($"Statistics.sh returns {code}.");
             }
-
-            var stat = new ProcessStatistics();
-            //TODO: Parse the stdout for stat...
-            throw new NotImplementedException();
+            return ParseStatisticsResult(stdout);
         }
         catch (Exception ex)
         {
