@@ -74,7 +74,11 @@ public interface ISystemService
      */
     Task<string?> RemoveAuthorizedKeyAsync(string username, string key, CancellationToken cancellationToken = default);
 
-    Task<string> MakeTempDirectoryAsync(string template, string username);
+    /*
+     * Create a temporary directory from the template and make it available only to the user by the username.
+     * The template must contain at least 3 consecutive 'X's in last component. For example, "/tmp/task_XXX".
+     */
+    Task<string> MakeTempDirectoryAsync(string username, string template, CancellationToken cancellationToken = default);
 
     Task<Tuple<ulong, ulong>> GetCpuUsageAsync(CancellationToken cancellationToken = default);
 
@@ -538,9 +542,28 @@ printf ""$key_file""
         return string.IsNullOrEmpty(path) ? null : path;
     }
 
-    public Task<string> MakeTempDirectoryAsync(string template, string username)
+    [SupportedOSPlatform("linux")]
+    public async Task<string> MakeTempDirectoryAsync(string username, string template, CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        var script = @"
+set -ex
+user=$1
+template=$2
+
+path=$(mktemp -d ""$template"")
+chown ""$user"" ""$path""
+chmod 700 ""$path""
+echo ""$path""
+";
+
+        var (code, stdout, stderr) = await ExecuteInShellAsync(script, [nameof(MakeTempDirectoryAsync), username, template], null, cancellationToken)
+            .ConfigureAwait(false);
+        if (code != 0)
+        {
+            var msg = $"Error when making temp direcctory of template '{template}' for user '{username}'. Exit code: {code}\nStdOut:\n{stdout}\nStdErr:\n{stderr}";
+            throw new SystemException(msg);
+        }
+        return stdout.TrimEnd();
     }
 
     public Task<Tuple<ulong, ulong>> GetCpuUsageAsync(CancellationToken cancellationToken = default)

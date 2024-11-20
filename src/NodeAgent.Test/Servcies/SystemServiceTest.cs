@@ -462,4 +462,75 @@ echo abc > /tmp/xyz
             await _system.GenerateSshPublicKeyAsync("/invalid/path");
         });
     }
+
+    [Fact]
+    public async Task TestMakeTempDirectoryAsync()
+    {
+        var username = "testuser1";
+        string? path = null;
+        try
+        {
+            var isNew = await _system.CreateUserAsync(username, "password", false);
+            Assert.True(isNew);
+
+            var prefix = "/tmp/xyz_";
+            var template = prefix + "XXX";
+            path = await _system.MakeTempDirectoryAsync(username, template);
+            Assert.StartsWith(prefix, path);
+            Assert.NotEqual(template, path);
+            Assert.Equal(template.Length, path.Length);
+
+            var test = @"
+set -ex
+user=$1
+path=$2
+owner=$(stat -Lc ""%U"" ""$path"")
+[[ $owner == $user ]] || exit 1
+perms=$(stat -Lc ""%a"" ""$path"")
+(( $perms == 700 )) || exit 2
+";
+            var (code, stdout, stderr) = await _system.ExecuteInShellAsync(test, ["test", username, path]);
+            if (code != 0)
+            {
+                _output.WriteLine($"STDOUT:\n{stdout}\nSTDERR:\n{stderr}");
+            }
+            Assert.Equal(0, code);
+        }
+        finally
+        {
+            await DeleteUserAsync(username);
+            if (path != null)
+            {
+                Directory.Delete(path, true);
+            }
+        }
+    }
+
+    [Fact]
+    public async Task TestMakeTempDirectoryAsyncError()
+    {
+        var username = "testuser1";
+        string? path = null;
+        try
+        {
+            var isNew = await _system.CreateUserAsync(username, "password", false);
+            Assert.True(isNew);
+
+            var prefix = "/tmp/xzy_";
+            var template = prefix + "XX";
+
+            await Assert.ThrowsAsync<Services.SystemException>(async () =>
+            {
+                path = await _system.MakeTempDirectoryAsync(username, template);
+            });
+        }
+        finally
+        {
+            await DeleteUserAsync(username);
+            if (path != null)
+            {
+                Directory.Delete(path, true);
+            }
+        }
+    }
 }

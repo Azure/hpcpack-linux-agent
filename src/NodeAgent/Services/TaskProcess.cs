@@ -27,6 +27,8 @@ public interface ITaskProcess : IAsyncDisposable
 //TODO: Review cancellationToken param for methods.
 public class TaskProcess : ITaskProcess
 {
+    private static readonly char[] SpaceChars = ['\n', '\t', ' '];
+
     private ILogger _logger;
     private IOutputSenderFactory _outputSenderFactory;
     private IOutputSender? _outputSender;
@@ -148,7 +150,7 @@ public class TaskProcess : ITaskProcess
         var template = $"/tmp/nodemanager_task_{_taskId}_{_requeueCount}.XXXXXX";
         try
         {
-            _taskDirectory = await _systemService.MakeTempDirectoryAsync(template, _user).ConfigureAwait(false);
+            _taskDirectory = await _systemService.MakeTempDirectoryAsync(_user, template).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -547,7 +549,7 @@ echo after >{0}/after1.txt 2>{0}/after2.txt || ([ ""$?"" = ""1"" ] && exit 253)
         stat.KernelTimeMs = (ulong)(ParseInt(lines[1]) * 10);
         stat.WorkingSetKb = (ulong)(ParseInt(lines[2]) / 1024);
 
-        var tokens = lines[3].Split(['\n', '\t', ' '], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+        var tokens = lines[3].Split(SpaceChars, StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         foreach (var token in tokens)
         {
             stat.ProcessIds.Add(int.Parse(token));
