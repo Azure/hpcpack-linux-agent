@@ -56,7 +56,7 @@ if $isDockerTask; then
 
 	containerId=$(GetContainerId $taskFolder)
 	docker exec $containerId useradd -m $userName
-    docker exec $containerId chown $userName $taskFolder
+	docker exec $containerId chown $userName $taskFolder
 	if $isMpiTask && ! $skipSshSetup; then
 		/bin/bash MpiContainerPreparation.sh $containerId $userName
 	fi

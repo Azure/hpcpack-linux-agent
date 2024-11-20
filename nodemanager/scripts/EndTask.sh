@@ -101,14 +101,14 @@ elif $CGInstalled && ! $cgDisabled; then
 		((maxLoop--))
 	done
 else # processes would run away if pstree is not installed
-    pid=$(pstree -l -p "$processId" | grep "([[:digit:]]*)" -o | tr -d '()')
-    if [ -n "$pid" ]; then
-        if [ "$forced" == "1" ]; then
-            kill -s 9 $pid
-        else
-            kill -s SIGINT $pid
-        fi
-    fi
+	pid=$(pstree -l -p "$processId" | grep "([[:digit:]]*)" -o | tr -d '()')
+	if [ -n "$pid" ]; then
+		if [ "$forced" == "1" ]; then
+			kill -s 9 $pid
+		else
+			kill -s SIGINT $pid
+		fi
+	fi
 fi
 
 exit 0

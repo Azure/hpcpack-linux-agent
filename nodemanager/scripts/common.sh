@@ -7,7 +7,7 @@ command -v cgexec > /dev/null 2>&1 && CGInstalled=true
 
 CGroupV1=true
 if [ "$(stat -fc %T /sys/fs/cgroup/)" == "cgroup2fs" ]; then
-    CGroupV1=false
+	CGroupV1=false
 fi
 
 CGroupV2Root="/sys/fs/cgroup"
