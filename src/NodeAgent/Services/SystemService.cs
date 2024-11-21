@@ -1,4 +1,4 @@
-﻿using NodeAgent.Models;
+using NodeAgent.Models;
 using NodeAgent.Utils;
 using System.Diagnostics;
 using System.Net;
@@ -83,6 +83,8 @@ public interface ISystemService
      * The template must contain at least 3 consecutive 'X's in last component. For example, "/tmp/task_XXX".
      */
     Task<string> MakeTempDirectoryAsync(string username, string template, CancellationToken cancellationToken = default);
+
+    Task<CpuInfo> GetCpuInfoAsync(CancellationToken cancellationToken = default);
 
     Task<Tuple<ulong, ulong>> GetCpuUsageAsync(CancellationToken cancellationToken = default);
 
@@ -591,6 +593,12 @@ echo ""$path""
             throw new SystemException(msg);
         }
         return stdout.TrimEnd();
+    }
+
+    [SupportedOSPlatform("linux")]
+    public Task<CpuInfo> GetCpuInfoAsync(CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
     }
 
     [SupportedOSPlatform("linux")]

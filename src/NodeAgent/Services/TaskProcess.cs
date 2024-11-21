@@ -57,14 +57,6 @@ public class TaskProcess : ITaskProcess
     private StringBuilder _messageBuffer = new StringBuilder();
     private StringBuilder? _outputBuffer;
 
-    private string CpuAffinity
-    {
-        get
-        {
-            throw new NotImplementedException();
-        }
-    }
-
     public int? ExitCode { get; private set; }
 
     public TaskProcess(
@@ -276,12 +268,50 @@ echo after >{0}/after1.txt 2>{0}/after2.txt || ([ ""$?"" = ""1"" ] && exit 253)
         await File.WriteAllTextAsync(path, "1").ConfigureAwait(false);
     }
 
+    //TODO: Test it.
+    public static IEnumerable<int> CalculateCpuAffinity(IEnumerable<ulong> input, int cores)
+    {
+        Debug.Assert(input != null);
+        Debug.Assert(cores > 0);
+
+        int coreId = 0;
+        ISet<int> coreIds = new HashSet<int>();
+        foreach (var num in input)
+        {
+            for (ulong mask = 1; mask != 0; mask <<= 1, coreId++)
+            {
+                if ((mask & num) != 0)
+                {
+                    coreIds.Add(coreId % cores);
+                }
+            }
+        }
+        return coreIds;
+    }
+
+    private async Task<string> GetCpuAffinityAsync()
+    {
+        var cpuInfo = await _systemService.GetCpuInfoAsync();
+        Trace.Assert(cpuInfo.Cores > 0);
+
+        if (_cpuAffinity != null)
+        {
+            var aff = CalculateCpuAffinity(_cpuAffinity, cpuInfo.Cores);
+            if (aff.Any())
+            {
+                return string.Join(',', aff);
+            }
+        }
+        return $"0-{cpuInfo.Cores - 1}";
+    }
+
     private async Task PrepareTaskAsync()
     {
         Debug.Assert(!string.IsNullOrEmpty(_taskDirectory));
 
+        var cpuAffinity = await GetCpuAffinityAsync();
         var (code, stdout, stderr) = await _systemService.ExecuteFileInShellAsync(
-            "PrepareTask.sh", [_taskExecutionId, CpuAffinity, _taskDirectory, _user], workingDir: _scriptBaseDir).ConfigureAwait(false);
+            "PrepareTask.sh", [_taskExecutionId, cpuAffinity, _taskDirectory, _user], workingDir: _scriptBaseDir).ConfigureAwait(false);
         if (code != 0)
         {
             throw new ApplicationException($"PrepareTask.sh failed with exit code {code}.\nStdOut:\n{stdout}\nStdErr:{stderr}");
