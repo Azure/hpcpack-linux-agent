@@ -1,7 +1,6 @@
 ﻿using NodeAgent.Models;
 using NodeAgent.Utils;
 using System.Diagnostics;
-using System.Runtime.Versioning;
 using System.Text;
 
 namespace NodeAgent.Services;
@@ -348,6 +347,11 @@ echo after >{0}/after1.txt 2>{0}/after2.txt || ([ ""$?"" = ""1"" ] && exit 253)
             .ConfigureAwait(false);
 
         LogInformation("Process ended with code {code}", ExitCode);
+
+        if (_streamOutput)
+        {
+            await _outputSender!.SendEndAsync();
+        }
 
         if (ExitCode == 0)
         {

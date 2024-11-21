@@ -3,7 +3,12 @@
 public class MockHttpHandler : DelegatingHandler
 {
     private IList<HttpResponseMessage> _responses = new List<HttpResponseMessage>();
+    private IList<HttpRequestMessage> _requests = new List<HttpRequestMessage>();
     private int _current = -1;
+
+    public int Counter => _current + 1;
+
+    public IList<HttpRequestMessage> Requests => _requests;
 
     public MockHttpHandler(HttpResponseMessage response)
     {
@@ -25,7 +30,7 @@ public class MockHttpHandler : DelegatingHandler
         {
             throw new InvalidOperationException("Test error!");
         }
-        var response = _responses[_current];
-        return Task.FromResult(response);
+        _requests.Add(request);
+        return Task.FromResult(_responses[_current]);
     }
 }
