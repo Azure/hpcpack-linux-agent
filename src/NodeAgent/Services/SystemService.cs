@@ -84,8 +84,6 @@ public interface ISystemService
      */
     Task<string> MakeTempDirectoryAsync(string username, string template, CancellationToken cancellationToken = default);
 
-    Task<CpuInfo> GetCpuInfoAsync(CancellationToken cancellationToken = default);
-
     Task<Tuple<ulong, ulong>> GetCpuUsageAsync(CancellationToken cancellationToken = default);
 
     /*
@@ -98,11 +96,7 @@ public interface ISystemService
 
     float GetFreeSpacePercentage();
 
-    /*
-     * Return a tuple of cpu cores and sockets.
-     * Throw an exception if anything wrong.
-     */
-    Task<Tuple<int, int>> GetCpuCoresInfoAsync(CancellationToken cancellationToken = default);
+    Task<CpuInfo> GetCpuInfoAsync(CancellationToken cancellationToken = default);
 
     Task<string> GetDistroInfoAsync(CancellationToken cancellationToken = default);
 
@@ -596,12 +590,6 @@ echo ""$path""
     }
 
     [SupportedOSPlatform("linux")]
-    public Task<CpuInfo> GetCpuInfoAsync(CancellationToken cancellationToken = default)
-    {
-        throw new NotImplementedException();
-    }
-
-    [SupportedOSPlatform("linux")]
     public Task<Tuple<ulong, ulong>> GetCpuUsageAsync(CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
@@ -642,7 +630,7 @@ echo ""$path""
     }
 
     [SupportedOSPlatform("linux")]
-    public async Task<Tuple<int, int>> GetCpuCoresInfoAsync(CancellationToken cancellationToken = default)
+    public async Task<CpuInfo> GetCpuInfoAsync(CancellationToken cancellationToken = default)
     {
         // cpu core number can be retrieved from Environment.ProcessorCount
         // but socket number can only be retrieved from /proc/cpuinfo
@@ -650,7 +638,7 @@ echo ""$path""
         return ParseProcCpuInfoContent(lines);
     }
 
-    public Tuple<int, int> ParseProcCpuInfoContent(string[] lines)
+    public CpuInfo ParseProcCpuInfoContent(string[] lines)
     {
         var physicalIds = new HashSet<string>();
         var coreIds = new HashSet<string>();
@@ -679,7 +667,7 @@ echo ""$path""
         var sockets = physicalIds.Count;
         sockets = (sockets > 0) ? sockets : 1;
 
-        return new(cores, sockets);
+        return new CpuInfo() { Cores = cores, Sockets = sockets };
     }
 
     [SupportedOSPlatform("linux")]

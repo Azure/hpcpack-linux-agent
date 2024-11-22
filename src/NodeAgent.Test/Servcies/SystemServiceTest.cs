@@ -575,16 +575,16 @@ perms=$(stat -Lc ""%a"" ""$path"")
         };
 
         var result = _system.ParseProcCpuInfoContent(lines);
-        Assert.Equal(4, result.Item1);
-        Assert.Equal(1, result.Item2);
+        Assert.Equal(4, result.Cores);
+        Assert.Equal(1, result.Sockets);
     }
 
     [Fact]
-    public async Task TestGetCpuCoresInfoAsync()
+    public async Task TestGetCpuInfoAsync()
     {
-        var result = await _system.GetCpuCoresInfoAsync();
-        Assert.True(result.Item1 > 0);
-        Assert.True(result.Item2 > 0);
+        var result = await _system.GetCpuInfoAsync();
+        Assert.True(result.Cores > 0);
+        Assert.True(result.Sockets > 0);
     }
 
     [Fact]
