@@ -546,16 +546,16 @@ perms=$(stat -Lc ""%a"" ""$path"")
         ];
 
         var result = _system.ParseProcMemInfoContent(lines);
-        Assert.Equal((ulong)10, result.Item1);
-        Assert.Equal((ulong)2, result.Item2);
+        Assert.Equal((ulong)10, result.Total);
+        Assert.Equal((ulong)2, result.Available);
     }
 
     [Fact]
     public async Task TestGetMemoryUsageAsync()
     {
         var result = await _system.GetMemoryUsageAsync();
-        Assert.True(result.Item1 >= 0);
-        Assert.True(result.Item2 >= 0);
+        Assert.True(result.Total >= 0);
+        Assert.True(result.Available >= 0);
     }
 
     [Fact]

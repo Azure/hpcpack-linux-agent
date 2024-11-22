@@ -84,17 +84,9 @@ public interface ISystemService
      */
     Task<string> MakeTempDirectoryAsync(string username, string template, CancellationToken cancellationToken = default);
 
-    Task<Tuple<ulong, ulong>> GetCpuUsageAsync(CancellationToken cancellationToken = default);
+    Task<CpuUsage> GetCpuUsageAsync(CancellationToken cancellationToken = default);
 
-    /*
-     * Return a tuple of total memory and available memory in kB.
-     * Throw an exception if anything wrong.
-     */
-    Task<Tuple<ulong, ulong>> GetMemoryUsageAsync(CancellationToken cancellationToken = default);
-
-    Task<Tuple<float, float>> GetVirtualMemoryStatAsync(CancellationToken cancellationToken = default);
-
-    float GetFreeSpacePercentage();
+    Task<MemoryUsage> GetMemoryUsageAsync(CancellationToken cancellationToken = default);
 
     Task<CpuInfo> GetCpuInfoAsync(CancellationToken cancellationToken = default);
 
@@ -102,15 +94,7 @@ public interface ISystemService
 
     IList<NetworkInfo> GetNetworkInfo();
 
-    IDictionary<string, ulong> GetNetworkUsageInBytes();
-
-    Task<IDictionary<string, ulong>> GetIbNetworkUsageAsync(CancellationToken cancellationToken = default);
-
-    Task<IList<string>> GetIbDevicesAsync(CancellationToken cancellationToken = default);
-
     Task<IList<ExtendedGpuInfo>> GetGpuInfoAsync(CancellationToken cancellationToken = default);
-
-    Task<bool> InitializeGpuDriver(CancellationToken cancellationToken = default);
 }
 
 public class SystemService : ISystemService
@@ -590,19 +574,19 @@ echo ""$path""
     }
 
     [SupportedOSPlatform("linux")]
-    public Task<Tuple<ulong, ulong>> GetCpuUsageAsync(CancellationToken cancellationToken = default)
+    public Task<CpuUsage> GetCpuUsageAsync(CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
     }
 
     [SupportedOSPlatform("linux")]
-    public async Task<Tuple<ulong, ulong>> GetMemoryUsageAsync(CancellationToken cancellationToken = default)
+    public async Task<MemoryUsage> GetMemoryUsageAsync(CancellationToken cancellationToken = default)
     {
         var lines = await File.ReadAllLinesAsync("/proc/meminfo", cancellationToken);
         return ParseProcMemInfoContent(lines);
     }
 
-    public Tuple<ulong, ulong> ParseProcMemInfoContent(string[] lines)
+    public MemoryUsage ParseProcMemInfoContent(string[] lines)
     {
         if (lines.Length < 3)
         {
@@ -614,19 +598,7 @@ echo ""$path""
         var total = ulong.Parse(totalLine[1]);
         var available = ulong.Parse(availableLine[1]);
 
-        return new(total, available);
-    }
-
-    [SupportedOSPlatform("linux")]
-    public Task<Tuple<float, float>> GetVirtualMemoryStatAsync(CancellationToken cancellationToken = default)
-    {
-        throw new NotImplementedException();
-    }
-
-    [SupportedOSPlatform("linux")]
-    public float GetFreeSpacePercentage()
-    {
-        throw new NotImplementedException();
+        return new MemoryUsage() { Total = total, Available = available };
     }
 
     [SupportedOSPlatform("linux")]
@@ -729,24 +701,6 @@ echo ""$path""
     }
 
     [SupportedOSPlatform("linux")]
-    public IDictionary<string, ulong> GetNetworkUsageInBytes()
-    {
-        throw new NotImplementedException();
-    }
-
-    [SupportedOSPlatform("linux")]
-    public Task<IDictionary<string, ulong>> GetIbNetworkUsageAsync(CancellationToken cancellationToken = default)
-    {
-        throw new NotImplementedException();
-    }
-
-    [SupportedOSPlatform("linux")]
-    public Task<IList<string>> GetIbDevicesAsync(CancellationToken cancellationToken = default)
-    {
-        throw new NotImplementedException();
-    }
-
-    [SupportedOSPlatform("linux")]
     public async Task<IList<ExtendedGpuInfo>> GetGpuInfoAsync(CancellationToken cancellationToken = default)
     {
         var command = "nvidia-smi --format=csv,noheader --query-gpu=name,uuid,pci.bus_id,pci.device_id,memory.total,clocks.max.sm,fan.speed,memory.used,power.draw,clocks.current.sm,temperature.gpu,utilization.gpu";
@@ -798,11 +752,5 @@ echo ""$path""
         }
 
         return gpuInfos;
-    }
-
-    [SupportedOSPlatform("linux")]
-    public Task<bool> InitializeGpuDriver(CancellationToken cancellationToken = default)
-    {
-        throw new NotImplementedException();
     }
 }
