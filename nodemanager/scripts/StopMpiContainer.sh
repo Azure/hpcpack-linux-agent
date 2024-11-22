@@ -11,5 +11,5 @@ mpiContainerLabelSkipSshSetup=$(docker inspect --format '{{ index .Config.Labels
 docker rm -f $containerName
 if [ "$mpiContainerLabelSkipSshSetup" == "0" ]
 then
-    $(GetSshStartCommand)
+	$(GetSshStartCommand)
 fi

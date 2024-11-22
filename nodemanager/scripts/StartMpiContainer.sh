@@ -19,27 +19,27 @@ mpiContainerStartOption=$(GetMpiContainerStartOption $userName)
 mpiContainerLabelSkipSshSetup="CCP_DOCKER_SKIP_SSH_SETUP=0"
 if [ "$skipSshSetup" == "1" ]
 then
-    mpiContainerStartOption=""
-    mpiContainerLabelSkipSshSetup="CCP_DOCKER_SKIP_SSH_SETUP=1"
+	mpiContainerStartOption=""
+	mpiContainerLabelSkipSshSetup="CCP_DOCKER_SKIP_SSH_SETUP=1"
 fi
 
 $dockerEngine run -id \
-            $additionalOption \
-            --name $containerName \
-            $mpiContainerStartOption \
-            --label "$mpiContainerLabelSkipSshSetup" \
-            $dockerImage 2>&1
+			$additionalOption \
+			--name $containerName \
+			$mpiContainerStartOption \
+			--label "$mpiContainerLabelSkipSshSetup" \
+			$dockerImage 2>&1
 
 ec=$?
 if [ $ec -ne 0 ]
 then
-    echo "Failed to start docker container"
-    exit $ec
+	echo "Failed to start docker container"
+	exit $ec
 fi
 
 docker exec $containerName useradd -m $userName
 if [ "$skipSshSetup" != "1" ]
 then
-    /bin/bash MpiContainerPreparation.sh $containerName $userName
+	/bin/bash MpiContainerPreparation.sh $containerName $userName
 fi
 

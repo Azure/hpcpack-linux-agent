@@ -11,32 +11,32 @@ docker exec $container cp -rT $TmpSshDir $userSshDir 2>&1
 ec=$?
 if [ $ec -ne 0 ]
 then
-    echo "Failed to set container ssh key"
-    exit $ec
+	echo "Failed to set container ssh key"
+	exit $ec
 fi
 
 docker exec $container chown -R $userName $userSshDir 2>&1
 ec=$?
 if [ $ec -ne 0 ]
 then
-    echo "Failed to set container ssh key"
-    exit $ec
+	echo "Failed to set container ssh key"
+	exit $ec
 fi
 
 docker exec $container rm $userSshDir/known_hosts
 ec=$?
 if [ $ec -ne 0 ]
 then
-    echo "Failed to set container ssh key"
-    exit $ec
+	echo "Failed to set container ssh key"
+	exit $ec
 fi
 
 $(GetSshStopCommand)
 ec=$?
 if [ $ec -ne 0 ]
 then
-    echo "Failed to stop host ssh server"
-    exit $ec
+	echo "Failed to stop host ssh server"
+	exit $ec
 fi
 
 # need to change along with various linux images
@@ -44,8 +44,8 @@ docker exec $container /etc/init.d/ssh start
 ec=$?
 if [ $ec -ne 0 ]
 then
-    echo "Failed to start container ssh server"
-    exit $ec
+	echo "Failed to start container ssh server"
+	exit $ec
 fi
 
 docker exec $container mount -a
