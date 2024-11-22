@@ -37,7 +37,10 @@ RestartIntervalInSeconds = 60
 
 def main():
 	global config, logger
-	logger = agentUtil.LoggerInit(LogFile, '/dev/stdout')
+	if os.path.exists('/dev/stdout'):
+		logger = agentUtil.LoggerInit(LogFile, '/dev/stdout')
+	else:
+		logger = agentUtil.LoggerInit(LogFile)
 	logger.Log("The command line is: " + " ".join(sys.argv))
 	config = configUtil.ConfigUtility(logger.Log, logger.Error)
 
@@ -193,9 +196,9 @@ def daemon():
 		logger.Log("The domain FQDN is " + domain_fqdn)
 		_add_dns_search(domain_fqdn)
 
-	if os.path.exists("/sys/fs/cgroup/cgroup.controllers"):
+	if not os.path.exists("/sys/fs/cgroup/hpcpack.slice/hpcagent.service") and os.path.exists("/sys/fs/cgroup/cgroup.controllers"):
 		agentUtil.Run("echo \"+cpu +cpuset +memory\" > /sys/fs/cgroup/cgroup.subtree_control")
-		logger.Log("Cgroup v2 subsystem enabled: cpu, cpuset, memory")
+		logger.Log("Cgroup v2 subsystem enabled: cpu, cpuset, memory @ /sys/fs/cgroup/cgroup.subtree_control")
 
 	try:
 		# Mount the directory /cgroup for centos 6.*

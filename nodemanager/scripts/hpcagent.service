@@ -1,0 +1,18 @@
+[Unit]
+Description=Daemon of the HPC Pack Linux node agent
+After=remote-fs.target syslog.target
+
+[Service]
+Type=forking
+PIDFile=/var/run/hpcnmdaemon.pid
+ExecStart=python3 /opt/hpcnodemanager/hpcagent enable
+ExecStartPost=bash /opt/hpcnodemanager/SystemdPost.sh
+ExecStop=python3 /opt/hpcnodemanager/hpcagent disable
+ExecReload=python3 /opt/hpcnodemanager/hpcagent restart
+Restart=always
+User=root
+Delegate=yes
+Slice=hpcpack.slice
+
+[Install]
+WantedBy=multi-user.target

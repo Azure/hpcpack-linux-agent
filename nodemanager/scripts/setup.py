@@ -40,6 +40,8 @@ DistroName = None
 DistroVersion = None
 SetupLogFile = None
 SupportSystemd = False
+CGroupV2 = False
+UseSystemdServiceUnit = False
 
 if not hasattr(subprocess,'check_output'):
 	def check_output(*popenargs, **kwargs):
@@ -141,7 +143,7 @@ def remove_hpcagent_files(keep_log=True, keep_cert=True):
 				os.remove(tmppath)
 
 def install_cgroup_tools():
-	if os.path.exists("/sys/fs/cgroup/cgroup.controllers"):
+	if CGroupV2:
 		Log("cgroup v2 enabled, skip cgroup tools installation")
 	elif Run("command -v cgexec", chk_err=False) == 0:
 		Log("cgroup tools was already installed")
@@ -175,15 +177,20 @@ def install_pstree():
 		install_package('psmisc')
 		Log("pstree was successfully installed")
 
-def install_chkconfig():
-	if os.path.isfile("/usr/lib/systemd/systemd-sysv-install"):
-		Log("chkconfig was already installed")
-	else:
-		Log("Start to install chkconfig")
-		if os.path.isdir("/etc/init.d"):
-			shutil.rmtree("/etc/init.d")
-		install_package('chkconfig')
-		Log("chkconfig was successfully installed")
+def use_systemd_service_unit():
+	if not SupportSystemd:
+		return False
+
+	if (
+		DistroName in ["centos", "redhat", "alma", "almalinux", "rocky", "rockylinux"]
+		and re.match("^9", DistroVersion)
+	):
+		return True
+
+	if DistroName == "ubuntu" and re.match("^2[2-9]", DistroVersion):
+		return True
+
+	return False
 
 def copy_direcotry(src, dest):
 	if not os.path.exists(dest):
@@ -227,7 +234,7 @@ def Usage():
 	print(usage)
 
 def is_hpcagent_installed():
-	if os.path.isfile('/etc/init.d/hpcagent'):
+	if os.path.isfile('/etc/init.d/hpcagent') or os.path.isfile('/etc/systemd/system/hpcagent.service'):
 		return True
 	else:
 		return False
@@ -253,7 +260,14 @@ def cleanup_host_entries():
 		raise
 
 def cleanup_hpc_agent(keepcert):
-	if os.path.isfile('/etc/init.d/hpcagent'):
+	if os.path.isfile('/etc/systemd/system/hpcagent.service'):
+		Log("Stop the hpc node agent")
+		Run("systemctl stop hpcagent", chk_err=False)
+		Run("systemctl disable hpcagent", chk_err=False)
+		os.remove('/etc/systemd/system/hpcagent.service')
+		Run("systemctl reset-failed", chk_err=False)
+		Run("systemctl daemon-reload", chk_err=False)
+	elif os.path.isfile('/etc/init.d/hpcagent'):
 		Log("Stop the hpc node agent")
 		if SupportSystemd:
 			Run("systemctl stop hpcagent", chk_err=False)
@@ -334,7 +348,11 @@ def update():
 	extract_hpcagent_files(srcpkg)
 	ReplaceFileContentsAtomic(configfile, json.dumps(configjson))
 	os.chmod(configfile, 0o644)
-	shutil.move(os.path.join(InstallRoot, "hpcagent.sh"), "/etc/init.d/hpcagent")
+	if UseSystemdServiceUnit:
+		shutil.move(os.path.join(InstallRoot, "hpcagent.service"), "/etc/systemd/system/hpcagent.service")
+		Run("systemctl daemon-reload")
+	else:
+		shutil.move(os.path.join(InstallRoot, "hpcagent.sh"), "/etc/init.d/hpcagent")
 
 	Log("restart hpcagent")
 	if SupportSystemd:
@@ -516,8 +534,6 @@ def install():
 		install_cgroup_tools()
 		install_sysstat()
 		install_pstree()
-		if DistroName in ["centos", "redhat", "alma", "almalinux", "rocky", "rockylinux"]:
-			install_chkconfig()
 
 		if Run("command -v setsebool", chk_err=False) == 0:
 			Log("Set SELinux boolean value httpd_can_network_connect and allow_httpd_anon_write to true")
@@ -532,7 +548,11 @@ def install():
 			Log("firewalld settings configured")
 
 		Log("Starting the hpc node agent daemon")
-		shutil.move(os.path.join(InstallRoot, "hpcagent.sh"), "/etc/init.d/hpcagent")
+		if UseSystemdServiceUnit:
+			shutil.move(os.path.join(InstallRoot, "hpcagent.service"), "/etc/systemd/system/hpcagent.service")
+			Run("systemctl daemon-reload")
+		else:
+			shutil.move(os.path.join(InstallRoot, "hpcagent.sh"), "/etc/init.d/hpcagent")
 		if SupportSystemd:
 			Run("systemctl enable hpcagent")
 			errCode, msg = RunGetOutput("systemctl start hpcagent")
@@ -596,9 +616,11 @@ def get_dist_info():
 
 def main():
 	t = time.localtime()
-	global DistroName, DistroVersion, SetupLogFile, SupportSystemd
+	global DistroName, DistroVersion, SetupLogFile, SupportSystemd, CGroupV2, UseSystemdServiceUnit
 	DistroName, DistroVersion = get_dist_info()
 	SupportSystemd = Run("command -v systemctl", chk_err=False) == 0
+	CGroupV2 = os.path.exists("/sys/fs/cgroup/cgroup.controllers")
+	UseSystemdServiceUnit = use_systemd_service_unit()
 
 	if len(sys.argv) < 2:
 		Usage()

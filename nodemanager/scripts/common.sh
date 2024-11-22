@@ -11,6 +11,9 @@ if [ "$(stat -fc %T /sys/fs/cgroup/)" == "cgroup2fs" ]; then
 fi
 
 CGroupV2Root="/sys/fs/cgroup"
+if [ -d "/sys/fs/cgroup/hpcpack.slice/hpcagent.service" ]; then
+	CGroupV2Root="/sys/fs/cgroup/hpcpack.slice/hpcagent.service"
+fi
 
 function GetCGroupName
 {

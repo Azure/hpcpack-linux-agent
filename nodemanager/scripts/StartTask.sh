@@ -38,9 +38,9 @@ if ! $CGroupV1 && ! $cgDisabled; then
 	echo $$ > "$procsFile"
 	/bin/bash $taskFolder/TestMutualTrust.sh "$taskId" "$taskFolder" "$userName" || exit
 	if [ "$CCP_SWITCH_USER" == "1" ]; then
-		su $userName -m -c "/bin/bash $runPath"
+		su $userName -m -c "/bin/bash /opt/hpcnodemanager/RunInCGroup.sh $procsFile $runPath"
 	else
-		sudo -H -E -u $userName env "PATH=$PATH" /bin/bash $runPath
+		sudo -H -E -u $userName env "PATH=$PATH" /bin/bash /opt/hpcnodemanager/RunInCGroup.sh $procsFile $runPath
 	fi
 elif $CGInstalled && ! $cgDisabled; then
 	groupName=$(GetCGroupName "$taskId")
