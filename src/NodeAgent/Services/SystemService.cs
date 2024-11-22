@@ -26,7 +26,7 @@ public interface ISystemService
      * Return a tuple of exit code, stdout and stderr of the command.
      * Throw an exception if anyting wrong (the exit code of the command is not considered for raising exception).
      */
-    Task<Tuple<int, string, string>> ExecuteInShellAsync(string cmd, IEnumerable<string>? args = null, string? stdin = null,
+    Task<CommandResult> ExecuteInShellAsync(string cmd, IEnumerable<string>? args = null, string? stdin = null,
         CancellationToken cancellationToken = default);
 
     /*
@@ -35,7 +35,7 @@ public interface ISystemService
      * Return a tuple of exit code, stdout and stderr of the command.
      * Throw an exception if anyting wrong (the exit code of the command is not considered for raising exception).
      */
-    Task<Tuple<int, string, string>> ExecuteFileInShellAsync(string filePath, IEnumerable<string>? args = null, string? stdin = null,
+    Task<CommandResult> ExecuteFileInShellAsync(string filePath, IEnumerable<string>? args = null, string? stdin = null,
         string? workingDir = null, CancellationToken cancellationToken = default);
 
     Task<int> ExecuteFileInShellExAsync(string filePath, IEnumerable<string>? args = null, string? stdin = null, string? workingDir = null,
@@ -109,7 +109,7 @@ public class SystemService : ISystemService
     public string HostName => Dns.GetHostName();
 
     [SupportedOSPlatform("linux")]
-    public async Task<Tuple<int, string, string>> ExecuteInShellAsync(string cmd, IEnumerable<string>? args = null, string? stdin = null,
+    public async Task<CommandResult> ExecuteInShellAsync(string cmd, IEnumerable<string>? args = null, string? stdin = null,
         CancellationToken cancellationToken = default)
     {
         var stdoutBuilder = new StringBuilder();
@@ -123,11 +123,11 @@ public class SystemService : ISystemService
             stderrBuilder.AppendLine(line);
         };
         var code = await ExecuteInShellExAsync(cmd, args, stdin, false, null, null, onStdOut, onStdErr, null, cancellationToken);
-        return new Tuple<int, string, string>(code, stdoutBuilder.ToString(), stderrBuilder.ToString());
+        return new CommandResult() { ExitCode = code, StdOut = stdoutBuilder.ToString(), StdErr = stderrBuilder.ToString() };
     }
 
     [SupportedOSPlatform("linux")]
-    public async Task<Tuple<int, string, string>> ExecuteFileInShellAsync(string filePath, IEnumerable<string>? args = null, string? stdin = null,
+    public async Task<CommandResult> ExecuteFileInShellAsync(string filePath, IEnumerable<string>? args = null, string? stdin = null,
         string? workingDir = null, CancellationToken cancellationToken = default)
     {
         var stdoutBuilder = new StringBuilder();
@@ -141,7 +141,7 @@ public class SystemService : ISystemService
             stderrBuilder.AppendLine(line);
         };
         var code = await ExecuteInShellExAsync(filePath, args, stdin, true, workingDir, null, onStdOut, onStdErr, null, cancellationToken);
-        return new Tuple<int, string, string>(code, stdoutBuilder.ToString(), stderrBuilder.ToString());
+        return new CommandResult() { ExitCode = code, StdOut = stdoutBuilder.ToString(), StdErr = stderrBuilder.ToString() };
     }
 
     [SupportedOSPlatform("linux")]
@@ -303,17 +303,16 @@ if ((admin == 1)) ; then
 fi
 ";
         var stdin = $"{password}\n{password}\n";
-        var (code, stdout, stderr) = await ExecuteInShellAsync(
-            script, [nameof(CreateUserAsync), username, isAdmin ? "1" : "0"], stdin, cancellationToken).ConfigureAwait(false);
+        var result = await ExecuteInShellAsync(script, [nameof(CreateUserAsync), username, isAdmin ? "1" : "0"], stdin, cancellationToken)
+            .ConfigureAwait(false);
 
-        _logger.LogDebug("CreateUserAsync result:\nExit code: {code}\nStdOut:\n{stdout}\nStdErr:\n{stderr}", code, stdout, stderr);
+        _logger.LogDebug("CreateUserAsync result: {result}", result);
 
-        if (code != 0 && code != 100)
+        if (result.ExitCode != 0 && result.ExitCode != 100)
         {
-            var msg = $"Error when creating user '{username}'. Exit code: {code}\nStdOut:\n{stdout}\nStdErr:\n{stderr}";
-            throw new SystemException(msg);
+            throw new SystemException($"Error when creating user '{username}'. Result: {result}");
         }
-        return code == 0;
+        return result.ExitCode == 0;
     }
 
     [SupportedOSPlatform("linux")]
@@ -330,18 +329,18 @@ set -ex
 keyfile=$1
 ssh-keygen -y -f ""$keyfile""
 ";
-        var (code, stdout, stderr) = await ExecuteInShellAsync(
-            script, [nameof(GenerateSshPublicKeyAsync), privateKeyFilePath], null, cancellationToken).ConfigureAwait(false);
+        var result = await ExecuteInShellAsync(script, [nameof(GenerateSshPublicKeyAsync), privateKeyFilePath], null, cancellationToken)
+            .ConfigureAwait(false);
 
-        _logger.LogDebug("GenerateSshPublicKeyAsync result:\nExit code: {code}\nStdOut:\n{stdout}\nStdErr:\n{stderr}", code, stdout, stderr);
+        _logger.LogDebug("GenerateSshPublicKeyAsync result: {result}", result);
 
-        if (code != 0 && code != 100)
+        if (result.ExitCode != 0)
         {
-            var msg = $"Error when generating SSH public key from file '{privateKeyFilePath}'. Exit code: {code}\nStdOut:\n{stdout}\nStdErr:\n{stderr}";
+            var msg = $"Error when generating SSH public key from file '{privateKeyFilePath}'. Result: {result}";
             throw new SystemException(msg);
         }
         //NOTE: The ending '\n' is kept.
-        return stdout;
+        return result.StdOut!;
     }
 
     [SupportedOSPlatform("linux")]
@@ -391,17 +390,17 @@ chmod $key_file_mode ""$key_path""
 
 printf ""$key_path""
 ";
-        var (code, stdout, stderr) = await ExecuteInShellAsync(
-            script, [nameof(AddSshKeyAsync), username, isPrivateKey ? "1" : "0"], key, cancellationToken).ConfigureAwait(false);
+        var result = await ExecuteInShellAsync(script, [nameof(AddSshKeyAsync), username, isPrivateKey ? "1" : "0"], key, cancellationToken)
+            .ConfigureAwait(false);
 
-        _logger.LogDebug("AddSshKeyAsync result:\nExit code: {code}\nStdOut:\n{stdout}\nStdErr:\n{stderr}", code, stdout, stderr);
+        _logger.LogDebug("AddSshKeyAsync result: {result}", result);
 
-        if (code != 0 && code != 100)
+        if (result.ExitCode != 0 && result.ExitCode != 100)
         {
-            var msg = $"Error when adding {(isPrivateKey ? "private" : "public")} SSH key for user '{username}'. Exit code: {code}\nStdOut:\n{stdout}\nStdErr:\n{stderr}";
+            var msg = $"Error when adding {(isPrivateKey ? "private" : "public")} SSH key for user '{username}'. Result: {result}";
             throw new SystemException(msg);
         }
-        return stdout.TrimEnd();
+        return result.StdOut!.TrimEnd();
     }
 
     [SupportedOSPlatform("linux")]
@@ -438,18 +437,18 @@ fi
 rm -rf ""$key_path""
 printf ""$key_path""
 ";
-        var (code, stdout, stderr) = await ExecuteInShellAsync(
+        var result = await ExecuteInShellAsync(
             script, [nameof(RemoveSshKeyAsync), username, isPrivateKey ? "1" : "0"], null, cancellationToken).ConfigureAwait(false);
 
-        _logger.LogDebug("RemoveSshKeyAsync result:\nExit code: {code}\nStdOut:\n{stdout}\nStdErr:\n{stderr}", code, stdout, stderr);
+        _logger.LogDebug("RemoveSshKeyAsync result: {result}", result);
 
-        if (code != 0)
+        if (result.ExitCode != 0)
         {
-            var msg = $"Error when removing {(isPrivateKey ? "private" : "public")} SSH key for user '{username}'. Exit code: {code}\nStdOut:\n{stdout}\nStdErr:\n{stderr}";
+            var msg = $"Error when removing {(isPrivateKey ? "private" : "public")} SSH key for user '{username}'. Result: {result}";
             throw new SystemException(msg);
         }
 
-        var path = stdout.TrimEnd();
+        var path = result.StdOut!.TrimEnd();
         return string.IsNullOrEmpty(path) ? null : path;
     }
 
@@ -488,17 +487,17 @@ chown ""$user"" ""$key_file""
 chmod 600 ""$key_file""
 printf ""$key_file""
 ";
-        var (code, stdout, stderr) = await ExecuteInShellAsync(
-            script, [nameof(AddAuthorizedKeyAsync), username], key, cancellationToken).ConfigureAwait(false);
+        var result = await ExecuteInShellAsync(script, [nameof(AddAuthorizedKeyAsync), username], key, cancellationToken)
+            .ConfigureAwait(false);
 
-        _logger.LogDebug("AddAuthorizedKeyAsync result:\nExit code: {code}\nStdOut:\n{stdout}\nStdErr:\n{stderr}", code, stdout, stderr);
+        _logger.LogDebug("AddAuthorizedKeyAsync result: {result}", result);
 
-        if (code != 0)
+        if (result.ExitCode != 0)
         {
-            var msg = $"Error when adding authorized key for user '{username}'. Exit code: {code}\nStdOut:\n{stdout}\nStdErr:\n{stderr}";
+            var msg = $"Error when adding authorized key for user '{username}'. Result: {result}";
             throw new SystemException(msg);
         }
-        return stdout.TrimEnd();
+        return result.StdOut!.TrimEnd();
     }
 
     [SupportedOSPlatform("linux")]
@@ -534,18 +533,18 @@ key=$(cat /dev/stdin)
 sed -i /^""$key""$/d ""$key_file""
 printf ""$key_file""
 ";
-        var (code, stdout, stderr) = await ExecuteInShellAsync(
-    script, [nameof(RemoveAuthorizedKeyAsync), username], key, cancellationToken).ConfigureAwait(false);
+        var result = await ExecuteInShellAsync(script, [nameof(RemoveAuthorizedKeyAsync), username], key, cancellationToken)
+            .ConfigureAwait(false);
 
-        _logger.LogDebug("RemoveAuthorizedKeyAsync result:\nExit code: {code}\nStdOut:\n{stdout}\nStdErr:\n{stderr}", code, stdout, stderr);
+        _logger.LogDebug("RemoveAuthorizedKeyAsync result: {result}", result);
 
-        if (code != 0)
+        if (result.ExitCode != 0)
         {
-            var msg = $"Error when removing authorized key for user '{username}'. Exit code: {code}\nStdOut:\n{stdout}\nStdErr:\n{stderr}";
+            var msg = $"Error when removing authorized key for user '{username}'. Result: {result}";
             throw new SystemException(msg);
         }
 
-        var path = stdout.TrimEnd();
+        var path = result.StdOut!.TrimEnd();
         return string.IsNullOrEmpty(path) ? null : path;
     }
 
@@ -563,14 +562,14 @@ chmod 700 ""$path""
 echo ""$path""
 ";
 
-        var (code, stdout, stderr) = await ExecuteInShellAsync(script, [nameof(MakeTempDirectoryAsync), username, template], null, cancellationToken)
+        var result = await ExecuteInShellAsync(script, [nameof(MakeTempDirectoryAsync), username, template], null, cancellationToken)
             .ConfigureAwait(false);
-        if (code != 0)
+        if (result.ExitCode != 0)
         {
-            var msg = $"Error when making temp direcctory of template '{template}' for user '{username}'. Exit code: {code}\nStdOut:\n{stdout}\nStdErr:\n{stderr}";
+            var msg = $"Error when making temp direcctory of template '{template}' for user '{username}'. Result: {result}";
             throw new SystemException(msg);
         }
-        return stdout.TrimEnd();
+        return result.StdOut!.TrimEnd();
     }
 
     [SupportedOSPlatform("linux")]
@@ -704,13 +703,13 @@ echo ""$path""
     public async Task<IList<ExtendedGpuInfo>> GetGpuInfoAsync(CancellationToken cancellationToken = default)
     {
         var command = "nvidia-smi --format=csv,noheader --query-gpu=name,uuid,pci.bus_id,pci.device_id,memory.total,clocks.max.sm,fan.speed,memory.used,power.draw,clocks.current.sm,temperature.gpu,utilization.gpu";
-        var (exitCode, stdout, stderr) = await ExecuteInShellAsync(command, cancellationToken: cancellationToken);
+        var result = await ExecuteInShellAsync(command, cancellationToken: cancellationToken).ConfigureAwait(false);
 
-        if (exitCode != 0)
+        if (result.ExitCode != 0)
         {
-            throw new SystemException($"Failed to execute nvidia-smi, exitCode: {exitCode}, stdout: {stdout}, stderr: {stderr}");
+            throw new SystemException($"Failed to execute nvidia-smi. Result: {result}");
         }
-        var lines = stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        var lines = result.StdOut!.Split('\n', StringSplitOptions.RemoveEmptyEntries);
         return ParseGpuInfoContent(lines);
     }
 

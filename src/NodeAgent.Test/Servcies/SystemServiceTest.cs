@@ -35,11 +35,11 @@ public class SystemServiceTest : IDisposable
     private async Task DeleteUserAsync(string username)
     {
         var cmd = @"userdel -rf ""$1""";
-        var (code, stdout, stderr) = await _system.ExecuteInShellAsync(cmd, [nameof(DeleteUserAsync), username]).ConfigureAwait(false);
+        var result = await _system.ExecuteInShellAsync(cmd, [nameof(DeleteUserAsync), username]).ConfigureAwait(false);
 
-        if (code != 0)
+        if (result.ExitCode != 0)
         {
-            var msg = $"Error when deleting user '{username}'. Exit code: {code}\nStdOut:\n{stdout}\nStdErr:\n{stderr}";
+            var msg = $"Error when deleting user '{username}': {result}";
             _output.WriteLine(msg);
         }
     }
@@ -48,26 +48,26 @@ public class SystemServiceTest : IDisposable
     public async Task TestHostName()
     {
         var hostname = _system.HostName;
-        var (code, stdout, _) = await _system.ExecuteInShellAsync("hostname");
-        Assert.Equal(0, code);
-        Assert.Equal(stdout.TrimEnd('\n'), hostname);
+        var result = await _system.ExecuteInShellAsync("hostname");
+        Assert.Equal(0, result.ExitCode);
+        Assert.Equal(result.StdOut!.TrimEnd('\n'), hostname);
     }
 
     [Fact]
     public async Task TestExecuteInShellAsync()
     {
         //Output a multi-line string with a EOL
-        var (code, stdout, stderr) = await _system.ExecuteInShellAsync(@"printf 'a\nb\n\nc\n'");
-        Assert.Equal(0, code);
-        Assert.Equal("a\nb\n\nc\n", stdout);
-        Assert.Equal("", stderr);
+        var result = await _system.ExecuteInShellAsync(@"printf 'a\nb\n\nc\n'");
+        Assert.Equal(0, result.ExitCode);
+        Assert.Equal("a\nb\n\nc\n", result.StdOut);
+        Assert.Equal("", result.StdErr);
 
         //Output a multi-line string without a EOL
         //Note the trailing "\n" in stdout: this is by design.
-        (code, stdout, stderr) = await _system.ExecuteInShellAsync(@"printf 'a\nb\n\nc'");
-        Assert.Equal(0, code);
-        Assert.Equal("a\nb\n\nc\n", stdout);
-        Assert.Equal("", stderr);
+        result = await _system.ExecuteInShellAsync(@"printf 'a\nb\n\nc'");
+        Assert.Equal(0, result.ExitCode);
+        Assert.Equal("a\nb\n\nc\n", result.StdOut);
+        Assert.Equal("", result.StdErr);
 
         //Execute a multi-line command
         var cmd = @"
@@ -75,28 +75,28 @@ echo abc
 echo xyz >&2
 exit 1
 ";
-        (code, stdout, stderr) = await _system.ExecuteInShellAsync(cmd);
-        Assert.Equal(1, code);
-        Assert.Equal("abc\n", stdout);
-        Assert.Equal("xyz\n", stderr);
+        result = await _system.ExecuteInShellAsync(cmd);
+        Assert.Equal(1, result.ExitCode);
+        Assert.Equal("abc\n", result.StdOut);
+        Assert.Equal("xyz\n", result.StdErr);
 
         //Execute a command with arguments
         cmd = @"
 echo $0
 echo $1
 ";
-        (code, stdout, stderr) = await _system.ExecuteInShellAsync(cmd, ["abc", "xyz"]);
-        Assert.Equal(0, code);
-        Assert.Equal("abc\nxyz\n", stdout);
-        Assert.Equal("", stderr);
+        result = await _system.ExecuteInShellAsync(cmd, ["abc", "xyz"]);
+        Assert.Equal(0, result.ExitCode);
+        Assert.Equal("abc\nxyz\n", result.StdOut);
+        Assert.Equal("", result.StdErr);
 
         //Execute command with input as stdin
         //Note the trailing "\n" in stdout: this is by design.
         var input = "hello";
-        (code, stdout, _) = await _system.ExecuteInShellAsync(@"cat", null, input);
-        Assert.Equal(0, code);
-        Assert.Equal($"{input}\n", stdout);
-        Assert.Equal("", stderr);
+        result = await _system.ExecuteInShellAsync(@"cat", null, input);
+        Assert.Equal(0, result.ExitCode);
+        Assert.Equal($"{input}\n", result.StdOut);
+        Assert.Equal("", result.StdErr);
     }
 
     [Fact]
@@ -106,10 +106,10 @@ echo $1
         var file = Path.Join(dir, "Assets", "test.sh");
         var arg = "abc";
         var input = "input";
-        var (code, stdout, stderr) = await _system.ExecuteFileInShellAsync(file, [arg], input);
-        Assert.Equal(100, code);
-        Assert.Equal($"{arg}\n", stdout);
-        Assert.Equal($"{input}\n", stderr);
+        var result = await _system.ExecuteFileInShellAsync(file, [arg], input);
+        Assert.Equal(100, result.ExitCode);
+        Assert.Equal($"{arg}\n", result.StdOut);
+        Assert.Equal($"{input}\n", result.StdErr);
     }
 
     [Theory]
@@ -135,8 +135,8 @@ fi
             var isNew = await _system.CreateUserAsync(username, password, isAdmin);
             Assert.True(isNew);
 
-            var (code, stdout, stderr) = await _system.ExecuteInShellAsync(test, ["test", username, isAdmin ? "1" : "0"]);
-            Assert.Equal(0, code);
+            var result = await _system.ExecuteInShellAsync(test, ["test", username, isAdmin ? "1" : "0"]);
+            Assert.Equal(0, result.ExitCode);
 
             isNew = await _system.CreateUserAsync(username, password, isAdmin);
             Assert.False(isNew);
@@ -422,8 +422,8 @@ fi
             var test = @"
 ssh-keygen -f /tmp/id_rsa -N ''
 ";
-            var (code, _, _) = await _system.ExecuteInShellAsync(test, null, "\n\n");
-            Assert.Equal(0, code);
+            var result = await _system.ExecuteInShellAsync(test, null, "\n\n");
+            Assert.Equal(0, result.ExitCode);
 
             var publicKeyExpected = await File.ReadAllTextAsync("/tmp/id_rsa.pub");
             var publicKey = await _system.GenerateSshPublicKeyAsync("/tmp/id_rsa");
@@ -444,8 +444,8 @@ ssh-keygen -f /tmp/id_rsa -N ''
             var test = @"
 echo abc > /tmp/xyz
 ";
-            var (code, _, _) = await _system.ExecuteInShellAsync(test);
-            Assert.Equal(0, code);
+            var result = await _system.ExecuteInShellAsync(test);
+            Assert.Equal(0, result.ExitCode);
 
             await Assert.ThrowsAsync<Services.SystemException>(async () =>
             {
@@ -489,12 +489,12 @@ owner=$(stat -Lc ""%U"" ""$path"")
 perms=$(stat -Lc ""%a"" ""$path"")
 (( $perms == 700 )) || exit 2
 ";
-            var (code, stdout, stderr) = await _system.ExecuteInShellAsync(test, ["test", username, path]);
-            if (code != 0)
+            var result = await _system.ExecuteInShellAsync(test, ["test", username, path]);
+            if (result.ExitCode != 0)
             {
-                _output.WriteLine($"STDOUT:\n{stdout}\nSTDERR:\n{stderr}");
+                _output.WriteLine(result.ToString());
             }
-            Assert.Equal(0, code);
+            Assert.Equal(0, result.ExitCode);
         }
         finally
         {

@@ -310,11 +310,11 @@ echo after >{0}/after1.txt 2>{0}/after2.txt || ([ ""$?"" = ""1"" ] && exit 253)
         Debug.Assert(!string.IsNullOrEmpty(_taskDirectory));
 
         var cpuAffinity = await GetCpuAffinityAsync();
-        var (code, stdout, stderr) = await _systemService.ExecuteFileInShellAsync(
+        var result = await _systemService.ExecuteFileInShellAsync(
             "PrepareTask.sh", [_taskExecutionId, cpuAffinity, _taskDirectory, _user], workingDir: _scriptBaseDir).ConfigureAwait(false);
-        if (code != 0)
+        if (result.ExitCode != 0)
         {
-            throw new ApplicationException($"PrepareTask.sh failed with exit code {code}.\nStdOut:\n{stdout}\nStdErr:{stderr}");
+            throw new ApplicationException($"PrepareTask.sh failed: {result}");
         }
     }
 
@@ -391,16 +391,15 @@ echo after >{0}/after1.txt 2>{0}/after2.txt || ([ ""$?"" = ""1"" ] && exit 253)
                 {
                     try
                     {
-                        var (code, stdout, stderr) = await _systemService.ExecuteInShellAsync($"head -c 1500 \"{_stdOutFile}\"");
-                        if (code == 0)
+                        var result = await _systemService.ExecuteInShellAsync($"head -c 1500 \"{_stdOutFile}\"").ConfigureAwait(false);
+                        if (result.ExitCode == 0)
                         {
-                            _messageBuffer.Append($"STDOUT: {stdout}");
+                            _messageBuffer.Append($"STDOUT: {result.StdOut}");
                         }
                         else
                         {
                             _messageBuffer.AppendLine($"STDOUT: (error)");
-                            LogWarning("Error when reading {file}:\nExit code: {code}\nStdOut:\n{stdout}\nStdErr:\n{stderr}",
-                                _stdOutFile, code, stdout, stderr);
+                            LogWarning("Error when reading {file}: {result}", _stdOutFile, result);
                         }
                     }
                     catch (Exception ex)
@@ -414,16 +413,15 @@ echo after >{0}/after1.txt 2>{0}/after2.txt || ([ ""$?"" = ""1"" ] && exit 253)
                     try
                     {
                         //TODO: Should it read _stdOutFile instead of _stdErrFilem, since stderr is already read and saved in _errorMsg before?
-                        var (code, stdout, stderr) = await _systemService.ExecuteInShellAsync($"head -c 1500 \"{_stdErrFile}\"");
-                        if (code == 0 )
+                        var result = await _systemService.ExecuteInShellAsync($"head -c 1500 \"{_stdErrFile}\"").ConfigureAwait(false);
+                        if (result.ExitCode == 0 )
                         {
-                            _messageBuffer.Append($"STDERR: {stdout}");
+                            _messageBuffer.Append($"STDERR: {result.StdOut}");
                         }
                         else
                         {
                             _messageBuffer.AppendLine($"STDERR: (error)");
-                            LogWarning("Error when reading {file}:\nExit code: {code}\nStdOut:\n{stdout}\nStdErr:\n{stderr}",
-                                _stdErrFile, code, stdout, stderr);
+                            LogWarning("Error when reading {file}: {result}", _stdErrFile, result);
                         }
                     }
                     catch (Exception ex)
@@ -447,12 +445,12 @@ echo after >{0}/after1.txt 2>{0}/after2.txt || ([ ""$?"" = ""1"" ] && exit 253)
         int pid = _processId ?? int.MaxValue;
         try
         {
-            var (code, stdout, stderr) = await _systemService.ExecuteFileInShellAsync(
+            var result = await _systemService.ExecuteFileInShellAsync(
                 "EndTask.sh", [_taskExecutionId, pid.ToString(), "1", _taskDirectory ?? string.Empty], workingDir: _scriptBaseDir)
                 .ConfigureAwait(false);
-            if (code != 0)
+            if (result.ExitCode != 0)
             {
-                LogWarning("Failed ending task.\nExit code: {code}\nStdOut:\n{stdout}\nStdErr:\n{stderr}", code, stdout, stderr);
+                LogWarning("Failed ending task: {result}", result);
             }
         }
         catch (Exception ex)
@@ -465,12 +463,12 @@ echo after >{0}/after1.txt 2>{0}/after2.txt || ([ ""$?"" = ""1"" ] && exit 253)
 
         try
         {
-            var (code, stdout, stderr) = await _systemService.ExecuteFileInShellAsync(
+            var result = await _systemService.ExecuteFileInShellAsync(
                 "CleanupTask.sh", [_taskExecutionId, pid.ToString(), _taskDirectory ?? string.Empty], workingDir: _scriptBaseDir)
                 .ConfigureAwait(false);
-            if (code != 0)
+            if (result.ExitCode != 0)
             {
-                LogWarning("Failed cleaning up task.\nExit code: {code}\nStdOut:\n{stdout}\nStdErr:\n{stderr}", code, stdout, stderr);
+                LogWarning("Failed cleaning up task: {result}", result);
             }
         }
         catch (Exception ex)
@@ -544,18 +542,21 @@ echo after >{0}/after1.txt 2>{0}/after2.txt || ([ ""$?"" = ""1"" ] && exit 253)
         if (!_ended)
         {
             var pid = _processId ?? int.MaxValue;
-            int code = -1;
-            string? stdout = null;
-            string? stderr = null;
             try
             {
-                (code, stdout, stderr) = await _systemService.ExecuteFileInShellAsync(
+                var result = await _systemService.ExecuteFileInShellAsync(
                     "EndTask.sh", [_taskExecutionId, pid.ToString(), forced ? "1" : "0", _taskDirectory ?? string.Empty], workingDir: _scriptBaseDir)
                     .ConfigureAwait(false);
+
+                if (result.ExitCode != 0)
+                {
+                    //TODO: Should it be debug level?
+                    LogWarning("Error when killing process {pid}. Result: {result}", pid, result);
+                }
             }
             catch (Exception ex)
             {
-                LogError(ex, "Error when killing process {pid}.\nExit code: {code}\nStdOut:\n{stdout}\nStdErr:\n{stderr}", pid, code, stdout, stderr);
+                LogError(ex, "Error when killing process {pid}.", pid);
             }
         }
     }
@@ -595,43 +596,38 @@ echo after >{0}/after1.txt 2>{0}/after2.txt || ([ ""$?"" = ""1"" ] && exit 253)
     {
         Debug.Assert(!string.IsNullOrEmpty(_taskDirectory));
 
-        int code = -1;
-        string? stdout = null;
-        string? stderr = null;
         try
         {
-            (code, stdout, stderr) = await _systemService.ExecuteFileInShellAsync("Statistics.sh", [_taskExecutionId, _taskDirectory], workingDir: _scriptBaseDir);
-            if (code != 0)
+            var result = await _systemService.ExecuteFileInShellAsync("Statistics.sh", [_taskExecutionId, _taskDirectory], workingDir: _scriptBaseDir)
+                .ConfigureAwait(false);
+            if (result.ExitCode != 0)
             {
-                throw new ApplicationException($"Statistics.sh returns {code}.");
+                throw new ApplicationException($"Statistics.sh failed: {result}");
             }
-            return ParseStatisticsResult(stdout);
+            return ParseStatisticsResult(result.StdOut!);
         }
         catch (Exception ex)
         {
-            LogWarning(ex, "Error when getting stat from CGroup.\nExit code: {code}\nStdOut:\n{stdout}\nStdErr:\n{stderr}", code, stdout, stderr);
+            LogWarning(ex, "Error when getting stat from CGroup.");
         }
         return null;
     }
 
     private async Task TailFileAsync(StringBuilder output, string filePath)
     {
-        int code = -1;
-        string? stdout = null;
-        string? stderr = null;
         try
         {
-            (code, stdout, stderr) = await _systemService.ExecuteInShellAsync("tail", ["-c", "5000", filePath]);
-            output.Append(stdout);
-            if (code != 0)
+            var result = await _systemService.ExecuteInShellAsync("tail", ["-c", "5000", filePath]);
+            output.Append(result.StdOut);
+            if (result.ExitCode != 0)
             {
-                output.AppendLine($"Failed reading '{filePath}' with exit code {code}:");
-                output.Append(stderr);
+                output.AppendLine($"Failed reading '{filePath}': {result}");
+                output.Append(result.StdErr);
             }
         }
         catch (Exception ex)
         {
-            LogWarning(ex, "Error when tailing file {file}.\nExit code: {code}\nStdOut:\n{stdout}\nStdErr:\n{stderr}", filePath, code, stdout, stderr);
+            LogWarning(ex, "Error when tailing file {file}.", filePath);
         }
     }
 

@@ -89,8 +89,8 @@ public class TaskProcessFactory : ITaskProcessFactory
 
     public async Task CleanupAsync(CancellationToken cancellationToken)
     {
-        var (code, stdout, stderr) = await _systemService.ExecuteFileInShellAsync(
+        var result = await _systemService.ExecuteFileInShellAsync(
             "CleanupAllTasks.sh", workingDir: _scriptBaseDir, cancellationToken: cancellationToken).ConfigureAwait(false);
-        _logger.LogInformation("CleanupAsync result:\nExit code: {code}\nStdOut:\n{stdout}\nStdErr:\n{stderr}", code, stdout, stderr);
+        _logger.LogInformation("CleanupAsync result: {result}", result);
     }
 }
