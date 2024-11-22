@@ -92,9 +92,9 @@ public interface ISystemService
 
     Task<string> GetDistroInfoAsync(CancellationToken cancellationToken = default);
 
-    IList<NetworkInfo> GetNetworkInfo();
+    IEnumerable<NetworkInfo> GetNetworkInfo();
 
-    Task<IList<ExtendedGpuInfo>> GetGpuInfoAsync(CancellationToken cancellationToken = default);
+    Task<IEnumerable<ExtendedGpuInfo>> GetGpuInfoAsync(CancellationToken cancellationToken = default);
 }
 
 public class SystemService : ISystemService
@@ -655,10 +655,8 @@ echo ""$path""
     }
 
     [SupportedOSPlatform("linux")]
-    public IList<NetworkInfo> GetNetworkInfo()
+    public IEnumerable<NetworkInfo> GetNetworkInfo()
     {
-        var info = new List<NetworkInfo>();
-
         var networkInterfaces = NetworkInterface.GetAllNetworkInterfaces();
         foreach (var networkInterface in networkInterfaces)
         {
@@ -693,14 +691,12 @@ echo ""$path""
                 }
             }
 
-            info.Add(networkInfo);
+            yield return networkInfo;
         }
-
-        return info;
     }
 
     [SupportedOSPlatform("linux")]
-    public async Task<IList<ExtendedGpuInfo>> GetGpuInfoAsync(CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<ExtendedGpuInfo>> GetGpuInfoAsync(CancellationToken cancellationToken = default)
     {
         var command = "nvidia-smi --format=csv,noheader --query-gpu=name,uuid,pci.bus_id,pci.device_id,memory.total,clocks.max.sm,fan.speed,memory.used,power.draw,clocks.current.sm,temperature.gpu,utilization.gpu";
         var result = await ExecuteInShellAsync(command, cancellationToken: cancellationToken).ConfigureAwait(false);
@@ -713,10 +709,8 @@ echo ""$path""
         return ParseGpuInfoContent(lines);
     }
 
-    public IList<ExtendedGpuInfo> ParseGpuInfoContent(string[] lines)
+    public IEnumerable<ExtendedGpuInfo> ParseGpuInfoContent(string[] lines)
     {
-        var gpuInfos = new List<ExtendedGpuInfo>();
-
         foreach (var line in lines)
         {
             if (string.IsNullOrWhiteSpace(line))
@@ -747,9 +741,7 @@ echo ""$path""
                 GpuUtilization = (values[11].Trim()).RemoveMeasurement(),
             };
 
-            gpuInfos.Add(info);
+            yield return info;
         }
-
-        return gpuInfos;
     }
 }

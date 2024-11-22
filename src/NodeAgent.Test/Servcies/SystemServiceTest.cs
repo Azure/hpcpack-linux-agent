@@ -614,7 +614,8 @@ perms=$(stat -Lc ""%a"" ""$path"")
             "Tesla V100-PCIE-16GB, GPU-0b937386-446c-7655-29da-f7e79b729e13, 00000001:00:00.0, 0x1DB410DE, 16384 MiB, 1380 MHz, [N/A], 0 MiB, 22.57 W, 135 MHz, 27, 0 %",
         };
 
-        var result = _system.ParseGpuInfoContent(lines);
+        var result = _system.ParseGpuInfoContent(lines).ToList();
+        Assert.Single(result);
 
         Assert.Equal("Tesla V100-PCIE-16GB", result[0].Name);
         Assert.Equal("GPU-0b937386-446c-7655-29da-f7e79b729e13", result[0].Uuid);
