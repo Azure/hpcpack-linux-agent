@@ -56,7 +56,7 @@ if $isDockerTask; then
 
 	containerId=$(GetContainerId $taskFolder)
 	docker exec $containerId useradd -m $userName
-    docker exec $containerId chown $userName $taskFolder
+	docker exec $containerId chown $userName $taskFolder
 	if $isMpiTask && ! $skipSshSetup; then
 		/bin/bash MpiContainerPreparation.sh $containerId $userName
 	fi
@@ -65,79 +65,129 @@ if $isDockerTask; then
 fi
 
 cgDisabled=$(CheckCgroupDisabledInFlagFile $taskFolder)
-if $CGInstalled && ! $cgDisabled; then
-	groupName=$(GetCGroupName "$taskId")
-	group=$CGroupSubSys:$groupName
+if ! $cgDisabled; then
+	if ! $CGroupV1; then
+		groupName=$(GetCGroupName "$taskId")
+		
+		maxLoop=3
+		while [ $maxLoop -gt 0 ]
+		do
+			mkdir $(GetGroupPathV2 "$groupName")
+			ec=$?
+			if [ $ec -eq 0 ]
+			then
+				break
+			fi
 
-	maxLoop=3
-	while [ $maxLoop -gt 0 ]
-	do
-		cgcreate -g "$group"
-		ec=$?
-		if [ $ec -eq 0 ]
+			echo "Failed to create cgroup $groupName, error code $ec, retry after .5 seconds"
+			((maxLoop--))
+			sleep .5
+		done
+
+		if [ $ec -ne 0 ]
 		then
-			break
+			exit $ec
 		fi
 
-		echo "Failed to create cgroup $group, error code $ec, retry after .5 seconds"
-		((maxLoop--))
-		sleep .5
-	done
+		maxLoop=3
+		while [ $maxLoop -gt 0 ]
+		do
+			cpusFile=$(GetCpusFileV2 "$groupName")
+			echo "$affinity" > "$cpusFile"
+			ec=$?
+			if [ $ec -eq 0 ]
+			then
+				break
+			fi
 
-	if [ $ec -ne 0 ]
-	then
-		exit $ec
-	fi
+			echo "Failed to set cpus for $groupName, error code $ec, retry after .5 seconds"
+			((maxLoop--))
+			sleep .5
+		done
 
-	maxLoop=3
-	while [ $maxLoop -gt 0 ]
-	do
-		cpusFile=$(GetCpusFile "$groupName")
-		echo "$affinity" > "$cpusFile"
-		ec=$?
-		if [ $ec -eq 0 ]
+		if [ $ec -ne 0 ]
 		then
-			break
+			exit $ec
 		fi
 
-		echo "Failed to set cpus for $group, error code $ec, retry after .5 seconds"
-		((maxLoop--))
-		sleep .5
-	done
+		tasks=$(GetCpusetTasksFileV2 "$groupName")
 
-	if [ $ec -ne 0 ]
-	then
-		exit $ec
-	fi
+		[ ! -f "$tasks" ] && echo "$tasks doesn't exist" && exit 200
 
-	maxLoop=3
-	while [ $maxLoop -gt 0 ]
-	do
-		memsFile=$(GetMemsFile "$groupName")
-		numaMaxIndex=$((`lscpu | grep 'NUMA node(s)' | awk '{print $NF}'` - 1))
-		echo 0-$numaMaxIndex > "$memsFile"
-		ec=$?
-		if [ $ec -eq 0 ]
+		exit 0
+	elif $CGInstalled; then
+		groupName=$(GetCGroupName "$taskId")
+		group=$CGroupSubSys:$groupName
+
+		maxLoop=3
+		while [ $maxLoop -gt 0 ]
+		do
+			cgcreate -g "$group"
+			ec=$?
+			if [ $ec -eq 0 ]
+			then
+				break
+			fi
+
+			echo "Failed to create cgroup $group, error code $ec, retry after .5 seconds"
+			((maxLoop--))
+			sleep .5
+		done
+
+		if [ $ec -ne 0 ]
 		then
-			break
+			exit $ec
 		fi
 
-		echo "Failed to set mems for $group, error code $ec, retry after .5 seconds"
-		((maxLoop--))
-		sleep .5
-	done
+		maxLoop=3
+		while [ $maxLoop -gt 0 ]
+		do
+			cpusFile=$(GetCpusFile "$groupName")
+			echo "$affinity" > "$cpusFile"
+			ec=$?
+			if [ $ec -eq 0 ]
+			then
+				break
+			fi
 
-	if [ $ec -ne 0 ]
-	then
-		exit $ec
+			echo "Failed to set cpus for $group, error code $ec, retry after .5 seconds"
+			((maxLoop--))
+			sleep .5
+		done
+
+		if [ $ec -ne 0 ]
+		then
+			exit $ec
+		fi
+
+		maxLoop=3
+		while [ $maxLoop -gt 0 ]
+		do
+			memsFile=$(GetMemsFile "$groupName")
+			numaMaxIndex=$((`lscpu | grep 'NUMA node(s)' | awk '{print $NF}'` - 1))
+			echo 0-$numaMaxIndex > "$memsFile"
+			ec=$?
+			if [ $ec -eq 0 ]
+			then
+				break
+			fi
+
+			echo "Failed to set mems for $group, error code $ec, retry after .5 seconds"
+			((maxLoop--))
+			sleep .5
+		done
+
+		if [ $ec -ne 0 ]
+		then
+			exit $ec
+		fi
+
+		tasks=$(GetCpusetTasksFile "$groupName")
+		freezerState=$(GetFreezerStateFile "$groupName")
+
+		[ ! -f "$tasks" ] && echo "$tasks doesn't exist" && exit 200
+		[ ! -f "$freezerState" ] && echo "$freezerState doesn't exist" && exit 201
+
+		exit 0
 	fi
-
-	tasks=$(GetCpusetTasksFile "$groupName")
-	freezerState=$(GetFreezerStateFile "$groupName")
-
-	[ ! -f "$tasks" ] && echo "$tasks doesn't exist" && exit 200
-	[ ! -f "$freezerState" ] && echo "$freezerState doesn't exist" && exit 201
-
-	exit 0
 fi
-

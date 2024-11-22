@@ -26,8 +26,8 @@ PIDFILE=/var/run/hpcnmdaemon.pid
 
 # Exit if not run as root
 if [[ $EUID != 0 ]]; then
-    echo "This script must be run as root"
-    exit 1
+	echo "This script must be run as root"
+	exit 1
 fi
 
 # Exit if the package is not installed
@@ -37,11 +37,11 @@ fi
 [ -r /etc/default/$NAME ] && . /etc/default/$NAME
 
 if command -v python3 >/dev/null 2>&1 ; then
-    PYTHONEXECUTOR="python3"
+	PYTHONEXECUTOR="python3"
 elif command -v python2 >/dev/null 2>&1 ; then
-    PYTHONEXECUTOR="python2"
+	PYTHONEXECUTOR="python2"
 elif command -v /usr/libexec/platform-python >/dev/null 2>&1 ; then
-    PYTHONEXECUTOR="/usr/libexec/platform-python"
+	PYTHONEXECUTOR="/usr/libexec/platform-python"
 fi
 
 #
@@ -49,16 +49,16 @@ fi
 #
 do_start()
 {
-    local RC=0
-    echo "Starting $FriendlyName"
-    $PYTHONEXECUTOR $AgentPath enable
-    RC=$?
-    if [ $RC = 0 ]; then
-      	echo "$FriendlyName was started"
-    else
-        echo "Failed to start $FriendlyName : $RC"
-    fi
-    return $RC    
+	local RC=0
+	echo "Starting $FriendlyName"
+	$PYTHONEXECUTOR $AgentPath enable
+	RC=$?
+	if [ $RC = 0 ]; then
+		echo "$FriendlyName was started"
+	else
+		echo "Failed to start $FriendlyName : $RC"
+	fi
+	return $RC    
 }
 
 #
@@ -66,16 +66,16 @@ do_start()
 #
 do_stop()
 {
-    local RC=0
-    echo "Starting $FriendlyName"
-    $PYTHONEXECUTOR $AgentPath disable
-    RC=$?
-    if [ $RC = 0 ]; then
-      	echo "$FriendlyName was stopped"
-    else
-        echo "Failed to stop $FriendlyName : $RC"
-    fi
-    return $RC
+	local RC=0
+	echo "Starting $FriendlyName"
+	$PYTHONEXECUTOR $AgentPath disable
+	RC=$?
+	if [ $RC = 0 ]; then
+		echo "$FriendlyName was stopped"
+	else
+		echo "Failed to stop $FriendlyName : $RC"
+	fi
+	return $RC
 }
 
 #
@@ -83,54 +83,54 @@ do_stop()
 #
 do_restart()
 {
-    local RC=0
-    echo "restarting $FriendlyName"
-    $PYTHONEXECUTOR $AgentPath restart
-    RC=$?    
-    if [ $RC = 0 ]; then
-      	echo "$FriendlyName was restarted"
-    else
-        echo "Failed to restart $FriendlyName : $RC"
-    fi
-    return $RC
+	local RC=0
+	echo "restarting $FriendlyName"
+	$PYTHONEXECUTOR $AgentPath restart
+	RC=$?    
+	if [ $RC = 0 ]; then
+		echo "$FriendlyName was restarted"
+	else
+		echo "Failed to restart $FriendlyName : $RC"
+	fi
+	return $RC
 }
 
 do_status()
 {
-    local daemon_pid=0
-    [ -r $PIDFILE ] && read daemon_pid < $PIDFILE
-    if [ $daemon_pid != 0 ]; then
-        local cmdline=`ps -p $daemon_pid -o cmd=`
-        [[ "$cmdline" = *"$AgentPath"* ]] || daemon_pid=0
-    fi
-    if [ $daemon_pid = 0 ]; then
-        echo "$FriendlyName is not running"
-    else
-        echo "$FriendlyName is running"
-    fi
-    return 0
+	local daemon_pid=0
+	[ -r $PIDFILE ] && read daemon_pid < $PIDFILE
+	if [ $daemon_pid != 0 ]; then
+		local cmdline=`ps -p $daemon_pid -o cmd=`
+		[[ "$cmdline" = *"$AgentPath"* ]] || daemon_pid=0
+	fi
+	if [ $daemon_pid = 0 ]; then
+		echo "$FriendlyName is not running"
+	else
+		echo "$FriendlyName is running"
+	fi
+	return 0
 }
 
 case "$1" in
   start)
-        do_start
-        RETVAL=$?
-        ;;
+		do_start
+		RETVAL=$?
+		;;
   stop)
-        do_stop
-        RETVAL=$?	
-        ;;
+		do_stop
+		RETVAL=$?	
+		;;
   status)
-        do_status
-        RETVAL=$?
-        ;;
+		do_status
+		RETVAL=$?
+		;;
   restart|reload|force-reload)
-        do_restart
-        RETVAL=$?
-        ;;
+		do_restart
+		RETVAL=$?
+		;;
   *)
-        echo "Usage: $SCRIPTNAME {start|stop|status|restart|force-reload}" >&2
-        RETVAL=3
-        ;;
+		echo "Usage: $SCRIPTNAME {start|stop|status|restart|force-reload}" >&2
+		RETVAL=3
+		;;
 esac
 exit $RETVAL
