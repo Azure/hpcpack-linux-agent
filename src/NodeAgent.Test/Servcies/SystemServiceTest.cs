@@ -10,14 +10,14 @@ namespace NodeAgent.Test.Servcies;
  * NOTE
  *
  * Linux OS permissons are required for some test methods, so that you may need
- * "sodo dotnet test ..." for SystemServiceTest.
+ * "sudo dotnet test ..." for SystemServiceTest.
  */
 [SupportedOSPlatform("linux")]
 public class SystemServiceTest : IDisposable
 {
     private readonly ITestOutputHelper _output;
     private ILoggerFactory _loggerFactory;
-    private ISystemService _system;
+    private SystemService _system;
 
     public SystemServiceTest(ITestOutputHelper output)
     {
@@ -532,5 +532,101 @@ perms=$(stat -Lc ""%a"" ""$path"")
                 Directory.Delete(path, true);
             }
         }
+    }
+
+    [Fact]
+    public void TestParseProcMemInfoContent()
+    {
+        string[] lines =
+        [
+            "MemTotal:        10 kB",
+            "MemFree:         1 kB",
+            "MemAvailable:    2 kB",
+            "Buffers:         3 kB",
+        ];
+
+        var result = _system.ParseProcMemInfoContent(lines);
+        Assert.Equal((ulong)10, result.Item1);
+        Assert.Equal((ulong)2, result.Item2);
+    }
+
+    [Fact]
+    public async Task TestGetMemoryUsageAsync()
+    {
+        var result = await _system.GetMemoryUsageAsync();
+        Assert.True(result.Item1 >= 0);
+        Assert.True(result.Item2 >= 0);
+    }
+
+    [Fact]
+    public void TestParseProcCpuInfoContent()
+    {
+        var lines = new string[]
+        {
+            "processor	     : 0",
+            "physical id     : 0",
+            "processor       : 1",
+            "physical id     : 0",
+            "...             : .",
+            "processor       : 2",
+            "physical id     : 0",
+            "processor       : 3",
+            "...             : .",
+        };
+
+        var result = _system.ParseProcCpuInfoContent(lines);
+        Assert.Equal(4, result.Item1);
+        Assert.Equal(1, result.Item2);
+    }
+
+    [Fact]
+    public async Task TestGetCpuCoresInfoAsync()
+    {
+        var result = await _system.GetCpuCoresInfoAsync();
+        Assert.True(result.Item1 > 0);
+        Assert.True(result.Item2 > 0);
+    }
+
+    [Fact]
+    public async Task TestGetDistroInfoAsync()
+    {
+        var result = await _system.GetDistroInfoAsync();
+        Assert.NotNull(result);
+    }
+
+    [Fact]
+    public void TestGetNetworkInfo()
+    {
+        var result = _system.GetNetworkInfo();
+        Assert.NotNull(result);
+
+        foreach (var info in result)
+        {
+            Assert.NotNull(info.Name);
+        }
+    }
+
+    [Fact]
+    public void TestParseGpuInfoContent()
+    {
+        var lines = new string[]
+        {
+            "Tesla V100-PCIE-16GB, GPU-0b937386-446c-7655-29da-f7e79b729e13, 00000001:00:00.0, 0x1DB410DE, 16384 MiB, 1380 MHz, [N/A], 0 MiB, 22.57 W, 135 MHz, 27, 0 %",
+        };
+
+        var result = _system.ParseGpuInfoContent(lines);
+
+        Assert.Equal("Tesla V100-PCIE-16GB", result[0].Name);
+        Assert.Equal("GPU-0b937386-446c-7655-29da-f7e79b729e13", result[0].Uuid);
+        Assert.Equal("00000001:00:00.0", result[0].PciBusId);
+        Assert.Equal("0x1DB410DE", result[0].PciBusDevice);
+        Assert.Equal(16384, result[0].TotalMemory);
+        Assert.Equal(1380, result[0].MaxSMClock);
+        Assert.Equal(0, result[0].FanSpeed);
+        Assert.Equal(0, result[0].UsedMemoryMB);
+        Assert.Equal(22.57, result[0].PowerWatt, 1e-2);
+        Assert.Equal(135, result[0].CurrentSMClock);
+        Assert.Equal(27, result[0].Temperature);
+        Assert.Equal(0, result[0].GpuUtilization);
     }
 }

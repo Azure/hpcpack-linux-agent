@@ -1,7 +1,11 @@
+﻿using NodeAgent.Models;
+using NodeAgent.Utils;
 using System.Diagnostics;
 using System.Net;
+using System.Net.NetworkInformation;
 using System.Runtime.Versioning;
 using System.Text;
+using System.Text.RegularExpressions;
 
 namespace NodeAgent.Services;
 
@@ -82,11 +86,35 @@ public interface ISystemService
 
     Task<Tuple<ulong, ulong>> GetCpuUsageAsync(CancellationToken cancellationToken = default);
 
+    /*
+     * Return a tuple of total memory and available memory in kB.
+     * Throw an exception if anything wrong.
+     */
     Task<Tuple<ulong, ulong>> GetMemoryUsageAsync(CancellationToken cancellationToken = default);
 
     Task<Tuple<float, float>> GetVirtualMemoryStatAsync(CancellationToken cancellationToken = default);
 
     float GetFreeSpacePercentage();
+
+    /*
+     * Return a tuple of cpu cores and sockets.
+     * Throw an exception if anything wrong.
+     */
+    Task<Tuple<int, int>> GetCpuCoresInfoAsync(CancellationToken cancellationToken = default);
+
+    Task<string> GetDistroInfoAsync(CancellationToken cancellationToken = default);
+
+    IList<NetworkInfo> GetNetworkInfo();
+
+    IDictionary<string, ulong> GetNetworkUsageInBytes();
+
+    Task<IDictionary<string, ulong>> GetIbNetworkUsageAsync(CancellationToken cancellationToken = default);
+
+    Task<IList<string>> GetIbDevicesAsync(CancellationToken cancellationToken = default);
+
+    Task<IList<ExtendedGpuInfo>> GetGpuInfoAsync(CancellationToken cancellationToken = default);
+
+    Task<bool> InitializeGpuDriver(CancellationToken cancellationToken = default);
 }
 
 public class SystemService : ISystemService
@@ -97,7 +125,6 @@ public class SystemService : ISystemService
     {
         _logger = logger;
     }
-
 
     public string HostName => Dns.GetHostName();
 
@@ -162,7 +189,7 @@ public class SystemService : ISystemService
             cmd = cmd.Replace("\r\n", "\n");
         }
 
-        var startInfo = new ProcessStartInfo()
+        var startInfo = new System.Diagnostics.ProcessStartInfo()
         {
             UseShellExecute = false, //This means the Windows GUI shell, not the Linux shell
             FileName = "/bin/bash",
@@ -566,22 +593,219 @@ echo ""$path""
         return stdout.TrimEnd();
     }
 
+    [SupportedOSPlatform("linux")]
     public Task<Tuple<ulong, ulong>> GetCpuUsageAsync(CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
     }
 
-    public Task<Tuple<ulong, ulong>> GetMemoryUsageAsync(CancellationToken cancellationToken = default)
+    [SupportedOSPlatform("linux")]
+    public async Task<Tuple<ulong, ulong>> GetMemoryUsageAsync(CancellationToken cancellationToken = default)
     {
-        throw new NotImplementedException();
+        var lines = await File.ReadAllLinesAsync("/proc/meminfo", cancellationToken);
+        return ParseProcMemInfoContent(lines);
     }
 
+    public Tuple<ulong, ulong> ParseProcMemInfoContent(string[] lines)
+    {
+        if (lines.Length < 3)
+        {
+            throw new FormatException("Can't parse /proc/meminfo: length < 3");
+        }
+
+        var totalLine = lines[0].Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var availableLine = lines[2].Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        var total = ulong.Parse(totalLine[1]);
+        var available = ulong.Parse(availableLine[1]);
+
+        return new(total, available);
+    }
+
+    [SupportedOSPlatform("linux")]
     public Task<Tuple<float, float>> GetVirtualMemoryStatAsync(CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
     }
 
+    [SupportedOSPlatform("linux")]
     public float GetFreeSpacePercentage()
+    {
+        throw new NotImplementedException();
+    }
+
+    [SupportedOSPlatform("linux")]
+    public async Task<Tuple<int, int>> GetCpuCoresInfoAsync(CancellationToken cancellationToken = default)
+    {
+        // cpu core number can be retrieved from Environment.ProcessorCount
+        // but socket number can only be retrieved from /proc/cpuinfo
+        var lines = await File.ReadAllLinesAsync("/proc/cpuinfo", cancellationToken);
+        return ParseProcCpuInfoContent(lines);
+    }
+
+    public Tuple<int, int> ParseProcCpuInfoContent(string[] lines)
+    {
+        var physicalIds = new HashSet<string>();
+        var coreIds = new HashSet<string>();
+
+        foreach (var line in lines)
+        {
+            var cols = line.Split(':');
+
+            // it's expected that it contains empty lines which should be skipped
+            if (cols.Length >= 2)
+            {
+                var key = cols[0].Trim();
+                var value = cols[1].Trim();
+                if (key.Equals("physical id", StringComparison.OrdinalIgnoreCase))
+                {
+                    physicalIds.Add(value);
+                }
+                else if (key.Equals("processor", StringComparison.OrdinalIgnoreCase))
+                {
+                    coreIds.Add(value);
+                }
+            }
+        }
+
+        var cores = coreIds.Count;
+        var sockets = physicalIds.Count;
+        sockets = (sockets > 0) ? sockets : 1;
+
+        return new(cores, sockets);
+    }
+
+    [SupportedOSPlatform("linux")]
+    public async Task<string> GetDistroInfoAsync(CancellationToken cancellationToken = default)
+    {
+        var lines = await File.ReadAllLinesAsync("/proc/version", cancellationToken);
+
+        if (lines.Length == 0)
+        {
+            throw new FormatException("Can't parse /proc/version: length < 1");
+        }
+
+        return lines[0];
+    }
+
+    [SupportedOSPlatform("linux")]
+    public IList<NetworkInfo> GetNetworkInfo()
+    {
+        var info = new List<NetworkInfo>();
+
+        var networkInterfaces = NetworkInterface.GetAllNetworkInterfaces();
+        foreach (var networkInterface in networkInterfaces)
+        {
+            var networkName = networkInterface.Name;
+            // macAddress is like "00155dfc2aac"
+            var macAddress = networkInterface.GetPhysicalAddress().ToString();
+            // matches every two characters in the input string and appends a colon (:) after each pair, and removes the last colon
+            // convertedMacAddress is like "00:15:5d:fc:2a:ac"
+            var convertedMacAddress = Regex.Replace(macAddress, ".{2}", "$0:").TrimEnd(':');
+            var isIB = networkName.Equals("ib0", StringComparison.OrdinalIgnoreCase);
+            var addressInformationList = networkInterface.GetIPProperties().UnicastAddresses;
+            var networkInfo = new NetworkInfo()
+            {
+                Name = networkName,
+                MacAddress = convertedMacAddress,
+                IsIB = isIB,
+            };
+
+            foreach (var addressInformation in addressInformationList)
+            {
+                var ipAddr = addressInformation.Address.ToString();
+                var prefixLength = addressInformation.PrefixLength;
+
+                // only consume the last ip address if there are multiple ip addresses
+                if (addressInformation.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork)
+                {
+                    networkInfo.IpV4 = $"{ipAddr}/{prefixLength}";
+                }
+                if (addressInformation.Address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetworkV6)
+                {
+                    networkInfo.IpV6 = $"{ipAddr}/{prefixLength}";
+                }
+            }
+
+            info.Add(networkInfo);
+        }
+
+        return info;
+    }
+
+    [SupportedOSPlatform("linux")]
+    public IDictionary<string, ulong> GetNetworkUsageInBytes()
+    {
+        throw new NotImplementedException();
+    }
+
+    [SupportedOSPlatform("linux")]
+    public Task<IDictionary<string, ulong>> GetIbNetworkUsageAsync(CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    [SupportedOSPlatform("linux")]
+    public Task<IList<string>> GetIbDevicesAsync(CancellationToken cancellationToken = default)
+    {
+        throw new NotImplementedException();
+    }
+
+    [SupportedOSPlatform("linux")]
+    public async Task<IList<ExtendedGpuInfo>> GetGpuInfoAsync(CancellationToken cancellationToken = default)
+    {
+        var command = "nvidia-smi --format=csv,noheader --query-gpu=name,uuid,pci.bus_id,pci.device_id,memory.total,clocks.max.sm,fan.speed,memory.used,power.draw,clocks.current.sm,temperature.gpu,utilization.gpu";
+        var (exitCode, stdout, stderr) = await ExecuteInShellAsync(command, cancellationToken: cancellationToken);
+
+        if (exitCode != 0)
+        {
+            throw new SystemException($"Failed to execute nvidia-smi, exitCode: {exitCode}, stdout: {stdout}, stderr: {stderr}");
+        }
+        var lines = stdout.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        return ParseGpuInfoContent(lines);
+    }
+
+    public IList<ExtendedGpuInfo> ParseGpuInfoContent(string[] lines)
+    {
+        var gpuInfos = new List<ExtendedGpuInfo>();
+
+        foreach (var line in lines)
+        {
+            if (string.IsNullOrWhiteSpace(line))
+            {
+                continue;
+            }
+
+            var values = line.Split(",", StringSplitOptions.RemoveEmptyEntries);
+
+            if (values.Length < 12)
+            {
+                throw new FormatException("Can't parse output of nvidia-smi: length < 12");
+            }
+
+            var info = new ExtendedGpuInfo()
+            {
+                Name = values[0].Trim(),
+                Uuid = values[1].Trim(),
+                PciBusId = values[2].Trim(),
+                PciBusDevice = values[3].Trim(),
+                TotalMemory = (long)(values[4].Trim()).RemoveMeasurement(),
+                MaxSMClock = (long)(values[5].Trim()).RemoveMeasurement(),
+                FanSpeed = (values[6].Trim()).RemoveMeasurement(),
+                UsedMemoryMB = (values[7].Trim()).RemoveMeasurement(),
+                PowerWatt = (values[8].Trim()).RemoveMeasurement(),
+                CurrentSMClock = (values[9].Trim()).RemoveMeasurement(),
+                Temperature = (values[10].Trim()).RemoveMeasurement(),
+                GpuUtilization = (values[11].Trim()).RemoveMeasurement(),
+            };
+
+            gpuInfos.Add(info);
+        }
+
+        return gpuInfos;
+    }
+
+    [SupportedOSPlatform("linux")]
+    public Task<bool> InitializeGpuDriver(CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
     }
