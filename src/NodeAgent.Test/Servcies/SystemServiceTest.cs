@@ -19,6 +19,12 @@ public class SystemServiceTest : IDisposable
     private ILoggerFactory _loggerFactory;
     private SystemService _system;
 
+    private async Task<bool> IsGpuSupported()
+    {
+        var result = await _system.ExecuteInShellAsync("type nvidia-smi");
+        return result.ExitCode == 0;
+    }
+
     public SystemServiceTest(ITestOutputHelper output)
     {
         _output = output;
@@ -606,6 +612,31 @@ perms=$(stat -Lc ""%a"" ""$path"")
         }
     }
 
+    [SkippableFact]
+    public async Task TestGetGpuInfoAsync()
+    {
+        var isSupportGpu = await IsGpuSupported();
+        Skip.IfNot(isSupportGpu);
+
+        var result = await _system.GetGpuInfoAsync();
+        Assert.NotNull(result);
+        foreach (var info in result)
+        {
+            Assert.NotNull(info.Name);
+            Assert.NotNull(info.Uuid);
+            Assert.NotNull(info.PciBusId);
+            Assert.NotNull(info.PciBusDevice);
+            Assert.True(info.TotalMemory >= 0);
+            Assert.True(info.MaxSMClock >= 0);
+            Assert.True(info.FanSpeed >= 0);
+            Assert.True(info.UsedMemoryMB >= 0);
+            Assert.True(info.PowerWatt >= 0);
+            Assert.True(info.CurrentSMClock > 0);
+            Assert.True(info.Temperature >= 0);
+            Assert.True(info.GpuUtilization >= 0);
+        }
+    }
+
     [Fact]
     public void TestParseGpuInfoContent()
     {
@@ -629,5 +660,14 @@ perms=$(stat -Lc ""%a"" ""$path"")
         Assert.Equal(135, result[0].CurrentSMClock);
         Assert.Equal(27, result[0].Temperature);
         Assert.Equal(0, result[0].GpuUtilization);
+    }
+
+    [SkippableFact]
+    public async Task TestInitializeGpuDriverAsync()
+    {
+        var isSupportGpu = await IsGpuSupported();
+        Skip.IfNot(isSupportGpu);
+
+        await _system.InitializeGpuDriverAsync();
     }
 }

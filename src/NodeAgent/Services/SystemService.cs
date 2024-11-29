@@ -95,6 +95,8 @@ public interface ISystemService
     IEnumerable<NetworkInfo> GetNetworkInfo();
 
     Task<IEnumerable<ExtendedGpuInfo>> GetGpuInfoAsync(CancellationToken cancellationToken = default);
+
+    Task InitializeGpuDriverAsync(CancellationToken cancellationToken = default);
 }
 
 public class SystemService : ISystemService
@@ -581,7 +583,7 @@ echo ""$path""
     [SupportedOSPlatform("linux")]
     public async Task<MemoryUsage> GetMemoryUsageAsync(CancellationToken cancellationToken = default)
     {
-        var lines = await File.ReadAllLinesAsync("/proc/meminfo", cancellationToken);
+        var lines = await File.ReadAllLinesAsync("/proc/meminfo", cancellationToken).ConfigureAwait(false);
         return ParseProcMemInfoContent(lines);
     }
 
@@ -605,7 +607,7 @@ echo ""$path""
     {
         // cpu core number can be retrieved from Environment.ProcessorCount
         // but socket number can only be retrieved from /proc/cpuinfo
-        var lines = await File.ReadAllLinesAsync("/proc/cpuinfo", cancellationToken);
+        var lines = await File.ReadAllLinesAsync("/proc/cpuinfo", cancellationToken).ConfigureAwait(false);
         return ParseProcCpuInfoContent(lines);
     }
 
@@ -644,7 +646,7 @@ echo ""$path""
     [SupportedOSPlatform("linux")]
     public async Task<string> GetDistroInfoAsync(CancellationToken cancellationToken = default)
     {
-        var lines = await File.ReadAllLinesAsync("/proc/version", cancellationToken);
+        var lines = await File.ReadAllLinesAsync("/proc/version", cancellationToken).ConfigureAwait(false);
 
         if (lines.Length == 0)
         {
@@ -703,7 +705,7 @@ echo ""$path""
 
         if (result.ExitCode != 0)
         {
-            throw new SystemException($"Failed to execute nvidia-smi. Result: {result}");
+            throw new SystemException($"Failed in executing nvidia-smi. Result: {result}");
         }
         var lines = result.StdOut!.Split('\n', StringSplitOptions.RemoveEmptyEntries);
         return ParseGpuInfoContent(lines);
@@ -742,6 +744,17 @@ echo ""$path""
             };
 
             yield return info;
+        }
+    }
+
+    [SupportedOSPlatform("linux")]
+    public async Task InitializeGpuDriverAsync(CancellationToken cancellationToken = default)
+    {
+        var result = await ExecuteInShellAsync("nvidia-smi -pm 1 2>/dev/null", cancellationToken: cancellationToken).ConfigureAwait(false);
+        
+        if (result.ExitCode != 0)
+        {
+            throw new SystemException($"Failed in executing nvidia-smi. Result: {result}");
         }
     }
 }
