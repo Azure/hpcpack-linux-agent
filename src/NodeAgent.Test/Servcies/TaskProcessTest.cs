@@ -1,15 +1,64 @@
-﻿using NodeAgent.Services;
+﻿using Microsoft.Extensions.Logging;
+using NodeAgent.Services;
+using NodeAgent.Test.Mocks;
+using System.Reflection;
+using Xunit.Abstractions;
 
 namespace NodeAgent.Test.Servcies;
 
-public class TaskProcessTest
+public class TaskProcessTest : IDisposable
 {
+    private readonly ITestOutputHelper _output;
+    private ILoggerFactory _loggerFactory;
+    private ILogger<TaskProcess> _logger;
+    private ISystemService _system;
+    private IOutputSenderFactory _outputSenderFactory;
+    private string _baseDir;
+
+    public TaskProcessTest(ITestOutputHelper output)
+    {
+        _output = output;
+        _loggerFactory = LoggerFactory.Create(_ => { });
+        _logger = _loggerFactory.CreateLogger<TaskProcess>();
+        var sysLogger = _loggerFactory.CreateLogger<SystemService>();
+        _system = new SystemService(sysLogger);
+        _outputSenderFactory = new MockOutputSenderFactory();
+        _baseDir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
+    }
+
+    public void Dispose()
+    {
+        _loggerFactory.Dispose();
+    }
+
+    [Fact]
+    public async Task TestStartAsync()
+    {
+        using var user = new TestUser("testuser1", _system, _output);
+        Assert.True(user.IsNew);
+
+        var scriptBase = Path.Join(_baseDir, "Assets", "TaskProcessTest", "TestStartAsync");
+        var taskProcess = new TaskProcess(
+            _logger,
+            _outputSenderFactory,
+            _system,
+            scriptBase,
+            1,
+            2,
+            3,
+            "test",
+            "hostname", 
+            user: user.Name);
+
+        await taskProcess.StartAsync();
+    }
+
     /*
-     * NOTE
-     *
-     * The lines of results (including the empty lines) are deliberately selected. 
-     * Be careful when you change them.
-     */
+    * NOTE
+    *
+    * The lines of results (including the empty lines) are deliberately selected. 
+    * Be careful when you change them.
+    */
     [Fact]
     public void TestParseStatisticsResult()
     {

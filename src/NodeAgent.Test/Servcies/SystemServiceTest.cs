@@ -38,18 +38,6 @@ public class SystemServiceTest : IDisposable
         _loggerFactory.Dispose();
     }
 
-    private async Task DeleteUserAsync(string username)
-    {
-        var cmd = @"userdel -rf ""$1""";
-        var result = await _system.ExecuteInShellAsync(cmd, [nameof(DeleteUserAsync), username]).ConfigureAwait(false);
-
-        if (result.ExitCode != 0)
-        {
-            var msg = $"Error when deleting user '{username}': {result}";
-            _output.WriteLine(msg);
-        }
-    }
-
     [Fact]
     public async Task TestHostName()
     {
@@ -109,7 +97,7 @@ echo $1
     public async Task TestExecuteFileInShellAsync()
     {
         var dir = Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location);
-        var file = Path.Join(dir, "Assets", "test.sh");
+        var file = Path.Join(dir, "Assets", "SystemServiceTest", "test.sh");
         var arg = "abc";
         var input = "input";
         var result = await _system.ExecuteFileInShellAsync(file, [arg], input);
@@ -149,7 +137,7 @@ fi
         }
         finally
         {
-            await DeleteUserAsync(username);
+            await _system.DeleteUserAsync(username, _output);
         }
     }
 
@@ -167,7 +155,7 @@ fi
         }
         finally
         {
-            await DeleteUserAsync(username);
+            await _system.DeleteUserAsync(username, _output);
         }
     }
 
@@ -206,7 +194,7 @@ fi
         finally
         {
             //The key file should be deleted since it's inside the user's home.
-            await DeleteUserAsync(username);
+            await _system.DeleteUserAsync(username, _output);
         }
     }
     [Fact]
@@ -240,7 +228,7 @@ fi
         finally
         {
             //The key files should be deleted since they're inside the user's home.
-            await DeleteUserAsync(username);
+            await _system.DeleteUserAsync(username, _output);
         }
     }
 
@@ -287,7 +275,7 @@ fi
         }
         finally
         {
-            await DeleteUserAsync(username);
+            await _system.DeleteUserAsync(username, _output);
         }
     }
 
@@ -324,7 +312,7 @@ fi
         }
         finally
         {
-            await DeleteUserAsync(username);
+            await _system.DeleteUserAsync(username, _output);
         }
     }
 
@@ -355,7 +343,7 @@ fi
         }
         finally
         {
-            await DeleteUserAsync(username);
+            await _system.DeleteUserAsync(username, _output);
         }
     }
 
@@ -405,7 +393,7 @@ fi
         }
         finally
         {
-            await DeleteUserAsync(username);
+            await _system.DeleteUserAsync(username, _output);
         }
     }
 
@@ -504,7 +492,7 @@ perms=$(stat -Lc ""%a"" ""$path"")
         }
         finally
         {
-            await DeleteUserAsync(username);
+            await _system.DeleteUserAsync(username, _output);
             if (path != null)
             {
                 Directory.Delete(path, true);
@@ -532,7 +520,7 @@ perms=$(stat -Lc ""%a"" ""$path"")
         }
         finally
         {
-            await DeleteUserAsync(username);
+            await _system.DeleteUserAsync(username, _output);
             if (path != null)
             {
                 Directory.Delete(path, true);

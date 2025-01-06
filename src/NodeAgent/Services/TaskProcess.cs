@@ -23,7 +23,6 @@ public interface ITaskProcess : IAsyncDisposable
 }
 
 //TODO: Review _messageBuffer: what to add and when. The original logic in C++ is confusing.
-//TODO: Review cancellationToken param for methods.
 public class TaskProcess : ITaskProcess
 {
     private static readonly char[] SpaceChars = ['\n', '\t', ' '];
@@ -69,15 +68,15 @@ public class TaskProcess : ITaskProcess
         int requeueCount,
         string taskExecutionName,
         string cmdLine,
-        string? stdOutFile,
-        string? stdErrFile,
-        string? stdInFile,
-        string? workDir,
-        string? user,
-        bool dumpStdOut,
-        IEnumerable<ulong>? cpuAffinity,
-        IDictionary<string, string?>? env,
-        Action<int, string, ProcessStatistics>? onComplete)
+        string? stdOutFile = null,
+        string? stdErrFile = null,
+        string? stdInFile = null,
+        string? workDir = null,
+        string? user = null,
+        bool dumpStdOut = false,
+        IEnumerable<ulong>? cpuAffinity = null,
+        IDictionary<string, string?>? env = null,
+        Action<int, string, ProcessStatistics>? onComplete = null)
     {
         _logger = logger;
         _outputSenderFactory = outputSenderFactory;
@@ -127,7 +126,7 @@ public class TaskProcess : ITaskProcess
 
     public async ValueTask DisposeAsync()
     {
-        await KillAsync();
+        await KillAsync().ConfigureAwait(false);
     }
 
     private static bool IsHttpUrl(string url)
@@ -136,12 +135,12 @@ public class TaskProcess : ITaskProcess
             || url.StartsWith("http://", StringComparison.OrdinalIgnoreCase);
     }
 
-    private async Task CreateTaskDirectoryAsync()
+    private async Task CreateTaskDirectoryAsync(CancellationToken cancellationToken = default)
     {
         var template = $"/tmp/nodemanager_task_{_taskId}_{_requeueCount}.XXXXXX";
         try
         {
-            _taskDirectory = await _systemService.MakeTempDirectoryAsync(_user, template).ConfigureAwait(false);
+            _taskDirectory = await _systemService.MakeTempDirectoryAsync(_user, template, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -173,7 +172,7 @@ public class TaskProcess : ITaskProcess
         }
     }
 
-    private async Task<string> GenerateCmdFileAsync()
+    private async Task<string> GenerateCmdFileAsync(CancellationToken cancellationToken = default)
     {
         Debug.Assert(!string.IsNullOrEmpty(_taskDirectory));
 
@@ -184,18 +183,18 @@ public class TaskProcess : ITaskProcess
 {0}
 ".Replace("\r\n", "\n");
         var content = string.Format(template, _cmdLine);
-        await File.WriteAllTextAsync(path, content).ConfigureAwait(false);
+        await File.WriteAllTextAsync(path, content, cancellationToken).ConfigureAwait(false);
         return path;
     }
 
-    private async Task<string> GenerateRunFileAsync()
+    private async Task<string> GenerateRunFileAsync(CancellationToken cancellationToken = default)
     {
         Debug.Assert(!string.IsNullOrEmpty(_taskDirectory));
         Debug.Assert(!string.IsNullOrEmpty(_workDir));
         Debug.Assert(!string.IsNullOrEmpty(_stdOutFile));
         Debug.Assert(!string.IsNullOrEmpty(_stdErrFile));
 
-        var cmdFilePath = await GenerateCmdFileAsync().ConfigureAwait(false);
+        var cmdFilePath = await GenerateCmdFileAsync(cancellationToken).ConfigureAwait(false);
         var runDirInOut = Path.Join(_taskDirectory, "run_dir_in_out.sh");
 
         /*
@@ -243,7 +242,7 @@ echo after >{0}/after1.txt 2>{0}/after2.txt || ([ ""$?"" = ""1"" ] && exit 253)
 ".Replace("\r\n", "\n");
 
         content += string.Format(template2, _taskDirectory);
-        await File.WriteAllTextAsync(runDirInOut, content).ConfigureAwait(false);
+        await File.WriteAllTextAsync(runDirInOut, content, cancellationToken).ConfigureAwait(false);
         return runDirInOut;
     }
 
@@ -252,7 +251,7 @@ echo after >{0}/after1.txt 2>{0}/after2.txt || ([ ""$?"" = ""1"" ] && exit 253)
         return _env != null && _env.TryGetValue("CCP_DOCKER_IMAGE", out var value) && !string.IsNullOrEmpty(value);
     }
 
-    private Task PrepareDockerTaskAsync()
+    private Task PrepareDockerTaskAsync(CancellationToken cancellationToken = default)
     {
         throw new NotImplementedException();
     }
@@ -262,10 +261,10 @@ echo after >{0}/after1.txt 2>{0}/after2.txt || ([ ""$?"" = ""1"" ] && exit 253)
         return _env != null && _env.TryGetValue("CCP_DISABLE_CGROUP", out var value) && string.Equals(value, "1");
     }
 
-    private async Task DisableCGroupAsync()
+    private async Task DisableCGroupAsync(CancellationToken cancellationToken = default)
     {
         var path = Path.Join(_taskDirectory, "disable_cgroup");
-        await File.WriteAllTextAsync(path, "1").ConfigureAwait(false);
+        await File.WriteAllTextAsync(path, "1", cancellationToken).ConfigureAwait(false);
     }
 
     //TODO: Test it.
@@ -289,9 +288,9 @@ echo after >{0}/after1.txt 2>{0}/after2.txt || ([ ""$?"" = ""1"" ] && exit 253)
         return coreIds;
     }
 
-    private async Task<string> GetCpuAffinityAsync()
+    private async Task<string> GetCpuAffinityAsync(CancellationToken cancellationToken = default)
     {
-        var cpuInfo = await _systemService.GetCpuInfoAsync();
+        var cpuInfo = await _systemService.GetCpuInfoAsync(cancellationToken).ConfigureAwait(false);
         Trace.Assert(cpuInfo.Cores > 0);
 
         if (_cpuAffinity != null)
@@ -305,13 +304,14 @@ echo after >{0}/after1.txt 2>{0}/after2.txt || ([ ""$?"" = ""1"" ] && exit 253)
         return $"0-{cpuInfo.Cores - 1}";
     }
 
-    private async Task PrepareTaskAsync()
+    private async Task PrepareTaskAsync(CancellationToken cancellationToken = default)
     {
         Debug.Assert(!string.IsNullOrEmpty(_taskDirectory));
 
-        var cpuAffinity = await GetCpuAffinityAsync();
+        var cpuAffinity = await GetCpuAffinityAsync(cancellationToken).ConfigureAwait(false);
         var result = await _systemService.ExecuteFileInShellAsync(
-            "PrepareTask.sh", [_taskExecutionId, cpuAffinity, _taskDirectory, _user], workingDir: _scriptBaseDir).ConfigureAwait(false);
+            "PrepareTask.sh", [_taskExecutionId, cpuAffinity, _taskDirectory, _user], null, _scriptBaseDir, cancellationToken)
+            .ConfigureAwait(false);
         if (result.ExitCode != 0)
         {
             throw new ApplicationException($"PrepareTask.sh failed: {result}");
@@ -340,7 +340,7 @@ echo after >{0}/after1.txt 2>{0}/after2.txt || ([ ""$?"" = ""1"" ] && exit 253)
         }
     }
 
-    private async Task StartTaskAsync(string scriptPath)
+    private async Task StartTaskAsync(string scriptPath, CancellationToken cancellationToken = default)
     {
         Debug.Assert(!string.IsNullOrEmpty(_taskDirectory));
         Debug.Assert(!string.IsNullOrEmpty(_stdOutFile));
@@ -373,14 +373,14 @@ echo after >{0}/after1.txt 2>{0}/after2.txt || ([ ""$?"" = ""1"" ] && exit 253)
 
         //TODO/Q: Does the exit code need to go through the equivalent process of WIFEXITED and WEXITSTATUS in C++?
         ExitCode = await _systemService.ExecuteFileInShellExAsync(
-            "StartTask.sh", [_taskExecutionId, scriptPath, _user, _taskDirectory], null, _scriptBaseDir, env, onStdOut, onStdErr, onStart)
+            "StartTask.sh", [_taskExecutionId, scriptPath, _user, _taskDirectory], null, _scriptBaseDir, env, onStdOut, onStdErr, onStart, cancellationToken)
             .ConfigureAwait(false);
 
         LogInformation("Process ended with code {code}", ExitCode);
 
         if (_streamOutput)
         {
-            await _outputSender!.SendEndAsync();
+            await _outputSender!.SendEndAsync(cancellationToken).ConfigureAwait(false);
         }
 
         if (ExitCode == 0)
@@ -391,7 +391,8 @@ echo after >{0}/after1.txt 2>{0}/after2.txt || ([ ""$?"" = ""1"" ] && exit 253)
                 {
                     try
                     {
-                        var result = await _systemService.ExecuteInShellAsync($"head -c 1500 \"{_stdOutFile}\"").ConfigureAwait(false);
+                        var result = await _systemService.ExecuteInShellAsync($"head -c 1500 \"{_stdOutFile}\"", cancellationToken: cancellationToken)
+                            .ConfigureAwait(false);
                         if (result.ExitCode == 0)
                         {
                             _messageBuffer.Append($"STDOUT: {result.StdOut}");
@@ -413,7 +414,8 @@ echo after >{0}/after1.txt 2>{0}/after2.txt || ([ ""$?"" = ""1"" ] && exit 253)
                     try
                     {
                         //TODO: Should it read _stdOutFile instead of _stdErrFilem, since stderr is already read and saved in _errorMsg before?
-                        var result = await _systemService.ExecuteInShellAsync($"head -c 1500 \"{_stdErrFile}\"").ConfigureAwait(false);
+                        var result = await _systemService.ExecuteInShellAsync($"head -c 1500 \"{_stdErrFile}\"", cancellationToken: cancellationToken)
+                            .ConfigureAwait(false);
                         if (result.ExitCode == 0 )
                         {
                             _messageBuffer.Append($"STDERR: {result.StdOut}");
@@ -438,7 +440,7 @@ echo after >{0}/after1.txt 2>{0}/after2.txt || ([ ""$?"" = ""1"" ] && exit 253)
         }
     }
 
-    private async Task EndTaskAsync()
+    private async Task EndTaskAsync(CancellationToken cancellationToken = default)
     {
         Debug.Assert(ExitCode.HasValue);
 
@@ -446,7 +448,7 @@ echo after >{0}/after1.txt 2>{0}/after2.txt || ([ ""$?"" = ""1"" ] && exit 253)
         try
         {
             var result = await _systemService.ExecuteFileInShellAsync(
-                "EndTask.sh", [_taskExecutionId, pid.ToString(), "1", _taskDirectory ?? string.Empty], workingDir: _scriptBaseDir)
+                "EndTask.sh", [_taskExecutionId, pid.ToString(), "1", _taskDirectory ?? string.Empty], null, _scriptBaseDir, cancellationToken)
                 .ConfigureAwait(false);
             if (result.ExitCode != 0)
             {
@@ -459,12 +461,12 @@ echo after >{0}/after1.txt 2>{0}/after2.txt || ([ ""$?"" = ""1"" ] && exit 253)
         }
 
         //GetStatisticsFromCGroupAsync doesn't throw exception.
-        var stat = await GetStatisticsFromCGroupAsync().ConfigureAwait(false);
+        var stat = await GetStatisticsFromCGroupAsync(cancellationToken).ConfigureAwait(false);
 
         try
         {
             var result = await _systemService.ExecuteFileInShellAsync(
-                "CleanupTask.sh", [_taskExecutionId, pid.ToString(), _taskDirectory ?? string.Empty], workingDir: _scriptBaseDir)
+                "CleanupTask.sh", [_taskExecutionId, pid.ToString(), _taskDirectory ?? string.Empty], null, _scriptBaseDir, cancellationToken)
                 .ConfigureAwait(false);
             if (result.ExitCode != 0)
             {
@@ -493,22 +495,22 @@ echo after >{0}/after1.txt 2>{0}/after2.txt || ([ ""$?"" = ""1"" ] && exit 253)
     {
         try
         {
-            await CreateTaskDirectoryAsync().ConfigureAwait(false);
+            await CreateTaskDirectoryAsync(cancellationToken).ConfigureAwait(false);
             NormalizeStdOutAndStdErrFiles();
-            var filePath = await GenerateRunFileAsync().ConfigureAwait(false);
+            var filePath = await GenerateRunFileAsync(cancellationToken).ConfigureAwait(false);
 
             if (IsDockerTask())
             {
-                await PrepareDockerTaskAsync().ConfigureAwait(false);
+                await PrepareDockerTaskAsync(cancellationToken).ConfigureAwait(false);
             }
             if (IsCGroupDisabled())
             {
-                await DisableCGroupAsync().ConfigureAwait(false);
+                await DisableCGroupAsync(cancellationToken).ConfigureAwait(false);
             }
 
-            await PrepareTaskAsync().ConfigureAwait(false);
+            await PrepareTaskAsync(cancellationToken).ConfigureAwait(false);
 
-            await StartTaskAsync(filePath).ConfigureAwait(false);
+            await StartTaskAsync(filePath, cancellationToken).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -516,7 +518,7 @@ echo after >{0}/after1.txt 2>{0}/after2.txt || ([ ""$?"" = ""1"" ] && exit 253)
             ExitCode = 1;
             _messageBuffer.AppendLine(ex.Message);
         }
-        await EndTaskAsync().ConfigureAwait(false);
+        await EndTaskAsync(cancellationToken).ConfigureAwait(false);
     }
 
     public Task StartAsync(CancellationToken cancellationToken = default)
@@ -545,7 +547,7 @@ echo after >{0}/after1.txt 2>{0}/after2.txt || ([ ""$?"" = ""1"" ] && exit 253)
             try
             {
                 var result = await _systemService.ExecuteFileInShellAsync(
-                    "EndTask.sh", [_taskExecutionId, pid.ToString(), forced ? "1" : "0", _taskDirectory ?? string.Empty], workingDir: _scriptBaseDir)
+                    "EndTask.sh", [_taskExecutionId, pid.ToString(), forced ? "1" : "0", _taskDirectory ?? string.Empty], null, _scriptBaseDir, cancellationToken)
                     .ConfigureAwait(false);
 
                 if (result.ExitCode != 0)
@@ -598,8 +600,8 @@ echo after >{0}/after1.txt 2>{0}/after2.txt || ([ ""$?"" = ""1"" ] && exit 253)
 
         try
         {
-            var result = await _systemService.ExecuteFileInShellAsync("Statistics.sh", [_taskExecutionId, _taskDirectory], workingDir: _scriptBaseDir)
-                .ConfigureAwait(false);
+            var result = await _systemService.ExecuteFileInShellAsync(
+                "Statistics.sh", [_taskExecutionId, _taskDirectory], null, _scriptBaseDir, cancellationToken).ConfigureAwait(false);
             if (result.ExitCode != 0)
             {
                 throw new ApplicationException($"Statistics.sh failed: {result}");
@@ -613,11 +615,12 @@ echo after >{0}/after1.txt 2>{0}/after2.txt || ([ ""$?"" = ""1"" ] && exit 253)
         return null;
     }
 
-    private async Task TailFileAsync(StringBuilder output, string filePath)
+    private async Task TailFileAsync(StringBuilder output, string filePath, CancellationToken cancellationToken = default)
     {
         try
         {
-            var result = await _systemService.ExecuteInShellAsync("tail", ["-c", "5000", filePath]);
+            var result = await _systemService.ExecuteInShellAsync("tail", ["-c", "5000", filePath], null, cancellationToken)
+                .ConfigureAwait(false);
             output.Append(result.StdOut);
             if (result.ExitCode != 0)
             {
@@ -637,7 +640,7 @@ echo after >{0}/after1.txt 2>{0}/after2.txt || ([ ""$?"" = ""1"" ] && exit 253)
         Debug.Assert(!string.IsNullOrEmpty(_stdErrFile));
 
         var stdout = new StringBuilder();
-        await TailFileAsync(stdout, _stdOutFile);
+        await TailFileAsync(stdout, _stdOutFile, cancellationToken).ConfigureAwait(false);
 
         if (!string.Equals(_stdOutFile, _stdErrFile))
         {
@@ -646,7 +649,7 @@ echo after >{0}/after1.txt 2>{0}/after2.txt || ([ ""$?"" = ""1"" ] && exit 253)
             output.Append(stdout);
             output.AppendLine("STDERR:");
 
-            await TailFileAsync(output, _stdErrFile);
+            await TailFileAsync(output, _stdErrFile, cancellationToken).ConfigureAwait(false);
             return output.ToString();
         }
         else
