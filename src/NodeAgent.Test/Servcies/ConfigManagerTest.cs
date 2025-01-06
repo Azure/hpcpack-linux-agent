@@ -1,5 +1,4 @@
-﻿
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.Extensions.Logging;
 using NodeAgent.Services;
 
 namespace NodeAgent.Test.Servcies;
@@ -42,16 +41,50 @@ public class ConfigManagerTest
     }
 
     [Fact]
+    public void TestInvalidConfigFile()
+    {
+        using var loggerFactory = LoggerFactory.Create(_ => { });
+        var logger = loggerFactory.CreateLogger<ConfigManager>();
+
+
+        var json = """
+{
+    "HeartbeatUri": "abc",
+    "RegisterUri": "a"
+}
+""";
+        var filename = "invalid-file";
+        var filepath = Path.GetFullPath(filename, Directory.GetCurrentDirectory());
+        File.WriteAllText(filepath, json);
+
+        try
+        {
+            Assert.Throws<InvalidDataException>(() =>
+            {
+                var configManager = new ConfigManager(logger, filepath);
+            });
+        }
+        finally
+        {
+            File.Delete(filepath);
+        }
+    }
+
+    [Fact]
     public void TestValidConfigFile()
     {
         using var loggerFactory = LoggerFactory.Create(_ => { });
         var logger = loggerFactory.CreateLogger<ConfigManager>();
 
-        var json = @"
+        var json = """
 {
-""HeartbeatUri"": ""abc""
+    "HeartbeatUri": "abc",
+    "RegisterUri": "a",
+    "NamingServiceUri": ["a"],
+    "DefaultServiceName": "a",
+    "UdpMetricServiceName": "a"
 }
-";
+""";
         var filename = "valid-file";
         var filepath = Path.GetFullPath(filename, Directory.GetCurrentDirectory());
         File.WriteAllText(filepath, json);
@@ -61,6 +94,10 @@ public class ConfigManagerTest
             //NOTE: Only filename is passed in here.
             var configManager = new ConfigManager(logger, filename);
             Assert.Equal("abc", configManager.Config.HeartbeatUri);
+            Assert.NotEmpty(configManager.Config.RegisterUri);
+            Assert.NotEmpty(configManager.Config.NamingServiceUri);
+            Assert.NotEmpty(configManager.Config.DefaultServiceName);
+            Assert.NotEmpty(configManager.Config.UdpMetricServiceName);
 
             //Change and save
             configManager.Config.HeartbeatUri = "xyz";

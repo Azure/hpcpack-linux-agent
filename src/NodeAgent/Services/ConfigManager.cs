@@ -1,4 +1,5 @@
 ﻿using NodeAgent.Models;
+using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
 
 namespace NodeAgent.Services;
@@ -36,7 +37,6 @@ public class ConfigManager : IConfigManager
         ReadConfig();
     }
 
-    //TODO: Raise exception when a required property is empty?
     private void ReadConfig()
     {
         var content = File.ReadAllText(_configFilePath);
@@ -48,6 +48,16 @@ public class ConfigManager : IConfigManager
         if (_config == null)
         {
             throw new InvalidDataException($"Config file ${_configFilePath} is invalid!");
+        }
+        var validationResults = new List<ValidationResult>();
+        bool isValid = Validator.TryValidateObject(_config, new ValidationContext(_config), validationResults, true);
+        if (!isValid)
+        {
+            foreach (var validationResult in validationResults)
+            {
+                _logger.LogError("Node Manager configuration validation error: {error}", validationResult.ErrorMessage);
+            }
+            throw new InvalidDataException($"Config file ${_configFilePath} contains invalid data!");
         }
     }
 
