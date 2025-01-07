@@ -367,7 +367,7 @@ private=$2
 home_dir=$(eval printf ""~$user"")
 ssh_dir=$home_dir/.ssh
 if [[ ! -d ""$ssh_dir"" ]]; then
-    mkdir ""$ssh_dir""
+    mkdir -p ""$ssh_dir""
     chown ""$user"" ""$ssh_dir""
     chmod 700 ""$ssh_dir""
 fi
@@ -475,7 +475,7 @@ user=$1
 home_dir=$(eval printf ""~$user"")
 ssh_dir=$home_dir/.ssh
 if [[ ! -d ""$ssh_dir"" ]]; then
-    mkdir ""$ssh_dir""
+    mkdir -p ""$ssh_dir""
     chown ""$user"" ""$ssh_dir""
     chmod 700 ""$ssh_dir""
 fi
