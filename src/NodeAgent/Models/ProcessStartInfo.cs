@@ -1,6 +1,6 @@
 ﻿namespace NodeAgent.Models;
 
-public class ProcessStartInfo
+public class ProcessStartInfo : DiagBase
 {
     public string? CommandLine { get; set; }
 

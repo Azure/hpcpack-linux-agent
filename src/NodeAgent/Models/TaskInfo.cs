@@ -3,8 +3,8 @@ using System.Text.Json.Serialization;
 
 namespace NodeAgent.Models;
 
-//TODO: Unit test
-public class TaskInfo
+//TODO: Unit test? And should it be a model class with unit test?
+public class TaskInfo : DiagBase
 {
     public int JobId { get; set; }
 
@@ -100,11 +100,5 @@ public class TaskInfo
         }
         other.CancelGracefulPeriod = null;
         return (TaskInfo)other;
-    }
-
-    //TODO: For logging
-    public override string? ToString()
-    {
-        return base.ToString();
     }
 }

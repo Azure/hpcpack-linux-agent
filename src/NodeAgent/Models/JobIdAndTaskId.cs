@@ -1,6 +1,6 @@
 ﻿namespace NodeAgent.Models;
 
-public class JobIdAndTaskId
+public class JobIdAndTaskId : DiagBase
 {
     public int JobId { get; set; }
 

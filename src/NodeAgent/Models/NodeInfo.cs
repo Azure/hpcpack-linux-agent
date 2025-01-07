@@ -7,7 +7,7 @@ public enum NodeAvailability
     Occupied = 2
 };
 
-public class NodeInfo
+public class NodeInfo : DiagBase
 {
     public string? Name { get; set; }
 

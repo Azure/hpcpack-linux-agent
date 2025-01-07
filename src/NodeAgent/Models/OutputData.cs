@@ -2,7 +2,7 @@
 
 namespace NodeAgent.Models;
 
-public class OutputData
+public class OutputData : DiagBase
 {
     [Required]
     public string? NodeName { get; set; }

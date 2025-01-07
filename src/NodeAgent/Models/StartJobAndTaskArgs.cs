@@ -2,7 +2,7 @@
 
 namespace NodeAgent.Models;
 
-public class StartJobAndTaskArgs
+public class StartJobAndTaskArgs : DiagBase
 {
     public int JobId { get; set; }
 

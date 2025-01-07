@@ -2,7 +2,7 @@
 
 namespace NodeAgent.Models;
 
-public class ProcessStatistics
+public class ProcessStatistics : DiagBase
 {
     public ulong UserTimeMs { get; set; }
     

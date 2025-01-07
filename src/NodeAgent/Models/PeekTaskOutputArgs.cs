@@ -1,6 +1,6 @@
 ﻿namespace NodeAgent.Models;
 
-public class PeekTaskOutputArgs
+public class PeekTaskOutputArgs : DiagBase
 {
     public int JobId { get; set; }
 

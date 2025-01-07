@@ -2,7 +2,7 @@
 
 namespace NodeAgent.Models;
 
-public class JobInfo
+public class JobInfo : DiagBase
 {
     public int JobId { get; set; }
 

@@ -1,6 +1,6 @@
 ﻿namespace NodeAgent.Models;
 
-public class GpuInfo
+public class GpuInfo : DiagBase
 {
     public string? Name { get; set; }
 

@@ -1,5 +1,5 @@
 ﻿namespace NodeAgent.Models;
 
-public class CpuUsage
+public class CpuUsage : DiagBase
 {
 }

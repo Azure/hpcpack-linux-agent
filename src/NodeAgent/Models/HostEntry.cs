@@ -1,6 +1,6 @@
 ﻿namespace NodeAgent.Models;
 
-public class HostEntry
+public class HostEntry : DiagBase
 {
     public string? HostName { get; set; }
 

@@ -1,6 +1,6 @@
 ﻿namespace NodeAgent.Models;
 
-public class CpuInfo
+public class CpuInfo : DiagBase
 {
     public int Cores { get; set; }
 

@@ -3,7 +3,7 @@
 namespace NodeAgent.Models;
 
 //The tuple input is really bad! But we have to keep it for compatibility.
-public class StartJobAndTaskArgsTuple
+public class StartJobAndTaskArgsTuple : DiagBase
 {
     [Required]
     public JobIdAndTaskId m_item1 { get; set; } = default!;
@@ -33,11 +33,5 @@ public class StartJobAndTaskArgsTuple
             PrivateKey = m_item5,
             PublicKey = m_item6,
         };
-    }
-
-    //TODO: For logging
-    public override string? ToString()
-    {
-        return base.ToString();
     }
 }

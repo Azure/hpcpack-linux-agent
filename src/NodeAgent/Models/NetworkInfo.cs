@@ -1,7 +1,7 @@
 ﻿
 namespace NodeAgent.Models;
 
-public class NetworkInfo
+public class NetworkInfo : DiagBase
 {
     public string? Name { get; set; }
 

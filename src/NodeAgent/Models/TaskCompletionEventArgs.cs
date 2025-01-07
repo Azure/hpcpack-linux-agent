@@ -2,7 +2,7 @@
 
 namespace NodeAgent.Models;
 
-public class TaskCompletionEventArgs
+public class TaskCompletionEventArgs : DiagBase
 {
     public int JobId { get; set; }
 
@@ -11,10 +11,4 @@ public class TaskCompletionEventArgs
 
     [Required]
     public string NodeName { get; set; } = default!;
-
-    //TODO: For logging
-    public override string? ToString()
-    {
-        return base.ToString();
-    }
 }

@@ -2,7 +2,7 @@
 
 //NOTE: The unit is KB for all properties.
 //TODO: Is uint/int is enough instead of ulong?
-public class MemoryUsage
+public class MemoryUsage : DiagBase
 {
     public ulong Total {  get; set; }
 

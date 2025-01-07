@@ -1,6 +1,6 @@
 ﻿namespace NodeAgent.Models;
 
-public class RegisterInfo
+public class RegisterInfo : DiagBase
 {
     public string? NodeName { get; set; }
 
@@ -21,10 +21,4 @@ public class RegisterInfo
     public IEnumerable<NetworkInfo>? NetworksInfo { get; set; }
 
     public IEnumerable<GpuInfo>? GpuInfo { get; set; }
-
-    //TODO: Make it for logging purpose
-    public override string? ToString()
-    {
-        return base.ToString();
-    }
 }

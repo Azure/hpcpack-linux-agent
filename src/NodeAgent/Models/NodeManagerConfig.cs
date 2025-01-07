@@ -3,7 +3,7 @@
 namespace NodeAgent.Models;
 
 //TODO: Review the nullability of the properties
-public class NodeManagerConfig
+public class NodeManagerConfig : DiagBase
 {
     public string TrustedCAFile { get; set; } = default!;
 

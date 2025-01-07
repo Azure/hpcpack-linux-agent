@@ -1,6 +1,6 @@
 ﻿namespace NodeAgent.Models;
 
-public class MetricCounter
+public class MetricCounter : DiagBase
 {
     public string? Path { get; set; }
 
