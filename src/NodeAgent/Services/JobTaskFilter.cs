@@ -12,20 +12,21 @@ public interface IJobTaskFilter
     Task<EndJobArgs> OnJobEnd(EndJobArgs args);
 }
 
+//TODO: Implement this.
 public class JobTaskFilter : IJobTaskFilter
 {
     public Task<StartJobAndTaskArgsTuple> OnJobStart(StartJobAndTaskArgsTuple args)
     {
-        throw new NotImplementedException();
+        return Task.FromResult(args);
     }
 
     public Task<StartTaskArgsTuple> OnTaskStart(StartTaskArgsTuple args)
     {
-        throw new NotImplementedException();
+        return Task.FromResult(args);
     }
 
     public Task<EndJobArgs> OnJobEnd(EndJobArgs args)
     {
-        throw new NotImplementedException();
+        return Task.FromResult(args);
     }
 }
