@@ -6,7 +6,7 @@ namespace NodeAgent.Services;
 //All methods of the interface are thread-safe.
 public interface IHeartbeatService
 {
-    Task PingAsync(string callbackUri);
+    Task PingAsync(string callbackUri, CancellationToken cancellationToken = default);
 }
 
 public class HeartbeatService : BackgroundService, IHeartbeatService
@@ -90,8 +90,9 @@ public class HeartbeatService : BackgroundService, IHeartbeatService
         return Task.CompletedTask;
     }
 
-    public Task PingAsync(string callbackUri)
+    public Task PingAsync(string callbackUri, CancellationToken cancellationToken = default)
     {
+        //TODO: Use ArgumentNullException.ThrowIfNull for all such things
         if (callbackUri is null)
         {
             throw new ArgumentNullException(nameof(callbackUri));

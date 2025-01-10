@@ -23,7 +23,8 @@ public class ApiController : ControllerBase
         [FromHeader(Name = CallbackURIHeader)] string callbackURI,
         [FromBody] StartJobAndTaskArgsTuple argsTuple,
         [FromServices] IJobTaskFilter filter,
-        [FromServices] IJobTaskExecutor executor)
+        [FromServices] IJobTaskExecutor executor,
+        CancellationToken cancellationToken)
     {
         //TODO: Make sure the log can only be read by system admin like root since it may contain password.
         _logger.LogDebug("StartJobAndTask: before filter: {args}", argsTuple);
@@ -41,7 +42,7 @@ public class ApiController : ControllerBase
         argsTuple = await filter.OnJobStart(argsTuple);
         _logger.LogDebug("StartJobAndTask: after filter: {args}", argsTuple);
 
-        await executor.StartJobAndTaskAsync(argsTuple.ToStartJobAndTaskArgs(), callbackURI);
+        await executor.StartJobAndTaskAsync(argsTuple.ToStartJobAndTaskArgs(), callbackURI, cancellationToken);
         return Ok();
     }
 
@@ -49,12 +50,13 @@ public class ApiController : ControllerBase
     public async Task<IActionResult> EndJob(
         [FromBody] EndJobArgs args,
         [FromServices] IJobTaskFilter filter,
-        [FromServices] IJobTaskExecutor executor)
+        [FromServices] IJobTaskExecutor executor,
+        CancellationToken cancellationToken)
     {
         args = await filter.OnJobEnd(args);
         _logger.LogDebug("EndJob: before filter: {args}", args);
 
-        var result = await executor.EndJobAsync(args);
+        var result = await executor.EndJobAsync(args, cancellationToken);
         _logger.LogDebug("EndJob: after filter: {args}", args);
 
         return Ok(result);
@@ -65,13 +67,14 @@ public class ApiController : ControllerBase
         [FromHeader(Name = CallbackURIHeader)] string callbackURI,
         [FromBody] StartTaskArgsTuple argsTuple,
         [FromServices] IJobTaskFilter filter,
-        [FromServices] IJobTaskExecutor executor)
+        [FromServices] IJobTaskExecutor executor,
+        CancellationToken cancellationToken)
     {
         _logger.LogDebug("StartTask: before filter: {args}", argsTuple);
         argsTuple = await filter.OnTaskStart(argsTuple);
         _logger.LogDebug("StartTask: after filter: {args}", argsTuple);
 
-        await executor.StartTaskAsync(argsTuple.ToStartTaskArgs(), callbackURI);
+        await executor.StartTaskAsync(argsTuple.ToStartTaskArgs(), callbackURI, cancellationToken);
         return Ok();
     }
 
@@ -79,18 +82,20 @@ public class ApiController : ControllerBase
     public async Task<IActionResult> EndTask(
         [FromHeader(Name = CallbackURIHeader)] string callbackURI,
         [FromBody] EndTaskArgs args,
-        [FromServices] IJobTaskExecutor executor)
+        [FromServices] IJobTaskExecutor executor,
+        CancellationToken cancellationToken)
     {
-        var result = await executor.EndTaskAsync(args, callbackURI);
+        var result = await executor.EndTaskAsync(args, callbackURI, cancellationToken);
         return Ok(result);
     }
 
     [HttpPost("PeekTaskOutput")]
     public async Task<IActionResult> PeekTaskOutput(
         [FromBody] PeekTaskOutputArgs args,
-        [FromServices] IJobTaskExecutor executor)
+        [FromServices] IJobTaskExecutor executor,
+        CancellationToken cancellationToken)
     {
-        var result = await executor.PeekTaskOutputAsync(args);
+        var result = await executor.PeekTaskOutputAsync(args, cancellationToken);
         return Ok(result);
     }
 
@@ -98,14 +103,17 @@ public class ApiController : ControllerBase
     [HttpPost("Ping")]
     public async Task<IActionResult> Ping(
         [FromHeader(Name = CallbackURIHeader)] string callbackURI,
-        [FromServices] IHeartbeatService heartbeat)
+        [FromServices] IHeartbeatService heartbeat,
+        CancellationToken cancellationToken)
     {
-        await heartbeat.PingAsync(callbackURI);
+        await heartbeat.PingAsync(callbackURI, cancellationToken);
         return Ok();
     }
 
     [HttpPost("Metric")]
-    public IActionResult Metric([FromHeader(Name = CallbackURIHeader)] string? callbackURI)
+    public IActionResult Metric(
+        [FromHeader(Name = CallbackURIHeader)] string? callbackURI,
+        CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
     }
@@ -113,7 +121,8 @@ public class ApiController : ControllerBase
     [HttpPost("MetricConfig")]
     public IActionResult MetricConfig(
         [FromHeader(Name = CallbackURIHeader)] string? callbackURI,
-        [FromBody] MetricCountersConfig config)
+        [FromBody] MetricCountersConfig config,
+        CancellationToken cancellationToken)
     {
         throw new NotImplementedException();
     }
