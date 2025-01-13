@@ -7,7 +7,7 @@ public static class SystemServiceExtensions
 {
     public static async Task DeleteUserAsync(this ISystemService system, string username, ITestOutputHelper? output = null)
     {
-        var cmd = @"userdel -rf ""$1""";
+        var cmd = """userdel -rf "$1" """;
         var result = await system.ExecuteInShellAsync(cmd, [nameof(DeleteUserAsync), username]).ConfigureAwait(false);
 
         if (result.ExitCode != 0)

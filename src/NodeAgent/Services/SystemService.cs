@@ -287,23 +287,23 @@ public class SystemService : ISystemService
             throw new ArgumentException($"Invalid password!", nameof(password));
         }
 
-        var script = @"
+        var script = """
 set -ex
 
 user=$1
 admin=$2
 
-if id -u ""$user"" ; then
+if id -u "$user" ; then
     exit 100
 fi
 
-useradd -m -s /bin/bash ""$user""
-passwd ""$user""
+useradd -m -s /bin/bash "$user"
+passwd "$user"
 
 if ((admin == 1)) ; then
-    usermod -aG sudo ""$user"" || usermod -aG wheel ""$user""
+    usermod -aG sudo "$user" || usermod -aG wheel "$user"
 fi
-";
+""";
         var stdin = $"{password}\n{password}\n";
         var result = await ExecuteInShellAsync(script, [nameof(CreateUserAsync), username, isAdmin ? "1" : "0"], stdin, cancellationToken)
             .ConfigureAwait(false);
@@ -325,12 +325,12 @@ fi
             throw new ArgumentException($"File '{privateKeyFilePath}' doesn't exist.", nameof(privateKeyFilePath));
         }
 
-        var script = @"
+        var script = """
 set -ex
 
 keyfile=$1
-ssh-keygen -y -f ""$keyfile""
-";
+ssh-keygen -y -f "$keyfile"
+""";
         var result = await ExecuteInShellAsync(script, [nameof(GenerateSshPublicKeyAsync), privateKeyFilePath], null, cancellationToken)
             .ConfigureAwait(false);
 
@@ -358,18 +358,18 @@ ssh-keygen -y -f ""$keyfile""
             throw new ArgumentException($"Invalid key!");
         }
 
-        var script = @"
+        var script = """
 set -ex
 
 user=$1
 private=$2
 
-home_dir=$(eval printf ""~$user"")
+home_dir=$(eval printf "~$user")
 ssh_dir=$home_dir/.ssh
-if [[ ! -d ""$ssh_dir"" ]]; then
-    mkdir ""$ssh_dir""
-    chown ""$user"" ""$ssh_dir""
-    chmod 700 ""$ssh_dir""
+if [[ ! -d "$ssh_dir" ]]; then
+    mkdir "$ssh_dir"
+    chown "$user" "$ssh_dir"
+    chmod 700 "$ssh_dir"
 fi
 
 if ((private == 1)); then
@@ -381,17 +381,17 @@ else
 fi
 
 key_path=$ssh_dir/$key_file
-if [[ -a ""$key_path"" ]]; then
-    printf ""$key_path""
+if [[ -a "$key_path" ]]; then
+    printf "$key_path"
     exit 100
 fi
 
-cp /dev/stdin ""$key_path""
-chown ""$user"" ""$key_path""
-chmod $key_file_mode ""$key_path""
+cp /dev/stdin "$key_path"
+chown "$user" "$key_path"
+chmod $key_file_mode "$key_path"
 
-printf ""$key_path""
-";
+printf "$key_path"
+""";
         var result = await ExecuteInShellAsync(script, [nameof(AddSshKeyAsync), username, isPrivateKey ? "1" : "0"], key, cancellationToken)
             .ConfigureAwait(false);
 
@@ -413,16 +413,16 @@ printf ""$key_path""
             throw new ArgumentException($"Invalid username '{username}'!");
         }
 
-        var script = @"
+        var script = """
 set -ex
 
 user=$1
 private=$2
 
 # Test exsitance before we go
-id ""$user"" >/dev/null 2>&1
+id "$user" >/dev/null 2>&1
 
-home_dir=$(eval printf ""~$user"")
+home_dir=$(eval printf "~$user")
 ssh_dir=$home_dir/.ssh
 
 if ((private == 1)); then
@@ -432,13 +432,13 @@ else
 fi
 
 key_path=$ssh_dir/$key_file
-if [[ ! -a ""$key_path"" ]]; then
+if [[ ! -a "$key_path" ]]; then
     exit 0
 fi
 
-rm -rf ""$key_path""
-printf ""$key_path""
-";
+rm -rf "$key_path"
+printf "$key_path"
+""";
         var result = await ExecuteInShellAsync(
             script, [nameof(RemoveSshKeyAsync), username, isPrivateKey ? "1" : "0"], null, cancellationToken).ConfigureAwait(false);
 
@@ -467,28 +467,28 @@ printf ""$key_path""
             throw new ArgumentException($"Invalid key!");
         }
 
-        var script = @"
+        var script = """
 set -ex
 
 user=$1
 
-home_dir=$(eval printf ""~$user"")
+home_dir=$(eval printf "~$user")
 ssh_dir=$home_dir/.ssh
-if [[ ! -d ""$ssh_dir"" ]]; then
-    mkdir ""$ssh_dir""
-    chown ""$user"" ""$ssh_dir""
-    chmod 700 ""$ssh_dir""
+if [[ ! -d "$ssh_dir" ]]; then
+    mkdir "$ssh_dir"
+    chown "$user" "$ssh_dir"
+    chmod 700 "$ssh_dir"
 fi
 
 key_file=$ssh_dir/authorized_keys
 
 # Read key from subshell. In this way, the trailing line endings are removed.
 key=$(cat /dev/stdin)
-echo ""$key"" >> ""$key_file""
-chown ""$user"" ""$key_file""
-chmod 600 ""$key_file""
-printf ""$key_file""
-";
+echo "$key" >> "$key_file"
+chown "$user" "$key_file"
+chmod 600 "$key_file"
+printf "$key_file"
+""";
         var result = await ExecuteInShellAsync(script, [nameof(AddAuthorizedKeyAsync), username], key, cancellationToken)
             .ConfigureAwait(false);
 
@@ -515,26 +515,26 @@ printf ""$key_file""
             throw new ArgumentException($"Invalid key!");
         }
 
-        var script = @"
+        var script = """
 set -ex
 
 user=$1
 
 # Test exsitance before we go
-id ""$user"" >/dev/null 2>&1
+id "$user" >/dev/null 2>&1
 
-home_dir=$(eval printf ""~$user"")
+home_dir=$(eval printf "~$user")
 ssh_dir=$home_dir/.ssh
 key_file=$ssh_dir/authorized_keys
 
-if [[ ! -a ""$key_file"" ]]; then
+if [[ ! -a "$key_file" ]]; then
     exit 0
 fi
 
 key=$(cat /dev/stdin)
-sed -i /^""$key""$/d ""$key_file""
-printf ""$key_file""
-";
+sed -i /^"$key"$/d "$key_file"
+printf "$key_file"
+""";
         var result = await ExecuteInShellAsync(script, [nameof(RemoveAuthorizedKeyAsync), username], key, cancellationToken)
             .ConfigureAwait(false);
 
@@ -553,16 +553,16 @@ printf ""$key_file""
     [SupportedOSPlatform("linux")]
     public async Task<string> MakeTempDirectoryAsync(string username, string template, CancellationToken cancellationToken = default)
     {
-        var script = @"
+        var script = """
 set -ex
 user=$1
 template=$2
 
-path=$(mktemp -d ""$template"")
-chown ""$user"" ""$path""
-chmod 700 ""$path""
-echo ""$path""
-";
+path=$(mktemp -d "$template")
+chown "$user" "$path"
+chmod 700 "$path"
+echo "$path"
+""";
 
         var result = await ExecuteInShellAsync(script, [nameof(MakeTempDirectoryAsync), username, template], null, cancellationToken)
             .ConfigureAwait(false);
@@ -751,7 +751,7 @@ echo ""$path""
     public async Task InitializeGpuDriverAsync(CancellationToken cancellationToken = default)
     {
         var result = await ExecuteInShellAsync("nvidia-smi -pm 1 2>/dev/null", cancellationToken: cancellationToken).ConfigureAwait(false);
-        
+
         if (result.ExitCode != 0)
         {
             throw new SystemException($"Failed in executing nvidia-smi. Result: {result}");

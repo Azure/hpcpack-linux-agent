@@ -111,19 +111,19 @@ echo $1
     [InlineData("testuser2", "testpw", false)]
     public async Task TestCreateUserAsync(string username, string password, bool isAdmin)
     {
-        var test = @"
+        var test = """
 set -ex
 
 user=$1
 admin=$2
 
-id ""$user""
+id "$user"
 
 if ((admin == 1)) ; then
-    groups=$(id -nG ""$user"")
+    groups=$(id -nG "$user")
     { echo $groups | grep -qw sudo ; } || { echo $groups | grep -qw wheel ; } || exit 1
 fi
-";
+""";
         try
         {
             var isNew = await _system.CreateUserAsync(username, password, isAdmin);
@@ -474,15 +474,15 @@ echo abc > /tmp/xyz
             Assert.NotEqual(template, path);
             Assert.Equal(template.Length, path.Length);
 
-            var test = @"
+            var test = """
 set -ex
 user=$1
 path=$2
-owner=$(stat -Lc ""%U"" ""$path"")
+owner=$(stat -Lc "%U" "$path")
 [[ $owner == $user ]] || exit 1
-perms=$(stat -Lc ""%a"" ""$path"")
+perms=$(stat -Lc "%a" "$path")
 (( $perms == 700 )) || exit 2
-";
+""";
             var result = await _system.ExecuteInShellAsync(test, ["test", username, path]);
             if (result.ExitCode != 0)
             {

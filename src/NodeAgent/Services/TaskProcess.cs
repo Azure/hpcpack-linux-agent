@@ -177,11 +177,11 @@ public class TaskProcess : ITaskProcess
         Debug.Assert(!string.IsNullOrEmpty(_taskDirectory));
 
         var path = Path.Join(_taskDirectory, "cmd.sh");
-        var template = @"
+        var template = """
 #!/bin/bash
 
 {0}
-".Replace("\r\n", "\n");
+""".Replace("\r\n", "\n");
         var content = string.Format(template, _cmdLine);
         await File.WriteAllTextAsync(path, content, cancellationToken).ConfigureAwait(false);
         return path;
@@ -203,30 +203,31 @@ public class TaskProcess : ITaskProcess
          * The following script comes from the C++ version and it appears some problematic,
          * and may need fix/improvement. But let's keep it as it is for now for full compatibility.
          */
-        var template = @"
+        var template = """
 #!/bin/bash
 
-cd ""{0}"" || exit $?
+cd "{0}" || exit $?
 
-echo before >{1}/before1.txt 2>{1}/before2.txt || ([ ""$?"" = ""1"" ] && exit 253)
+echo before >{1}/before1.txt 2>{1}/before2.txt || ([ "$?" = "1" ] && exit 253)
 
-echo test >{1}/stdout.txt 2>{1}/stderr.txt || ([ ""$?"" = ""1"" ] && exit 253)
+echo test >{1}/stdout.txt 2>{1}/stderr.txt || ([ "$?" = "1" ] && exit 253)
 
-".Replace("\r\n", "\n");
+""".Replace("\r\n", "\n");
 
+        //TODO: content should be a string builder.
         var content = string.Format(template, _workDir, _taskDirectory);
 
         if (_streamOutput)
         {
-            content += $"/bin/bash \"{cmdFilePath}\" 2>&1";
+            content += $"""/bin/bash "{cmdFilePath}" 2>&1""";
         }
         else if (string.Equals(_stdOutFile, _stdInFile))
         {
-            content += $"/bin/bash \"{cmdFilePath}\" >\"{_stdOutFile}\"  2>&1";
+            content += $"""/bin/bash "{cmdFilePath}" >"{_stdOutFile}"  2>&1""";
         }
         else
         {
-            content += $"/bin/bash \"{cmdFilePath}\" >\"{_stdOutFile}\"  2>\"{_stdErrFile}\"";
+            content += $"""/bin/bash "{cmdFilePath}" >"{_stdOutFile}"  2>"{_stdErrFile}" """;
         }
 
         if (!string.IsNullOrEmpty(_stdInFile))
@@ -237,9 +238,9 @@ echo test >{1}/stdout.txt 2>{1}/stderr.txt || ([ ""$?"" = ""1"" ] && exit 253)
         content += "ec=$?\n";
         content += "[ $ec -ne 0 ] && exit $ec\n\n";
 
-        var template2 = @"
-echo after >{0}/after1.txt 2>{0}/after2.txt || ([ ""$?"" = ""1"" ] && exit 253)
-".Replace("\r\n", "\n");
+        var template2 = """
+echo after >{0}/after1.txt 2>{0}/after2.txt || ([ "$?" = "1" ] && exit 253)
+""".Replace("\r\n", "\n");
 
         content += string.Format(template2, _taskDirectory);
         await File.WriteAllTextAsync(runDirInOut, content, cancellationToken).ConfigureAwait(false);
@@ -391,7 +392,7 @@ echo after >{0}/after1.txt 2>{0}/after2.txt || ([ ""$?"" = ""1"" ] && exit 253)
                 {
                     try
                     {
-                        var result = await _systemService.ExecuteInShellAsync($"head -c 1500 \"{_stdOutFile}\"", cancellationToken: cancellationToken)
+                        var result = await _systemService.ExecuteInShellAsync($"""head -c 1500 "{_stdOutFile}" """, cancellationToken: cancellationToken)
                             .ConfigureAwait(false);
                         if (result.ExitCode == 0)
                         {
@@ -414,7 +415,7 @@ echo after >{0}/after1.txt 2>{0}/after2.txt || ([ ""$?"" = ""1"" ] && exit 253)
                     try
                     {
                         //TODO: Should it read _stdOutFile instead of _stdErrFilem, since stderr is already read and saved in _errorMsg before?
-                        var result = await _systemService.ExecuteInShellAsync($"head -c 1500 \"{_stdErrFile}\"", cancellationToken: cancellationToken)
+                        var result = await _systemService.ExecuteInShellAsync($"""head -c 1500 "{_stdErrFile}" """, cancellationToken: cancellationToken)
                             .ConfigureAwait(false);
                         if (result.ExitCode == 0 )
                         {
