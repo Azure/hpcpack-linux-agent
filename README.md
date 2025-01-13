@@ -35,3 +35,10 @@ i/lf    w/crlf  attr/text=auto eol=crlf src/NodeAgent/nodemanager.json
 Make sure the first column is always `i/lf` for all types of text files. This means all text files are saved with LF as EOF in the Git index tree. But for the Git working tree (in the second column), it depends. It can be `w/crlf` (for all text files except .sh files) or `w/lf` (for .sh files only).
 
 When in doubt of EOL, check it with the command.
+
+## Testing in WSL
+
+To run test in WSL by Visual Studio when developing,
+
+1. Make sure Ubuntu 20.04 is installed and is named exactly as "Ubuntu-20.04", which matches the vaule of `wslDistribution` defined in [testEnvironments.json](./src/testEnvironments.json). See more at https://learn.microsoft.com/en-us/visualstudio/test/remote-testing?view=vs-2022
+2. Make sure the default user is "root" in `/etc/wsl.conf`. See more at https://learn.microsoft.com/en-us/windows/wsl/wsl-config#user-settings
