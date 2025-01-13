@@ -364,6 +364,9 @@ set -ex
 user=$1
 private=$2
 
+# Test existance before we go
+id "$user" >/dev/null 2>&1
+
 home_dir=$(eval printf "~$user")
 ssh_dir=$home_dir/.ssh
 if [[ ! -d "$ssh_dir" ]]; then
@@ -419,7 +422,7 @@ set -ex
 user=$1
 private=$2
 
-# Test exsitance before we go
+# Test existance before we go
 id "$user" >/dev/null 2>&1
 
 home_dir=$(eval printf "~$user")
@@ -472,6 +475,9 @@ set -ex
 
 user=$1
 
+# Test existance before we go
+id "$user" >/dev/null 2>&1
+
 home_dir=$(eval printf "~$user")
 ssh_dir=$home_dir/.ssh
 if [[ ! -d "$ssh_dir" ]]; then
@@ -520,7 +526,7 @@ set -ex
 
 user=$1
 
-# Test exsitance before we go
+# Test existance before we go
 id "$user" >/dev/null 2>&1
 
 home_dir=$(eval printf "~$user")
