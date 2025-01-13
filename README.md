@@ -36,9 +36,19 @@ Make sure the first column is always `i/lf` for all types of text files. This me
 
 When in doubt of EOL, check it with the command.
 
-## Testing in WSL
+## Remote Testing in Visual Studio
 
-To run test in WSL by Visual Studio when developing,
+Visual Studio can run test remotely. The configure file is [testEnvironments.json](./src/testEnvironments.json). Here we have options for WSL and container. But there're some prerequisites for them, separtely.
 
-1. Make sure Ubuntu 20.04 is installed and is named exactly as "Ubuntu-20.04", which matches the vaule of `wslDistribution` defined in [testEnvironments.json](./src/testEnvironments.json). See more at https://learn.microsoft.com/en-us/visualstudio/test/remote-testing?view=vs-2022
-2. Make sure the default user is "root" in `/etc/wsl.conf`. See more at https://learn.microsoft.com/en-us/windows/wsl/wsl-config#user-settings
+See more at https://learn.microsoft.com/en-us/visualstudio/test/remote-testing?view=vs-2022
+
+### WSL
+
+1. Make sure Ubuntu 20.04 is installed and is named exactly as "Ubuntu-20.04", which matches the vaule of `wslDistribution` defined in testEnvironments.json.
+2. Make sure the default user is "root" in file "/etc/wsl.conf". See help at https://learn.microsoft.com/en-us/windows/wsl/wsl-config#user-settings
+
+### Container
+
+1. Make sure Docker Desktop is installed and started.
+2. Build a local image of [Dockerfile.test](./src/Dockerfile.test) once, like `docker build -t local/netsdk:8.0 -f .\Dockerfile.test .`. Note the current directory for the build command is `src`.
+
