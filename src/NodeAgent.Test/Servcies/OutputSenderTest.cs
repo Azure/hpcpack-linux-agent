@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using NodeAgent.Models;
+﻿using NodeAgent.Models;
 using NodeAgent.Services;
 using NodeAgent.Test.Mocks;
 using System.Net;
@@ -7,22 +6,8 @@ using System.Net.Http.Json;
 
 namespace NodeAgent.Test.Servcies;
 
-public class OutputSenderTest : IDisposable
+public class OutputSenderTest
 {
-    private ILoggerFactory _loggerFactory;
-    private ILogger<OutputSender> _logger;
-
-    public OutputSenderTest()
-    {
-        _loggerFactory = LoggerFactory.Create(_ => { });
-        _logger = _loggerFactory.CreateLogger<OutputSender>();
-    }
-
-    public void Dispose()
-    {
-        _loggerFactory.Dispose();
-    }
-
     [Fact]
     public async Task Test()
     {
@@ -36,7 +21,7 @@ public class OutputSenderTest : IDisposable
         };
         var handler = new MockHttpHandler(responses);
         var httpClient = new HttpClient(handler);
-        var sender = new OutputSender(_logger, httpClient, uri, hostname);
+        var sender = new OutputSender(null, httpClient, uri, hostname);
         var messages = new string[]
         {
             "abc",
@@ -87,7 +72,7 @@ public class OutputSenderTest : IDisposable
         };
         var handler = new MockHttpHandler(responses);
         var httpClient = new HttpClient(handler);
-        var sender = new OutputSender(_logger, httpClient, uri, hostname);
+        var sender = new OutputSender(null, httpClient, uri, hostname);
 
         await sender.SendEndAsync();
         Assert.True(sender.IsEnd);

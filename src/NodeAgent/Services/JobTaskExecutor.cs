@@ -282,7 +282,7 @@ public class JobTaskExecutor : IJobTaskExecutor
                     _logger.LogDebug(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
                         "Start process with ProcessKey {key} and process count {count}", taskInfo.ProcessKey, _processes.Count);
 
-                    return process.StartAsync(cancellationToken);
+                    return process.StartAsync();
                 }
             }
             return Task.CompletedTask;
@@ -366,6 +366,7 @@ public class JobTaskExecutor : IJobTaskExecutor
                 taskInfo.Exited = false;
                 taskInfo.AssignFromStat(stat);
                 taskInfo.CancelGracefulPeriod?.Cancel();
+                //TODO/Q: Is it necessary to create a linked token source?
                 taskInfo.CancelGracefulPeriod = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
 
                 //Let the following lambda capture this variable instead of the original taskInfo.
@@ -411,7 +412,8 @@ public class JobTaskExecutor : IJobTaskExecutor
             }
 
             _logger.LogDebug(jobId, taskId, requeueCount, "Try to kill the process. Forced: {forced}", forced);
-            process.KillAsync(exitCode, forced, cancellationToken).Wait();
+
+            process.KillAsync(forcedExitCode: exitCode, forced: forced).Wait();
 
             var times = 10;
             var stat = process.GetStatisticsFromCGroupAsync(cancellationToken).Result;
@@ -543,18 +545,10 @@ public class JobTaskExecutor : IJobTaskExecutor
 
                 if (_processes.TryGetValue(taskInfo.ProcessKey, out var process))
                 {
-                    try
-                    {
-                        return Task.FromResult<string?>(process.PeekOutputAsync(cancellationToken).Result);
-                    }
-                    catch (Exception ex) {
-                        _logger.LogWarning(ex, taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
-                            "PeekTaskOutput got an exception when calling process' PeekOutput.");
-                    }
+                    return Task.FromResult(process.PeekOutputAsync(cancellationToken).Result);
                 }
             }
         }
-
         return Task.FromResult<string?>(null);
     }
 

@@ -12,14 +12,14 @@ public interface INamingClient
 
 public class NamingClient : INamingClient
 {
-    private ILogger _logger;
+    private ILogger? _logger;
     private IConfigManager _configManager;
     private IHttpClientFactory _httpClientFactory;
 
     private IDictionary<string, string> _serviceLocations = new ConcurrentDictionary<string, string>();
     private object _lock = new object();
 
-    public NamingClient(ILogger<NamingClient> logger, IConfigManager configManager, IHttpClientFactory httpClientFactory)
+    public NamingClient(ILogger<NamingClient>? logger, IConfigManager configManager, IHttpClientFactory httpClientFactory)
     {
         _logger = logger;
         _configManager = configManager;
@@ -37,7 +37,7 @@ public class NamingClient : INamingClient
             var uri = $"{namingServicesUris[idx++]}{serviceName}";
             idx %= namingServicesUris.Length;
 
-            _logger.LogInformation("Request service location for '{name}' from '{uri}'.", serviceName, uri);
+            _logger?.LogInformation("Request service location for '{name}' from '{uri}'.", serviceName, uri);
 
             var httpClient = _httpClientFactory.CreateClient();
             try
@@ -46,7 +46,7 @@ public class NamingClient : INamingClient
                 response.EnsureSuccessStatusCode();
 
                 var location = await response.Content.ReadFromJsonAsync<string>(cancellationToken).ConfigureAwait(false);
-                _logger.LogDebug("Got location '{location}' for service '{name}'", location, serviceName);
+                _logger?.LogDebug("Got location '{location}' for service '{name}'", location, serviceName);
 
                 if (string.IsNullOrEmpty(location))
                 {
@@ -56,7 +56,7 @@ public class NamingClient : INamingClient
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Error when requesting '{uri}'", uri);
+                _logger?.LogError(ex, "Error when requesting '{uri}'", uri);
                 if (ex is InvalidDataException)
                 {
                     throw;

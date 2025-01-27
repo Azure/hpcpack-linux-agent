@@ -15,7 +15,7 @@ public interface IOutputSender
 
 public class OutputSender : IOutputSender
 {
-    private ILogger _logger;
+    private ILogger? _logger;
     private HttpClient _httpClient;
     private string _hostName;
     private int _order = -1;
@@ -27,7 +27,7 @@ public class OutputSender : IOutputSender
 
     public string Uri { get; private set; }
 
-    public OutputSender(ILogger<OutputSender> logger, HttpClient httpClient, string uri, string hostName)
+    public OutputSender(ILogger<OutputSender>? logger, HttpClient httpClient, string uri, string hostName)
     {
         _logger = logger;
         _httpClient = httpClient;
@@ -44,7 +44,7 @@ public class OutputSender : IOutputSender
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Error when sending output to '{uri}'", Uri);
+            _logger?.LogError(ex, "Error when sending output to '{uri}'", Uri);
         }
     }
 

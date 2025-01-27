@@ -16,7 +16,7 @@ public class ConfigManager : IConfigManager
 {
     public const string DefaultConfigFile = "nodemanager.json";
 
-    private ILogger _logger;
+    private ILogger? _logger;
 
     private string _configFilePath;
 
@@ -24,7 +24,7 @@ public class ConfigManager : IConfigManager
 
     private object _saveLock = new object();
 
-    public ConfigManager(ILogger<ConfigManager> logger, string? configFile = null)
+    public ConfigManager(ILogger<ConfigManager>? logger = null, string? configFile = null)
     {
         _logger = logger;
         _configFilePath = configFile ?? DefaultConfigFile;
@@ -32,7 +32,7 @@ public class ConfigManager : IConfigManager
         {
             _configFilePath = Path.GetFullPath(_configFilePath, Directory.GetCurrentDirectory());
         }
-        _logger.LogInformation("Node Manager Configuration file: {file}", _configFilePath);
+        _logger?.LogInformation("Node Manager Configuration file: {file}", _configFilePath);
 
         ReadConfig();
     }
@@ -55,7 +55,7 @@ public class ConfigManager : IConfigManager
         {
             foreach (var validationResult in validationResults)
             {
-                _logger.LogError("Node Manager configuration validation error: {error}", validationResult.ErrorMessage);
+                _logger?.LogError("Node Manager configuration validation error: {error}", validationResult.ErrorMessage);
             }
             throw new InvalidDataException($"Config file ${_configFilePath} contains invalid data!");
         }

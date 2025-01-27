@@ -1,22 +1,12 @@
-﻿using Microsoft.Extensions.Logging;
-using NodeAgent.Services;
+﻿using NodeAgent.Services;
 using NodeAgent.Test.Mocks;
 using System.Net.Http.Json;
 using System.Net;
 
 namespace NodeAgent.Test.Servcies;
 
-public class NamingClientTest : IDisposable
+public class NamingClientTest
 {
-    private ILoggerFactory _loggerFactory;
-    private ILogger<NamingClient> _logger;
-
-    public NamingClientTest()
-    {
-        _loggerFactory = LoggerFactory.Create(_ => { });
-        _logger = _loggerFactory.CreateLogger<NamingClient>();
-    }
-
     [Theory]
     [InlineData("https://head1/path")]
     [InlineData("https://head1/path", "https://head2/path")]
@@ -27,7 +17,7 @@ public class NamingClientTest : IDisposable
         var location = "location";
         var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(location) };
         var httpClientFactory = MockHttpClientFactory.Create(response);
-        var namingClient = new NamingClient(_logger, configManager, httpClientFactory);
+        var namingClient = new NamingClient(null, configManager, httpClientFactory);
 
         //Test thread-safety by concurrent calls
         var tasks = new Task<string>[3];
@@ -58,7 +48,7 @@ public class NamingClientTest : IDisposable
             new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(location) }
         };
         var httpClientFactory = MockHttpClientFactory.Create(responses);
-        var namingClient = new NamingClient(_logger, configManager, httpClientFactory);
+        var namingClient = new NamingClient(null, configManager, httpClientFactory);
 
         //Test thread-safety by concurrent calls
         var tasks = new Task<string>[3];
@@ -89,7 +79,7 @@ public class NamingClientTest : IDisposable
             new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(location) }
         };
         var httpClientFactory = MockHttpClientFactory.Create(responses);
-        var namingClient = new NamingClient(_logger, configManager, httpClientFactory);
+        var namingClient = new NamingClient(null, configManager, httpClientFactory);
 
         //Test thread-safety by concurrent calls
         var cts = new CancellationTokenSource();
@@ -125,7 +115,7 @@ public class NamingClientTest : IDisposable
         var location = "location";
         var response = new HttpResponseMessage(HttpStatusCode.OK) { Content = JsonContent.Create(location) };
         var httpClientFactory = MockHttpClientFactory.Create(response);
-        var namingClient = new NamingClient(_logger, configManager, httpClientFactory);
+        var namingClient = new NamingClient(null, configManager, httpClientFactory);
 
         var uri1 = "https://host/path";
         var result1 = await namingClient.ResolveUriAsync(uri1, "service");
@@ -135,10 +125,5 @@ public class NamingClientTest : IDisposable
         var expected2 = string.Format(uri2, location);
         var result2 = await namingClient.ResolveUriAsync(uri2, "service");
         Assert.Equal(expected2, result2);
-    }
-
-    public void Dispose()
-    {
-        _loggerFactory.Dispose();
     }
 }

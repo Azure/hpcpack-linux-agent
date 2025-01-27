@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using NodeAgent.Services;
+﻿using NodeAgent.Services;
 using System.Reflection;
 using System.Runtime.Versioning;
 using Xunit.Abstractions;
@@ -13,10 +12,9 @@ namespace NodeAgent.Test.Servcies;
  * "sudo dotnet test ..." for SystemServiceTest.
  */
 [SupportedOSPlatform("linux")]
-public class SystemServiceTest : IDisposable
+public class SystemServiceTest
 {
     private readonly ITestOutputHelper _output;
-    private ILoggerFactory _loggerFactory;
     private SystemService _system;
 
     private async Task<bool> IsGpuSupported()
@@ -28,15 +26,9 @@ public class SystemServiceTest : IDisposable
     public SystemServiceTest(ITestOutputHelper output)
     {
         _output = output;
-        _loggerFactory = LoggerFactory.Create(_ => { });
-        var logger = _loggerFactory.CreateLogger<SystemService>();
-        _system = new SystemService(logger);
+        _system = new SystemService();
     }
 
-    public void Dispose()
-    {
-        _loggerFactory.Dispose();
-    }
 
     [Fact]
     public async Task TestHostName()

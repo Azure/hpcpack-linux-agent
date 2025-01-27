@@ -1,11 +1,14 @@
 ﻿using NodeAgent.Models;
 using System.Reflection;
 using System.Runtime.Versioning;
+using static NodeAgent.Services.ITaskProcessFactory;
 
 namespace NodeAgent.Services;
 
 public interface ITaskProcessFactory
 {
+    delegate void TaskCompletionHandler(int exitCode, string output, ProcessStatistics stat);
+
     ITaskProcess CreateProcess(
         int jobId,
         int taskId,
@@ -20,7 +23,7 @@ public interface ITaskProcessFactory
         bool dumpStdOut,
         IEnumerable<ulong>? cpuAffinity,
         IDictionary<string, string?>? env,
-        Action<int, string, ProcessStatistics>? onComplete);
+        TaskCompletionHandler? onComplete);
 
     Task CleanupAsync(CancellationToken cancellationToken);
 }
@@ -63,7 +66,7 @@ public class TaskProcessFactory : ITaskProcessFactory
         bool dumpStdOut,
         IEnumerable<ulong>? cpuAffinity,
         IDictionary<string, string?>? env,
-        Action<int, string, ProcessStatistics>? onComplete)
+        TaskCompletionHandler? onComplete)
     {
         var logger = _loggerFactory.CreateLogger<TaskProcess>();
         return new TaskProcess(

@@ -101,9 +101,9 @@ public interface ISystemService
 
 public class SystemService : ISystemService
 {
-    private ILogger _logger;
+    private ILogger? _logger;
 
-    public SystemService(ILogger<SystemService> logger)
+    public SystemService(ILogger<SystemService>? logger = null)
     {
         _logger = logger;
     }
@@ -151,7 +151,7 @@ public class SystemService : ISystemService
         string? workingDir = null, IDictionary<string, string?>? env = null, Action<string>? onStdOut = null, Action<string>? onStdErr = null,
         Action<Process>? onStart = null, CancellationToken cancellationToken = default)
     {
-        return ExecuteInShellExAsync(filePath, args, stdin, true, workingDir, env, onStdOut, onStdErr, null, cancellationToken);
+        return ExecuteInShellExAsync(filePath, args, stdin, true, workingDir, env, onStdOut, onStdErr, onStart, cancellationToken);
     }
 
     [SupportedOSPlatform("linux")]
@@ -308,7 +308,7 @@ fi
         var result = await ExecuteInShellAsync(script, [nameof(CreateUserAsync), username, isAdmin ? "1" : "0"], stdin, cancellationToken)
             .ConfigureAwait(false);
 
-        _logger.LogDebug("CreateUserAsync result: {result}", result);
+        _logger?.LogDebug("CreateUserAsync result: {result}", result);
 
         if (result.ExitCode != 0 && result.ExitCode != 100)
         {
@@ -334,7 +334,7 @@ ssh-keygen -y -f "$keyfile"
         var result = await ExecuteInShellAsync(script, [nameof(GenerateSshPublicKeyAsync), privateKeyFilePath], null, cancellationToken)
             .ConfigureAwait(false);
 
-        _logger.LogDebug("GenerateSshPublicKeyAsync result: {result}", result);
+        _logger?.LogDebug("GenerateSshPublicKeyAsync result: {result}", result);
 
         if (result.ExitCode != 0)
         {
@@ -398,7 +398,7 @@ printf "$key_path"
         var result = await ExecuteInShellAsync(script, [nameof(AddSshKeyAsync), username, isPrivateKey ? "1" : "0"], key, cancellationToken)
             .ConfigureAwait(false);
 
-        _logger.LogDebug("AddSshKeyAsync result: {result}", result);
+        _logger?.LogDebug("AddSshKeyAsync result: {result}", result);
 
         if (result.ExitCode != 0 && result.ExitCode != 100)
         {
@@ -445,7 +445,7 @@ printf "$key_path"
         var result = await ExecuteInShellAsync(
             script, [nameof(RemoveSshKeyAsync), username, isPrivateKey ? "1" : "0"], null, cancellationToken).ConfigureAwait(false);
 
-        _logger.LogDebug("RemoveSshKeyAsync result: {result}", result);
+        _logger?.LogDebug("RemoveSshKeyAsync result: {result}", result);
 
         if (result.ExitCode != 0)
         {
@@ -498,7 +498,7 @@ printf "$key_file"
         var result = await ExecuteInShellAsync(script, [nameof(AddAuthorizedKeyAsync), username], key, cancellationToken)
             .ConfigureAwait(false);
 
-        _logger.LogDebug("AddAuthorizedKeyAsync result: {result}", result);
+        _logger?.LogDebug("AddAuthorizedKeyAsync result: {result}", result);
 
         if (result.ExitCode != 0)
         {
@@ -544,7 +544,7 @@ printf "$key_file"
         var result = await ExecuteInShellAsync(script, [nameof(RemoveAuthorizedKeyAsync), username], key, cancellationToken)
             .ConfigureAwait(false);
 
-        _logger.LogDebug("RemoveAuthorizedKeyAsync result: {result}", result);
+        _logger?.LogDebug("RemoveAuthorizedKeyAsync result: {result}", result);
 
         if (result.ExitCode != 0)
         {

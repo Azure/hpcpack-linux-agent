@@ -1,5 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
-using NodeAgent.Services;
+﻿using NodeAgent.Services;
 
 namespace NodeAgent.Test.Servcies;
 
@@ -8,21 +7,15 @@ public class ConfigManagerTest
     [Fact]
     public void TestNonexistedConfigFile()
     {
-        using var loggerFactory = LoggerFactory.Create(_ => { });
-        var logger = loggerFactory.CreateLogger<ConfigManager>();
-
         Assert.Throws<FileNotFoundException>(() =>
         {
-            var configManager = new ConfigManager(logger, "nonexisted-file");
+            var configManager = new ConfigManager(null, "nonexisted-file");
         });
     }
 
     [Fact]
     public void TestEmptyConfigFile()
     {
-        using var loggerFactory = LoggerFactory.Create(_ => { });
-        var logger = loggerFactory.CreateLogger<ConfigManager>();
-
         var filename = "empty-file";
         var filepath = Path.GetFullPath(filename, Directory.GetCurrentDirectory());
         File.WriteAllText(filepath, "   ");
@@ -31,7 +24,7 @@ public class ConfigManagerTest
         {
             Assert.Throws<InvalidDataException>(() =>
             {
-                var configManager = new ConfigManager(logger, filepath);
+                var configManager = new ConfigManager(null, filepath);
             });
         }
         finally
@@ -43,10 +36,6 @@ public class ConfigManagerTest
     [Fact]
     public void TestInvalidConfigFile()
     {
-        using var loggerFactory = LoggerFactory.Create(_ => { });
-        var logger = loggerFactory.CreateLogger<ConfigManager>();
-
-
         var json = """
 {
     "HeartbeatUri": "abc",
@@ -61,7 +50,7 @@ public class ConfigManagerTest
         {
             Assert.Throws<InvalidDataException>(() =>
             {
-                var configManager = new ConfigManager(logger, filepath);
+                var configManager = new ConfigManager(null, filepath);
             });
         }
         finally
@@ -73,9 +62,6 @@ public class ConfigManagerTest
     [Fact]
     public void TestValidConfigFile()
     {
-        using var loggerFactory = LoggerFactory.Create(_ => { });
-        var logger = loggerFactory.CreateLogger<ConfigManager>();
-
         var json = """
 {
     "HeartbeatUri": "abc",
@@ -92,7 +78,7 @@ public class ConfigManagerTest
         try
         {
             //NOTE: Only filename is passed in here.
-            var configManager = new ConfigManager(logger, filename);
+            var configManager = new ConfigManager(null, filename);
             Assert.Equal("abc", configManager.Config.HeartbeatUri);
             Assert.NotEmpty(configManager.Config.RegisterUri);
             Assert.NotEmpty(configManager.Config.NamingServiceUri);
@@ -104,7 +90,7 @@ public class ConfigManagerTest
             configManager.SaveConfig();
 
             //NOTE: An absolute path is passed in here.
-            configManager = new ConfigManager(logger, filepath);
+            configManager = new ConfigManager(null, filepath);
             Assert.Equal("xyz", configManager.Config.HeartbeatUri);
         }
         finally

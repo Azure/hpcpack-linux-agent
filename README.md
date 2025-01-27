@@ -44,8 +44,9 @@ See more at https://learn.microsoft.com/en-us/visualstudio/test/remote-testing?v
 
 ### WSL
 
-1. Make sure Ubuntu 20.04 is installed and is named exactly as "Ubuntu-20.04", which matches the vaule of `wslDistribution` defined in testEnvironments.json.
-2. Make sure the default user is "root" in file "/etc/wsl.conf". See help at https://learn.microsoft.com/en-us/windows/wsl/wsl-config#user-settings
+1. Install a Linux distribution in WSL. See the supported versions of Linux distros in testEnvironments.json.
+2. Install .NET SDK in the distro.
+3. Make sure the distro's default user is "root" in file "/etc/wsl.conf". See help at https://learn.microsoft.com/en-us/windows/wsl/wsl-config#user-settings
 
 ### Container
 
