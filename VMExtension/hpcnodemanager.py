@@ -41,16 +41,18 @@ DaemonPidFilePath = '/var/run/hpcnmdaemon.pid'
 InstallRoot = '/opt/hpcnodemanager'
 DistroName = None
 DistroVersion = None
+CGroupV2 = False
 RestartIntervalInSeconds = 60
 osutil = None
 
 def main():
     waagent.LoggerInit('/var/log/waagent.log','/dev/stdout')
     waagent.Log('Microsoft.HpcPack Linux NodeAgent started to handle.')
-    global DistroName, DistroVersion, osutil
+    global DistroName, DistroVersion, osutil, CGroupV2
     distro = get_dist_info()
     DistroName = distro[0].lower()
     DistroVersion = distro[1]
+    CGroupV2 = os.path.exists("/sys/fs/cgroup/cgroup.controllers")
     osutil = get_osutil()
     for a in sys.argv[1:]:        
         if re.match("^([-/]*)(disable)", a):
@@ -131,7 +133,9 @@ def _uninstall_nodemanager_files():
                 os.remove(tmppath)
 
 def _install_cgroup_tool():
-    if waagent.Run("command -v cgexec", chk_err=False) == 0:
+    if CGroupV2:
+        waagent.Log("cgroup v2 enabled, skip cgroup tools installation")
+    elif waagent.Run("command -v cgexec", chk_err=False) == 0:
         waagent.Log("cgroup tools was already installed")
     else:
         waagent.Log("Start to install cgroup tools")
@@ -466,6 +470,11 @@ def install():
         waagent.SetFileContents(configfile, json.dumps(configjson))
         shutil.copy2(configfile, backup_configfile)
         config_firewall_rules()
+        if CGroupV2:
+            shutil.copy2(os.path.join(InstallRoot, "hpccgroot.service"), "/etc/systemd/system/hpccgroot.service")
+            waagent.Run("systemctl daemon-reload")
+            waagent.Run("systemctl enable hpccgroot.service")
+            waagent.Run("systemctl restart hpccgroot.service")
         hutil.do_exit(0, 'Install', 'success', '0', 'Install Succeeded.')
     except Exception as e:
         hutil.do_exit(1, 'Install','error','1', '{0}'.format(e))
@@ -501,6 +510,17 @@ def enable():
 
 def daemon():
     hutil = parse_context('Enable')
+
+    if CGroupV2:
+        service_dir = '/sys/fs/cgroup/hpcpack.slice/hpccgroot.service/service'
+        if not os.path.exists(service_dir):
+            os.makedirs(service_dir)
+        with open('/sys/fs/cgroup/hpcpack.slice/hpccgroot.service/cgroup.procs', 'r') as f:
+            pids = f.read().splitlines()
+        for pid in pids:
+            waagent.Run(f"echo {pid} > /sys/fs/cgroup/hpcpack.slice/hpccgroot.service/service/cgroup.procs")
+        waagent.Run('echo "+cpu +cpuset +memory" > /sys/fs/cgroup/hpcpack.slice/hpccgroot.service/cgroup.subtree_control')
+
     try:
         public_settings = hutil._context._config['runtimeSettings'][0]['handlerSettings'].get('publicSettings')
         domain_fqdn = public_settings.get('DomainName')
@@ -580,6 +600,12 @@ def uninstall():
     hutil = parse_context('Uninstall')
     _uninstall_nodemanager_files()
     cleanup_host_entries()
+    if os.path.isfile('/etc/systemd/system/hpccgroot.service'):
+        waagent.Run("systemctl stop hpccgroot.service")
+        waagent.Run("systemctl disable hpccgroot.service")
+        os.remove('/etc/systemd/system/hpccgroot.service')
+        waagent.Run("systemctl reset-failed")
+        waagent.Run("systemctl daemon-reload")
     hutil.do_exit(0,'Uninstall','success','0', 'Uninstall succeeded')
 
 def disable():

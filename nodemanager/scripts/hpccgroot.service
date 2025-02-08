@@ -1,0 +1,14 @@
+[Unit]
+Description=CGroup V2 root directory holder for HPC Pack Linux Extension
+After=remote-fs.target syslog.target
+
+[Service]
+Type=simple
+ExecStart=/bin/bash -c "while true; do sleep 1000; done"
+Restart=always
+User=root
+Delegate=yes
+Slice=hpcpack.slice
+
+[Install]
+WantedBy=multi-user.target

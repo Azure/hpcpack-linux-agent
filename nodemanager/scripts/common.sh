@@ -14,6 +14,9 @@ CGroupV2Root="/sys/fs/cgroup"
 if [ -d "/sys/fs/cgroup/hpcpack.slice/hpcagent.service" ]; then
 	CGroupV2Root="/sys/fs/cgroup/hpcpack.slice/hpcagent.service"
 fi
+if [ -d "/sys/fs/cgroup/hpcpack.slice/hpccgroot.service" ]; then
+	CGroupV2Root="/sys/fs/cgroup/hpcpack.slice/hpccgroot.service"
+fi
 
 function GetCGroupName
 {

@@ -17,9 +17,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-import imp
 import os
 import os.path
+import sys
+
+try:
+    import imp
+    def load_module(name, path):
+        return imp.load_source(name, path)
+except ImportError:
+    import importlib.util
+    import importlib.machinery
+    def load_module(name, path):
+        loader = importlib.machinery.SourceFileLoader(name, path)
+        spec = importlib.util.spec_from_file_location(name, path, loader=loader)
+        module = importlib.util.module_from_spec(spec)
+        loader.exec_module(module)
+        return module
 
 #
 # The following code will search and load waagent code and expose
@@ -45,7 +59,7 @@ def searchWAAgent():
 waagent = None
 agentPath = searchWAAgent()
 if agentPath:
-    waagent = imp.load_source('waagent', agentPath)
+    waagent = load_module('waagent', agentPath)
 else:
     raise Exception("Can't load waagent.")
 
