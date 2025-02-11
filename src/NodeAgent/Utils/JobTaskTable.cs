@@ -44,7 +44,7 @@ public class JobTaskTable
     public TaskInfo? RemoveTask(int jobId, int taskId, ulong attemptId)
     {
         TaskInfo? taskInfo = null;
-        if (_jobs.TryGetValue(taskId, out var jobInfo))
+        if (_jobs.TryGetValue(jobId, out var jobInfo))
         {
             if (jobInfo.Tasks.TryGetValue(taskId, out taskInfo) && taskInfo.AttemptId == attemptId)
             {
