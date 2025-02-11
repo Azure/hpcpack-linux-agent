@@ -17,10 +17,11 @@ namespace NodeAgent.Services;
  * the end of the task only by the result of GetStatisticsFromCGroupAsync. That design is not good
  * to unit test. Especially that it's not easy to tell the end of a task, and even impossible at all
  * in some situation.
+ *
+ * Also note:
+ * ITask may be better than ITaskProcess, since there may be multiple OS processes in a task. Only
+ * that Task is a name of .NET lib. So ITaskProcess and TaskProcess are used here to reduce ambiguity.
  */
-//TODO: ITask may be better than ITaskProcess, since there may be multiple OS processes in a task.
-//Only that Task is a name of .NET lib, and thus the implementation should have a different name to
-//avoid coding trouble.
 public interface ITaskProcess : IAsyncDisposable
 {
     //Set when StartAsync is called.
@@ -36,7 +37,7 @@ public interface ITaskProcess : IAsyncDisposable
 
     bool IsCGroupDisabled { get; }
 
-    //The final stat when task ends. May be null when no cgroup or an error happens.
+    //The final stat when task ends. May be null when no cgroup or an error happens when starting the task.
     ProcessStatistics? Stat { get; }
 
     //Start the task without waiting for its exit.
