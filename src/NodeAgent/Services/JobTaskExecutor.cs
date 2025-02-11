@@ -589,7 +589,7 @@ public class JobTaskExecutor : IJobTaskExecutor
     {
         lock (_lock)
         {
-            foreach (var taskInfo in _jobTaskTable.GetAllTasks())
+            foreach (var taskInfo in _jobTaskTable.GetTasks())
             {
                 if (_processes.TryGetValue(taskInfo.ProcessKey, out var process))
                 {

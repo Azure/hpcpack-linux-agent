@@ -70,7 +70,7 @@ public class JobTaskTable
 
     public int GetTaskCount()
     {
-        return GetAllTasks().Count();
+        return GetTasks().Count();
     }
 
     public int GetCoresInUse()
@@ -78,7 +78,7 @@ public class JobTaskTable
         throw new NotImplementedException();
     }
 
-    public IEnumerable<TaskInfo> GetAllTasks()
+    public IEnumerable<TaskInfo> GetTasks()
     {
         foreach (var job in _jobs.Values)
         {
