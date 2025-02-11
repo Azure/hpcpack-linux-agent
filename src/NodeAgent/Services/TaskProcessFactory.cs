@@ -34,14 +34,14 @@ public class TaskProcessFactory : ITaskProcessFactory
     private ILogger _logger;
     private ILoggerFactory _loggerFactory;
     private ISystemService _systemService;
-    private IOutputSenderFactory _outputSenderFactory;
+    private IOutputSenderFactory? _outputSenderFactory;
     private string _scriptBaseDir;
 
     public TaskProcessFactory(
         ILogger<TaskProcessFactory> logger,
         ILoggerFactory loggerFactory,
         ISystemService systemService,
-        IOutputSenderFactory outputSenderFactory,
+        IOutputSenderFactory? outputSenderFactory = null,
         string? scriptBaseDir = null)
     {
         _logger = logger;
