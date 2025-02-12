@@ -254,9 +254,6 @@ public class JobTaskExecutor : IJobTaskExecutor
                 }
                 else
                 {
-                    //Let the following lambdas capture the copy instead of the original object.
-                    var taskInfoCopy = taskInfo.Copy();
-
                     var process = _processFactory.CreateProcess(
                         taskInfo.JobId,
                         taskInfo.TaskId,
@@ -274,7 +271,7 @@ public class JobTaskExecutor : IJobTaskExecutor
                         (exitCode, message, stat) =>
                         {
                             System.Diagnostics.Debug.Assert(!taskInfo.Exited, "Task already exited.");
-                            OnTaskProcessComplete(taskInfoCopy, callbackUri, exitCode, message, stat);
+                            OnTaskProcessComplete(taskInfo, callbackUri, exitCode, message, stat);
                         });
 
                     _processes[taskInfo.ProcessKey] = process;
