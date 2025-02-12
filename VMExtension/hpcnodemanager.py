@@ -51,6 +51,9 @@ def main():
     global DistroName, DistroVersion, osutil, CGroupV2
     distro = get_dist_info()
     DistroName = distro[0].lower()
+    # waagent common lib returns 'rhel' than 'redhat' since 9, rename to 'redhat' here to minimize the change needed
+    if DistroName == 'rhel':
+        DistroName = 'redhat'
     DistroVersion = distro[1]
     CGroupV2 = os.path.exists("/sys/fs/cgroup/cgroup.controllers")
     osutil = get_osutil()
@@ -518,7 +521,7 @@ def daemon():
         with open('/sys/fs/cgroup/hpcpack.slice/hpccgroot.service/cgroup.procs', 'r') as f:
             pids = f.read().splitlines()
         for pid in pids:
-            waagent.Run(f"echo {pid} > /sys/fs/cgroup/hpcpack.slice/hpccgroot.service/service/cgroup.procs")
+            waagent.Run("echo {0} > /sys/fs/cgroup/hpcpack.slice/hpccgroot.service/service/cgroup.procs".format(pid))
         waagent.Run('echo "+cpu +cpuset +memory" > /sys/fs/cgroup/hpcpack.slice/hpccgroot.service/cgroup.subtree_control')
 
     try:
