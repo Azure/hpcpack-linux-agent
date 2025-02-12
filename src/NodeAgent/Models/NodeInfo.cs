@@ -19,5 +19,5 @@ public class NodeInfo : DiagBase
 
     public bool JustStarted { get; set; }
 
-    public IEnumerable<JobInfo>? Jobs { get; set; }
+    public IEnumerable<IReadOnlyJobInfo>? Jobs { get; set; }
 }

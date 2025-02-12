@@ -2,7 +2,6 @@
 
 namespace NodeAgent.Utils;
 
-
 //The public methods are not thread-safe. The caller has to ensure the thread-safety.
 public class JobTaskTable
 {
@@ -93,11 +92,8 @@ public class JobTaskTable
         }
     }
 
-    public IEnumerable<JobInfo> GetJobs(bool copy = false)
+    public IEnumerable<IReadOnlyJobInfo> GetReadOnlyJobs()
     {
-        foreach (var job in _jobs.Values)
-        {
-            yield return copy ? job.Copy() : job;
-        }
+        return _jobs.Values;
     }
 }

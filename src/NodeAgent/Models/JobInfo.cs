@@ -1,16 +1,20 @@
 ﻿
+using NodeAgent.Utils;
 
 namespace NodeAgent.Models;
 
-public class JobInfo : DiagBase
+public interface IReadOnlyJobInfo
+{
+    int JobId { get; }
+
+    IReadOnlyDictionary<int, IReadOnlyTaskInfo> Tasks { get; }
+}
+
+public class JobInfo : DiagBase, IReadOnlyJobInfo
 {
     public int JobId { get; set; }
 
     public IDictionary<int, TaskInfo> Tasks { get; set; } = new Dictionary<int, TaskInfo>();
 
-    //Return a deep clone
-    public JobInfo Copy()
-    {
-        throw new NotImplementedException();
-    }
+    IReadOnlyDictionary<int, IReadOnlyTaskInfo> IReadOnlyJobInfo.Tasks => new ProxyReadOnlyDictionary<int, IReadOnlyTaskInfo, TaskInfo>(Tasks);
 }

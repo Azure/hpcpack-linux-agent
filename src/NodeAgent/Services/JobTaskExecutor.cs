@@ -11,9 +11,9 @@ public interface IJobTaskExecutor
 
     Task StartTaskAsync(StartTaskArgs args, string callbackUri, CancellationToken cancellationToken = default);
 
-    Task<TaskInfo?> EndTaskAsync(EndTaskArgs args, string callbackUri, CancellationToken cancellationToken = default);
+    Task<IReadOnlyTaskInfo?> EndTaskAsync(EndTaskArgs args, string callbackUri, CancellationToken cancellationToken = default);
 
-    Task<JobInfo?> EndJobAsync(EndJobArgs args, CancellationToken cancellationToken = default);
+    Task<IReadOnlyJobInfo?> EndJobAsync(EndJobArgs args, CancellationToken cancellationToken = default);
 
     Task<string?> PeekTaskOutputAsync(PeekTaskOutputArgs args, CancellationToken cancellationToken = default);
 
@@ -23,7 +23,7 @@ public interface IJobTaskExecutor
 
     int GetCoresInUse();
 
-    IEnumerable<JobInfo> GetJobs();
+    IEnumerable<IReadOnlyJobInfo> GetJobs();
 }
 
 /*
@@ -326,7 +326,7 @@ public class JobTaskExecutor : IJobTaskExecutor
         }
     }
 
-    public Task<TaskInfo?> EndTaskAsync(EndTaskArgs args, string callbackUri, CancellationToken cancellationToken = default)
+    public Task<IReadOnlyTaskInfo?> EndTaskAsync(EndTaskArgs args, string callbackUri, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation(args.JobId, args.TaskId, null, "EndTask: Started.");
         lock (_lock)
@@ -335,7 +335,7 @@ public class JobTaskExecutor : IJobTaskExecutor
             if (taskInfo == null)
             {
                 _logger.LogWarning(args.JobId, args.TaskId, null, "EndTask: Task is already finished.");
-                return Task.FromResult<TaskInfo?>(null);
+                return Task.FromResult<IReadOnlyTaskInfo?>(null);
             }
 
             _logger.LogDebug(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
@@ -385,7 +385,7 @@ public class JobTaskExecutor : IJobTaskExecutor
 
             _logger.LogInformation(taskInfo.JobId, taskInfo.TaskId, null, "EndTask: Ended with result: {task}", taskInfo);
 
-            return Task.FromResult<TaskInfo?>(taskInfo.Copy());
+            return Task.FromResult<IReadOnlyTaskInfo?>(taskInfo);
         }
     }
 
@@ -464,7 +464,7 @@ public class JobTaskExecutor : IJobTaskExecutor
         }
     }
 
-    public Task<JobInfo?> EndJobAsync(EndJobArgs args, CancellationToken cancellationToken = default)
+    public Task<IReadOnlyJobInfo?> EndJobAsync(EndJobArgs args, CancellationToken cancellationToken = default)
     {
         _logger.LogInformation(args.JobId, null, null, "EndJob: Started.");
 
@@ -525,7 +525,7 @@ public class JobTaskExecutor : IJobTaskExecutor
                 }
             }
 
-            return Task.FromResult<JobInfo?>(jobInfo);
+            return Task.FromResult<IReadOnlyJobInfo?>(jobInfo);
         }
     }
 
@@ -573,12 +573,12 @@ public class JobTaskExecutor : IJobTaskExecutor
         }
     }
 
-    public IEnumerable<JobInfo> GetJobs()
+    public IEnumerable<IReadOnlyJobInfo> GetJobs()
     {
         lock (_lock)
         {
             UpdateTaskStatistics();
-            return _jobTaskTable.GetJobs(true);
+            return _jobTaskTable.GetReadOnlyJobs();
         }
     }
 

@@ -3,8 +3,45 @@ using System.Text.Json.Serialization;
 
 namespace NodeAgent.Models;
 
+public interface IReadOnlyTaskInfo
+{
+    int JobId { get; }
+
+    int TaskId { get; }
+
+    int TaskRequeueCount { get; }
+
+    int ExitCode { get; }
+
+    bool Exited { get; }
+
+    //In MS
+    ulong KernelProcessorTime { get; }
+
+    //In MS
+    ulong UserProcessorTime { get; }
+
+    //In KB
+    ulong WorkingSet { get; }
+
+    int NumberOfProcesses { get; }
+
+    bool PrimaryTask { get; }
+
+    string? Message { get; }
+
+    IReadOnlyList<int>? ProcessIds { get; }
+
+    IEnumerable<ulong>? Affinity { get; }
+
+    ulong ProcessKey { get; }
+
+    ulong AttemptId { get; }
+}
+
+
 //TODO: Unit test? And should it be a model class with unit test?
-public class TaskInfo : DiagBase
+public class TaskInfo : DiagBase, IReadOnlyTaskInfo
 {
     public int JobId { get; set; }
 
@@ -59,6 +96,8 @@ public class TaskInfo : DiagBase
 
     public IList<int>? ProcessIds { get; set; }
 
+    IReadOnlyList<int>? IReadOnlyTaskInfo.ProcessIds => ProcessIds is List<int> ? (List<int>)ProcessIds : null;
+
     [JsonIgnore]
     public IEnumerable<ulong>? Affinity { get; set; }
 
@@ -84,21 +123,5 @@ public class TaskInfo : DiagBase
     public TaskCompletionEventArgs ToTaskCompletionEventArgs()
     {
         throw new NotImplementedException();
-    }
-
-    //A deep clone without CancelGracefulPeriod
-    public TaskInfo Copy()
-    {
-        var other = (TaskInfo)MemberwiseClone();
-        if (ProcessIds != null)
-        {
-            other.ProcessIds = new List<int>(ProcessIds);
-        }
-        if (Affinity != null)
-        {
-            other.Affinity = new List<ulong>(Affinity);
-        }
-        other.CancelGracefulPeriod = null;
-        return (TaskInfo)other;
     }
 }
