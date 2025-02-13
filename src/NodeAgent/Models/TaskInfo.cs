@@ -113,9 +113,4 @@ public class TaskInfo : DiagBase, IReadOnlyTaskInfo
         ProcessIds = stat?.ProcessIds;
         WorkingSet = stat?.WorkingSetKb ?? 0;
     }
-
-    public TaskCompletionEventArgs ToTaskCompletionEventArgs()
-    {
-        throw new NotImplementedException();
-    }
 }

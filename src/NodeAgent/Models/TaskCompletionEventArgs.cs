@@ -7,7 +7,7 @@ public class TaskCompletionEventArgs : DiagBase
     public int JobId { get; set; }
 
     [Required]
-    public TaskInfo TaskInfo { get; set; } = default!;
+    public IReadOnlyTaskInfo TaskInfo { get; set; } = default!;
 
     [Required]
     public string NodeName { get; set; } = default!;

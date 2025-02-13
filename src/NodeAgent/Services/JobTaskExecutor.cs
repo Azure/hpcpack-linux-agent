@@ -294,7 +294,13 @@ public class JobTaskExecutor : IJobTaskExecutor
         taskInfo.Message = processMessage;
         taskInfo.AssignFromStat(stat);
 
-        ReportTaskCompletionAsync(taskInfo.ToTaskCompletionEventArgs(), callbackUri).Wait();
+        var taskCompletionEventArgs = new TaskCompletionEventArgs()
+        {
+            JobId = taskInfo.JobId,
+            TaskInfo = taskInfo,
+            NodeName = _systemService.HostName,
+        };
+        ReportTaskCompletionAsync(taskCompletionEventArgs, callbackUri).Wait();
 
         lock (_lock)
         {
@@ -450,7 +456,13 @@ public class JobTaskExecutor : IJobTaskExecutor
 
                     _logger.LogInformation(jobId, taskId, null, "TerminateTaskAfterGracefulPeriod: Ended with result: {task}", taskInfo);
 
-                    ReportTaskCompletionAsync(taskInfo.ToTaskCompletionEventArgs(), callbackUri).Wait();
+                    var taskCompletionEventArgs = new TaskCompletionEventArgs()
+                    {
+                        JobId = taskInfo.JobId,
+                        TaskInfo = taskInfo,
+                        NodeName = _systemService.HostName,
+                    };
+                    ReportTaskCompletionAsync(taskCompletionEventArgs, callbackUri).Wait();
                 }
                 else
                 {
