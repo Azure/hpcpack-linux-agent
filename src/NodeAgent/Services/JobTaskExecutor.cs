@@ -352,11 +352,7 @@ public class JobTaskExecutor : IJobTaskExecutor
 
                 taskInfo.Exited = true;
                 taskInfo.CancelGracefulPeriod?.Cancel();
-
-                if (stat != null)
-                {
-                    taskInfo.AssignFromStat(stat);
-                }
+                taskInfo.AssignFromStat(stat);
             }
             else
             {
