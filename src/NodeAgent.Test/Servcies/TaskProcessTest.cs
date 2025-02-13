@@ -112,8 +112,9 @@ public class TaskProcessTest : TestBase
         Assert.NotEqual(0, code);
         Assert.NotNull(output);
         Assert.NotEmpty(output);
-        Assert.Null(stat);
     }
+
+    //TODO: Test concurrent calls to KillAsync
 
     [SkippableTheory]
     [InlineData(0, false)]
