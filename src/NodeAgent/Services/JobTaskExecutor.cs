@@ -591,14 +591,13 @@ public class JobTaskExecutor : IJobTaskExecutor
                 if (_processes.TryGetValue(taskInfo.ProcessKey, out var process))
                 {
                     var stat = process.GetStatisticsFromCGroupAsync().Result;
-                    if (stat != null)
-                    {
-                        taskInfo.AssignFromStat(stat);
-                        continue;
-                    }
+                    taskInfo.AssignFromStat(stat);
                 }
-                _logger.LogWarning(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
-                    "No process object is found when updating task statistics.");
+                else
+                {
+                    _logger.LogWarning(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
+                        "No process object is found when updating task statistics.");
+                }
             }
         }
     }

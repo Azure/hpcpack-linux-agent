@@ -106,12 +106,12 @@ public class TaskInfo : DiagBase, IReadOnlyTaskInfo
     [JsonIgnore]
     public CancellationTokenSource? CancelGracefulPeriod { get; set; }
 
-    public void AssignFromStat(ProcessStatistics stat)
+    public void AssignFromStat(ProcessStatistics? stat)
     {
-        KernelProcessorTime = stat.KernelTimeMs;
-        UserProcessorTime = stat.UserTimeMs;
-        ProcessIds = stat.ProcessIds;
-        WorkingSet = stat.WorkingSetKb;
+        KernelProcessorTime = stat?.KernelTimeMs ?? 0;
+        UserProcessorTime = stat?.UserTimeMs ?? 0;
+        ProcessIds = stat?.ProcessIds;
+        WorkingSet = stat?.WorkingSetKb ?? 0;
     }
 
     public TaskCompletionEventArgs ToTaskCompletionEventArgs()
