@@ -44,32 +44,6 @@ public class TaskProcessTest : TestBase
         return taskProcess;
     }
 
-    private void OutputTaskResult(int? code, string? output, ProcessStatistics? stat)
-    {
-        var msg = $"""
-======================================
-OnComplete:
-[Code]
-{code}
-[Stat]
-{stat}
-[Output]
-{output}
-======================================
-""";
-        TestOut.WriteLine(msg);
-    }
-
-    private void OutputString(string? output)
-    {
-        var msg = $"""
-======================================
-{output}
-======================================
-""";
-        TestOut.WriteLine(msg);
-    }
-
     [SkippableFact]
     [SupportedOSPlatform("linux")]
     public async Task TestStartTaskAsync()
@@ -93,7 +67,7 @@ OnComplete:
         Assert.True(taskProcess.IsEnded);
         Assert.False(taskProcess.IsCanceled);
 
-        OutputTaskResult(code, output, stat);
+        TestOut.OutputTaskResult(code, output, stat);
 
         Assert.Equal(0, code);
         Assert.NotNull(output);
@@ -133,7 +107,7 @@ OnComplete:
         Assert.True(endEvent.WaitOne(2000));
         Assert.True(taskProcess.IsEnded);
 
-        OutputTaskResult(code, output, stat);
+        TestOut.OutputTaskResult(code, output, stat);
 
         Assert.NotEqual(0, code);
         Assert.NotNull(output);
@@ -159,7 +133,7 @@ OnComplete:
 
         await Task.Delay(delayBeforePeek);
         var output = await taskProcess.PeekOutputAsync();
-        OutputString(output);
+        TestOut.OutputString(output);
 
         if (shouldHaveOutput)
         {
