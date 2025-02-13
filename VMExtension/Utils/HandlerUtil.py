@@ -54,7 +54,6 @@ Example Status Report:
 import os
 import os.path
 import sys
-import imp
 import base64
 import json
 import time
