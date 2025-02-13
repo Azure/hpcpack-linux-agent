@@ -7,7 +7,7 @@ namespace NodeAgent.Services;
 
 public interface ITaskProcessFactory
 {
-    delegate void TaskCompletionHandler(int exitCode, string output, ProcessStatistics stat);
+    delegate void TaskCompletionHandler(int exitCode, string output, ProcessStatistics? stat);
 
     ITaskProcess CreateProcess(
         int jobId,

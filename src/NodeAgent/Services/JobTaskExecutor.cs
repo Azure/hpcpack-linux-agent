@@ -286,7 +286,7 @@ public class JobTaskExecutor : IJobTaskExecutor
         }
     }
 
-    private void OnTaskProcessComplete(TaskInfo taskInfo, string callbackUri, int processExitCode, string processMessage, ProcessStatistics stat)
+    private void OnTaskProcessComplete(TaskInfo taskInfo, string callbackUri, int processExitCode, string processMessage, ProcessStatistics? stat)
     {
         taskInfo.CancelGracefulPeriod?.Cancel();
         taskInfo.Exited = true;

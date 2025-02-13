@@ -112,7 +112,7 @@ public class TaskProcessTest : TestBase
         Assert.NotEqual(0, code);
         Assert.NotNull(output);
         Assert.NotEmpty(output);
-        Assert.NotNull(stat);
+        Assert.Null(stat);
     }
 
     [SkippableTheory]

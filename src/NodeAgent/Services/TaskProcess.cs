@@ -660,7 +660,7 @@ echo after >{0}/after1.txt 2>{0}/after2.txt || ([ "$?" = "1" ] && exit 253)
         LogDebug("Call task completion handler.");
         try
         {
-            _onComplete?.Invoke((int)ExitCode, _taskMessageBuffer.ToString(), Stat ?? new ProcessStatistics());
+            _onComplete?.Invoke((int)ExitCode, _taskMessageBuffer.ToString(), Stat);
         }
         catch (Exception ex)
         {
