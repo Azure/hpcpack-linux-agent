@@ -31,12 +31,6 @@ public interface IReadOnlyTaskInfo
     string? Message { get; }
 
     IReadOnlyList<int>? ProcessIds { get; }
-
-    IEnumerable<ulong>? Affinity { get; }
-
-    ulong ProcessKey { get; }
-
-    ulong AttemptId { get; }
 }
 
 
