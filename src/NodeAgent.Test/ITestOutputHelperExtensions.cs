@@ -35,9 +35,9 @@ OnComplete:
     {
         var msg = $"""
 ======================================
-{output}
+{output.ToString()}
 ======================================
 """;
-        testout.WriteLine(output.ToString());
+        testout.WriteLine(msg);
     }
 }
