@@ -7,17 +7,32 @@ using Xunit.Abstractions;
 
 namespace NodeAgent.Test.Servcies;
 
-[SupportedOSPlatform("linux")]
-public class JobTaskExecutorTest : TestBase
+public class IdGenerator
 {
+    private int _jobId = 0;
+
+    private int _taskId = 0;
+
+    public int JobId => ++_jobId;
+
+    public int TaskId => ++_taskId;
+}
+
+
+[SupportedOSPlatform("linux")]
+public class JobTaskExecutorTest : TestBase, IClassFixture<IdGenerator>
+{
+    private IdGenerator _idGenerator;
+
     private MockSchedulerApiClientForJobTaskExecutor _schedulerApiClient;
 
     private ISystemService _systemService;
 
     private JobTaskExecutor _jobTaskExecutor;
 
-    public JobTaskExecutorTest(ITestOutputHelper output) : base(output)
+    public JobTaskExecutorTest(ITestOutputHelper output, IdGenerator idGenerator) : base(output)
     {
+        _idGenerator = idGenerator;
         _schedulerApiClient = new MockSchedulerApiClientForJobTaskExecutor();
 
         var sysLogger = LoggerFactory.CreateLogger<SystemService>();
@@ -35,8 +50,8 @@ public class JobTaskExecutorTest : TestBase
     [Fact]
     public async Task TestStartJobAndTaskAsync()
     {
-        var jobId = 1;
-        var taskId = 2;
+        var jobId = _idGenerator.JobId;
+        var taskId = _idGenerator.TaskId;
         var args = new StartJobAndTaskArgs()
         {
             JobId = jobId,
@@ -82,9 +97,9 @@ public class JobTaskExecutorTest : TestBase
     [Fact]
     public async Task TestStartTaskAsync()
     {
-        var jobId = 1;
+        var jobId = _idGenerator.JobId;
         //NOTE the number of elements here for the designed test.
-        var taskIds = new int[] { 2, 3, 4, 5 };
+        var taskIds = new int[] { _idGenerator.TaskId, _idGenerator.TaskId, _idGenerator.TaskId, _idGenerator.TaskId };
         var callbackUri = "http://callback";
         var jobStarted = false;
         var tasks = new Task[taskIds.Length - 1];
@@ -136,5 +151,44 @@ public class JobTaskExecutorTest : TestBase
             Assert.Contains(call.Args.TaskInfo.TaskId, taskIds);
             Assert.Contains("hellotask", call.Args.TaskInfo.Message);
         }
+    }
+
+    [Theory]
+    [InlineData(3000, 3)]
+    [InlineData(3000, 0)]
+    [InlineData(0, 3)]
+    [InlineData(0, 0)]
+    public async Task TestEndTaskAsync(int delayBeforeEnd, int gracePeriod)
+    {
+        var jobId = _idGenerator.JobId;
+        var taskId = _idGenerator.TaskId;
+        var args = new StartJobAndTaskArgs()
+        {
+            JobId = jobId,
+            TaskId = taskId,
+            StartInfo = new ProcessStartInfo() { CommandLine = "sleep 100 && echo hellotask" },
+            UserName = TestUser.RandomName,
+            Password = "password",
+        };
+        var callbackUri = "http://callback";
+        await _jobTaskExecutor.StartJobAndTaskAsync(args, callbackUri);
+
+        Assert.Equal(1, _jobTaskExecutor.GetJobCount());
+        Assert.Equal(1, _jobTaskExecutor.GetTaskCount());
+
+        await Task.Delay(delayBeforeEnd);
+
+        var endArgs = new EndTaskArgs()
+        {
+            JobId = jobId,
+            TaskId = taskId,
+            TaskCancelGracePeriodSeconds = gracePeriod
+        };
+        var taskInfo = await _jobTaskExecutor.EndTaskAsync(endArgs, callbackUri);
+        Assert.NotNull(taskInfo);
+        TestOut.OutputObject(taskInfo);
+
+        Assert.True(taskInfo.Exited);
+        Assert.NotEqual(0, taskInfo.ExitCode);
     }
 }

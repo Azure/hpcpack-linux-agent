@@ -270,7 +270,6 @@ public class JobTaskExecutor : IJobTaskExecutor
                         args.StartInfo.EnvironmentVariables,
                         (exitCode, message, stat) =>
                         {
-                            System.Diagnostics.Debug.Assert(!taskInfo.Exited, "Task already exited.");
                             OnTaskProcessComplete(taskInfo, callbackUri, exitCode, message, stat);
                         });
 
@@ -289,18 +288,30 @@ public class JobTaskExecutor : IJobTaskExecutor
     private void OnTaskProcessComplete(TaskInfo taskInfo, string callbackUri, int processExitCode, string processMessage, ProcessStatistics? stat)
     {
         taskInfo.CancelGracefulPeriod?.Cancel();
-        taskInfo.Exited = true;
-        taskInfo.ExitCode = processExitCode;
-        taskInfo.Message = processMessage;
-        taskInfo.AssignFromStat(stat);
 
-        var taskCompletionEventArgs = new TaskCompletionEventArgs()
+        if (taskInfo.Exited)
         {
-            JobId = taskInfo.JobId,
-            TaskInfo = taskInfo,
-            NodeName = _systemService.HostName,
-        };
-        ReportTaskCompletionAsync(taskCompletionEventArgs, callbackUri).Wait();
+            _logger.LogDebug(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount, "Task has already been ended by EndTask.");
+        }
+        else
+        {
+            _logger.LogDebug(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount, "Task is complete.");
+
+            lock (_lock) {
+                taskInfo.Exited = true;
+                taskInfo.ExitCode = processExitCode;
+                taskInfo.Message = processMessage;
+                taskInfo.AssignFromStat(stat);
+            }
+
+            var taskCompletionEventArgs = new TaskCompletionEventArgs()
+            {
+                JobId = taskInfo.JobId,
+                TaskInfo = taskInfo,
+                NodeName = _systemService.HostName,
+            };
+            ReportTaskCompletionAsync(taskInfo, callbackUri).Wait();
+        }
 
         lock (_lock)
         {
@@ -314,10 +325,16 @@ public class JobTaskExecutor : IJobTaskExecutor
         }
     }
 
-    private async Task ReportTaskCompletionAsync(TaskCompletionEventArgs args, string uri, CancellationToken cancelToken = default)
+    private async Task ReportTaskCompletionAsync(TaskInfo taskInfo, string uri, CancellationToken cancelToken = default)
     {
         try
         {
+            var args = new TaskCompletionEventArgs()
+            {
+                JobId = taskInfo.JobId,
+                TaskInfo = taskInfo,
+                NodeName = _systemService.HostName,
+            };
             await _schedulerApiClient.ReportTaskCompletionAsync(uri, args, cancelToken).ConfigureAwait(false);
 
             _logger.LogInformation(args.JobId, args.TaskInfo.TaskId, args.TaskInfo.TaskRequeueCount,
@@ -325,7 +342,7 @@ public class JobTaskExecutor : IJobTaskExecutor
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, args.JobId, args.TaskInfo.TaskId, args.TaskInfo.TaskRequeueCount,
+            _logger.LogError(ex, taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
                 "Error when reporting task completion to {uri}", uri);
 
             _resyncFlag.RequestResync = true;
@@ -344,29 +361,33 @@ public class JobTaskExecutor : IJobTaskExecutor
                 return Task.FromResult<IReadOnlyTaskInfo?>(null);
             }
 
+            _logger.LogDebug(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount, "TaskInfo: {task}", taskInfo);
             _logger.LogDebug(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
                 "EndTask for ProcessKey {key}, processes count {count}", taskInfo.ProcessKey, _processes.Count);
 
             var stat = TerminateTask(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount, taskInfo.ProcessKey,
                 (int)ErrorCodes.EndTaskExitCode, args.TaskCancelGracePeriodSeconds == 0, !taskInfo.PrimaryTask, cancellationToken);
 
-            taskInfo.ExitCode = (int)ErrorCodes.EndTaskExitCode;
-
             if (stat == null || stat.IsTerminated)
             {
-                _jobTaskTable.RemoveTask(taskInfo.JobId, taskInfo.TaskId, taskInfo.AttemptId);
+                _logger.LogDebug(args.JobId, args.TaskId, null, "EndTask: Task is terminated.");
 
                 taskInfo.Exited = true;
+                taskInfo.ExitCode = (int)ErrorCodes.EndTaskExitCode;
                 taskInfo.CancelGracefulPeriod?.Cancel();
                 taskInfo.AssignFromStat(stat);
+                ReportTaskCompletionAsync(taskInfo, callbackUri).Wait();
+                _jobTaskTable.RemoveTask(taskInfo.JobId, taskInfo.TaskId, taskInfo.AttemptId);
             }
             else
             {
+                _logger.LogDebug(args.JobId, args.TaskId, null, "EndTask: Task is not terminated. Try to terminate it after {time} seconds.",
+                    args.TaskCancelGracePeriodSeconds);
+
                 taskInfo.Exited = false;
                 taskInfo.AssignFromStat(stat);
                 taskInfo.CancelGracefulPeriod?.Cancel();
-                //TODO/Q: Is it necessary to create a linked token source?
-                taskInfo.CancelGracefulPeriod = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
+                taskInfo.CancelGracefulPeriod = new CancellationTokenSource();
 
                 //Let the following lambda capture this variable instead of the original taskInfo.
                 var capture = new
@@ -452,17 +473,10 @@ public class JobTaskExecutor : IJobTaskExecutor
                     taskInfo.AssignFromStat(stat);
                     taskInfo.ProcessIds?.Clear();
 
+                    ReportTaskCompletionAsync(taskInfo, callbackUri).Wait();
+
                     _jobTaskTable.RemoveTask(taskInfo.JobId, taskInfo.TaskId, taskInfo.AttemptId);
-
                     _logger.LogInformation(jobId, taskId, null, "TerminateTaskAfterGracefulPeriod: Ended with result: {task}", taskInfo);
-
-                    var taskCompletionEventArgs = new TaskCompletionEventArgs()
-                    {
-                        JobId = taskInfo.JobId,
-                        TaskInfo = taskInfo,
-                        NodeName = _systemService.HostName,
-                    };
-                    ReportTaskCompletionAsync(taskCompletionEventArgs, callbackUri).Wait();
                 }
                 else
                 {
