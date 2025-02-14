@@ -2,6 +2,7 @@
 
 namespace NodeAgent.Models;
 
+//TODO: Make it a subclass of StartTaskArgs
 public class StartJobAndTaskArgs : DiagBase
 {
     public int JobId { get; set; }
