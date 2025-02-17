@@ -226,4 +226,25 @@ public class JobTaskExecutorTest : TestBase, IClassFixture<IdGenerator>
 
         Assert.Empty(_schedulerApiClient.TaskCompletionCalls);
     }
+
+    [Theory]
+    [InlineData(0, 3000, false)]
+    [InlineData(5, 3000, true)]
+    public async Task TestPeekTaskOutputAsync(int sleep, int delay, bool hasOutput)
+    {
+        var (jobId, taskIds, tasks) = await StartJobAndTasks(1, (_, _, _) => $"echo hellotask && sleep {sleep}");
+        await Task.Delay(delay);
+
+        var args = new PeekTaskOutputArgs() { JobId = jobId, TaskId = taskIds[0] };
+        var result = await _jobTaskExecutor.PeekTaskOutputAsync(args);
+        if (hasOutput)
+        {
+            TestOut.OutputString(result);
+            Assert.Contains("hellotask", result);
+        }
+        else
+        {
+            Assert.Null(result);
+        }
+    }
 }
