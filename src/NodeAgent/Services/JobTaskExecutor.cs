@@ -511,6 +511,8 @@ public class JobTaskExecutor : IJobTaskExecutor
                         taskInfo.AssignFromStat(stat);
                         taskInfo.CancelGracefulPeriod?.Cancel();
                     }
+                    //NOTE: No ReportTaskCompletionAsync is called here for each task. So no end message will be sent to the Schedular.
+                    //Maybe an issue. But let's keep it as it is.
                 }
             }
 

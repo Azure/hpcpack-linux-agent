@@ -201,4 +201,29 @@ public class JobTaskExecutorTest : TestBase, IClassFixture<IdGenerator>
         Assert.Equal(call.Args.JobId, endArgs.JobId);
         Assert.Equal(call.Args.TaskInfo.TaskId, endArgs.TaskId);
     }
+
+    //TODO: Test end multiple tasks concurrently
+
+    [Fact]
+    public async Task TestEndJobAsync()
+    {
+        var (jobId, taskIds, tasks) = await StartJobAndTasks(10, (_, _, taskId) => $"sleep 100 && echo hellotask{taskId}");
+        await Task.WhenAll(tasks);
+
+        Assert.Equal(1, _jobTaskExecutor.GetJobCount());
+        Assert.Equal(taskIds.Length, _jobTaskExecutor.GetTaskCount());
+
+        var args = new EndJobArgs() { JobId = jobId };
+        var jobInfo = await _jobTaskExecutor.EndJobAsync(args);
+        Assert.NotNull(jobInfo);
+        TestOut.OutputObject(jobInfo);
+
+        Assert.Equal(jobId, jobInfo.JobId);
+        Assert.Equal(10, jobInfo.Tasks.Count);
+
+        Assert.Equal(0, _jobTaskExecutor.GetJobCount());
+        Assert.Equal(0, _jobTaskExecutor.GetTaskCount());
+
+        Assert.Empty(_schedulerApiClient.TaskCompletionCalls);
+    }
 }
