@@ -159,13 +159,13 @@ public class JobTaskExecutorTest : TestBase, IClassFixture<IdGenerator>
     }
 
     [Theory]
-    [InlineData(3000, 3, 100, false)]
-    [InlineData(3000, 0, 100, false)]
-    [InlineData(0, 3, 100, false)]
-    [InlineData(0, 0, 100, false)]
-    [InlineData(3000, 0, 0, true)]
-    [InlineData(3000, 3, 0, true)]
-    public async Task TestEndTaskAsync(int delayBeforeEnd, int gracePeriod, int sleep, bool endEarly)
+    [InlineData(3, 3, 10, false)]
+    [InlineData(3, 0, 10, false)]
+    [InlineData(0, 3, 10, false)]
+    [InlineData(0, 0, 10, false)]
+    [InlineData(3, 0, 0, true)]
+    [InlineData(3, 3, 0, true)]
+    public async Task TestEndTaskAsync(int delay, int gracePeriod, int sleep, bool endEarly)
     {
         var (jobId, taskIds, tasks) = await StartJobAndTasks(1, (_, _, _) => $"sleep {sleep} && echo hellotask");
         var taskId = taskIds[0];
@@ -173,7 +173,7 @@ public class JobTaskExecutorTest : TestBase, IClassFixture<IdGenerator>
         Assert.Equal(1, _jobTaskExecutor.GetJobCount());
         Assert.Equal(1, _jobTaskExecutor.GetTaskCount());
 
-        await Task.Delay(delayBeforeEnd);
+        await Task.Delay(delay * 1000);
 
         var endArgs = new EndTaskArgs()
         {
@@ -228,12 +228,12 @@ public class JobTaskExecutorTest : TestBase, IClassFixture<IdGenerator>
     }
 
     [Theory]
-    [InlineData(0, 3000, false)]
-    [InlineData(5, 3000, true)]
+    [InlineData(0, 3, false)]
+    [InlineData(5, 3, true)]
     public async Task TestPeekTaskOutputAsync(int sleep, int delay, bool hasOutput)
     {
         var (jobId, taskIds, tasks) = await StartJobAndTasks(1, (_, _, _) => $"echo hellotask && sleep {sleep}");
-        await Task.Delay(delay);
+        await Task.Delay(delay * 1000);
 
         var args = new PeekTaskOutputArgs() { JobId = jobId, TaskId = taskIds[0] };
         var result = await _jobTaskExecutor.PeekTaskOutputAsync(args);

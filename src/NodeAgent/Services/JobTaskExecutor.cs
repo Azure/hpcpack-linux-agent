@@ -304,12 +304,6 @@ public class JobTaskExecutor : IJobTaskExecutor
                 taskInfo.AssignFromStat(stat);
             }
 
-            var taskCompletionEventArgs = new TaskCompletionEventArgs()
-            {
-                JobId = taskInfo.JobId,
-                TaskInfo = taskInfo,
-                NodeName = _systemService.HostName,
-            };
             ReportTaskCompletionAsync(taskInfo, callbackUri).Wait();
         }
 
