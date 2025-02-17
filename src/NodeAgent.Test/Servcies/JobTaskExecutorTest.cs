@@ -24,6 +24,8 @@ public class JobTaskExecutorTest : TestBase, IClassFixture<IdGenerator>
 {
     private IdGenerator _idGenerator;
 
+    private const string _callbackUri = "http://callback";
+
     private MockSchedulerApiClientForJobTaskExecutor _schedulerApiClient;
 
     private ISystemService _systemService;
@@ -47,21 +49,57 @@ public class JobTaskExecutorTest : TestBase, IClassFixture<IdGenerator>
         _jobTaskExecutor = new JobTaskExecutor(logger, _schedulerApiClient, flag, _systemService, taskFactory);
     }
 
+    private async Task<(int JobId, int[] TaskIds, Task[] Tasks)> StartJobAndTasks(int numOfTasks, Func<int, int, int, string> taskCmd)
+    {
+        System.Diagnostics.Debug.Assert(numOfTasks > 0);
+
+        var jobId = _idGenerator.JobId;
+        var taskIds = new int[numOfTasks];
+        for (var idx = 0; idx < numOfTasks; idx++)
+        {
+            taskIds[idx] = _idGenerator.TaskId;
+        }
+
+        var jobStarted = false;
+        var tasks = new Task[taskIds.Length];
+        var i = 0;
+        foreach (var taskId in taskIds)
+        {
+            var cmd = taskCmd(i, jobId, taskId);
+            if (!jobStarted)
+            {
+                var args = new StartJobAndTaskArgs()
+                {
+                    JobId = jobId,
+                    TaskId = taskId,
+                    StartInfo = new ProcessStartInfo() { CommandLine = cmd },
+                    UserName = TestUser.RandomName,
+                    Password = "password",
+                };
+                //StartJobAndTaskAsync has to be finished before StartTaskAsync. This is by design.
+                await (tasks[i++] = _jobTaskExecutor.StartJobAndTaskAsync(args, _callbackUri));
+                jobStarted = true;
+            }
+            else
+            {
+                var args = new StartTaskArgs()
+                {
+                    JobId = jobId,
+                    TaskId = taskId,
+                    StartInfo = new ProcessStartInfo() { CommandLine = cmd },
+                };
+                tasks[i++] = _jobTaskExecutor.StartTaskAsync(args, _callbackUri);
+            }
+        }
+        return (jobId, taskIds, tasks);
+    }
+
     [Fact]
     public async Task TestStartJobAndTaskAsync()
     {
-        var jobId = _idGenerator.JobId;
-        var taskId = _idGenerator.TaskId;
-        var args = new StartJobAndTaskArgs()
-        {
-            JobId = jobId,
-            TaskId = taskId,
-            StartInfo = new ProcessStartInfo() { CommandLine = "sleep 1 && hostname" },
-            UserName = TestUser.RandomName,
-            Password = "password",
-        };
-        var callbackUri = "http://callback";
-        await _jobTaskExecutor.StartJobAndTaskAsync(args, callbackUri);
+        var (jobId, taskIds, tasks) = await StartJobAndTasks(1, (_, _, _) => "sleep 1 && hostname");
+        var taskId = taskIds[0];
+
         var jobCount = _jobTaskExecutor.GetJobCount();
         Assert.Equal(1, jobCount);
         var taskCount = _jobTaskExecutor.GetTaskCount();
@@ -81,7 +119,7 @@ public class JobTaskExecutorTest : TestBase, IClassFixture<IdGenerator>
 
         Assert.Single(_schedulerApiClient.TaskCompletionCalls);
         var call = _schedulerApiClient.TaskCompletionCalls.Single();
-        Assert.Equal(callbackUri, call.Uri);
+        Assert.Equal(_callbackUri, call.Uri);
         Assert.Equal(jobId, call.Args?.JobId);
         Assert.Equal(taskId, call.Args?.TaskInfo.TaskId);
         Assert.Equal(taskInfo, call.Args?.TaskInfo);
@@ -97,41 +135,8 @@ public class JobTaskExecutorTest : TestBase, IClassFixture<IdGenerator>
     [Fact]
     public async Task TestStartTaskAsync()
     {
-        var jobId = _idGenerator.JobId;
         //NOTE the number of elements here for the designed test.
-        var taskIds = new int[] { _idGenerator.TaskId, _idGenerator.TaskId, _idGenerator.TaskId, _idGenerator.TaskId };
-        var callbackUri = "http://callback";
-        var jobStarted = false;
-        var tasks = new Task[taskIds.Length - 1];
-        var i = 0;
-        foreach (var taskId in taskIds)
-        {
-            var cmd = $"sleep 1 && echo hellotask{taskId}";
-            if (!jobStarted)
-            {
-                var args = new StartJobAndTaskArgs()
-                {
-                    JobId = jobId,
-                    TaskId = taskId,
-                    StartInfo = new ProcessStartInfo() { CommandLine = cmd },
-                    UserName = TestUser.RandomName,
-                    Password = "password",
-                };
-                //StartJobAndTaskAsync has to be finished before StartTaskAsync. This is by design.
-                await _jobTaskExecutor.StartJobAndTaskAsync(args, callbackUri);
-                jobStarted = true;
-            }
-            else
-            {
-                var args = new StartTaskArgs()
-                {
-                    JobId = jobId,
-                    TaskId = taskId,
-                    StartInfo = new ProcessStartInfo() { CommandLine = cmd },
-                };
-                tasks[i++] = _jobTaskExecutor.StartTaskAsync(args, callbackUri);
-            }
-        }
+        var (jobId, taskIds, tasks) = await StartJobAndTasks(4, (_, _, taskId) => $"sleep 1 && echo hellotask{taskId}");
         await Task.WhenAll(tasks);
 
         Assert.Equal(1, _jobTaskExecutor.GetJobCount());
@@ -145,7 +150,7 @@ public class JobTaskExecutorTest : TestBase, IClassFixture<IdGenerator>
         Assert.Equal(taskIds.Length, _schedulerApiClient.TaskCompletionCalls.Count);
         foreach (var call in _schedulerApiClient.TaskCompletionCalls)
         {
-            Assert.Equal(callbackUri, call.Uri);
+            Assert.Equal(_callbackUri, call.Uri);
             Assert.NotNull(call.Args);
             Assert.Equal(jobId, call.Args.JobId);
             Assert.Contains(call.Args.TaskInfo.TaskId, taskIds);
@@ -154,24 +159,16 @@ public class JobTaskExecutorTest : TestBase, IClassFixture<IdGenerator>
     }
 
     [Theory]
-    [InlineData(3000, 3)]
-    [InlineData(3000, 0)]
-    [InlineData(0, 3)]
-    [InlineData(0, 0)]
-    public async Task TestEndTaskAsync(int delayBeforeEnd, int gracePeriod)
+    [InlineData(3000, 3, 100, false)]
+    [InlineData(3000, 0, 100, false)]
+    [InlineData(0, 3, 100, false)]
+    [InlineData(0, 0, 100, false)]
+    [InlineData(3000, 0, 0, true)]
+    [InlineData(3000, 3, 0, true)]
+    public async Task TestEndTaskAsync(int delayBeforeEnd, int gracePeriod, int sleep, bool endEarly)
     {
-        var jobId = _idGenerator.JobId;
-        var taskId = _idGenerator.TaskId;
-        var args = new StartJobAndTaskArgs()
-        {
-            JobId = jobId,
-            TaskId = taskId,
-            StartInfo = new ProcessStartInfo() { CommandLine = "sleep 100 && echo hellotask" },
-            UserName = TestUser.RandomName,
-            Password = "password",
-        };
-        var callbackUri = "http://callback";
-        await _jobTaskExecutor.StartJobAndTaskAsync(args, callbackUri);
+        var (jobId, taskIds, tasks) = await StartJobAndTasks(1, (_, _, _) => $"sleep {sleep} && echo hellotask");
+        var taskId = taskIds[0];
 
         Assert.Equal(1, _jobTaskExecutor.GetJobCount());
         Assert.Equal(1, _jobTaskExecutor.GetTaskCount());
@@ -184,11 +181,24 @@ public class JobTaskExecutorTest : TestBase, IClassFixture<IdGenerator>
             TaskId = taskId,
             TaskCancelGracePeriodSeconds = gracePeriod
         };
-        var taskInfo = await _jobTaskExecutor.EndTaskAsync(endArgs, callbackUri);
-        Assert.NotNull(taskInfo);
-        TestOut.OutputObject(taskInfo);
+        var taskInfo = await _jobTaskExecutor.EndTaskAsync(endArgs, _callbackUri);
+        if (endEarly)
+        {
+            Assert.Null(taskInfo);
+        }
+        else
+        {
+            Assert.NotNull(taskInfo);
+            TestOut.OutputObject(taskInfo);
+            Assert.True(taskInfo.Exited);
+            Assert.NotEqual(0, taskInfo.ExitCode);
+        }
 
-        Assert.True(taskInfo.Exited);
-        Assert.NotEqual(0, taskInfo.ExitCode);
+        Assert.Single(_schedulerApiClient.TaskCompletionCalls);
+        var call = _schedulerApiClient.TaskCompletionCalls.Single();
+        Assert.Equal(_callbackUri, call.Uri);
+        Assert.NotNull(call.Args);
+        Assert.Equal(call.Args.JobId, endArgs.JobId);
+        Assert.Equal(call.Args.TaskInfo.TaskId, endArgs.TaskId);
     }
 }
