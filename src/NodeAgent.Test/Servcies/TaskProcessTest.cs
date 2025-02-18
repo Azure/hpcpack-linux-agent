@@ -19,12 +19,6 @@ public class TaskProcessTest : TestBase
         _scriptBaseDir = Path.GetDirectoryName(typeof(SystemService).Assembly.Location)!;
     }
 
-    private bool HasRequiredLinuxCommands()
-    {
-        var result = _system.ExecuteInShellAsync("type pstree && type sudo").Result;
-        return result.ExitCode == 0;
-    }
-
     private TaskProcess CreateTaskProcess(string username, string cmdLine, TaskCompletionHandler? handler)
     {
         var logger = LoggerFactory.CreateLogger<TaskProcess>();
@@ -44,12 +38,10 @@ public class TaskProcessTest : TestBase
         return taskProcess;
     }
 
-    [SkippableFact]
+    [Fact]
     [SupportedOSPlatform("linux")]
     public async Task TestStartTaskAsync()
     {
-        Skip.IfNot(HasRequiredLinuxCommands());
-
         using var user = new TestUser(_system, TestOut);
         Assert.True(user.IsNew);
 
@@ -77,15 +69,13 @@ public class TaskProcessTest : TestBase
         await taskProcess.KillAsync();
     }
 
-    [SkippableTheory]
+    [Theory]
     [InlineData(0)]
     [InlineData(100)]
     [InlineData(3000)]
     [SupportedOSPlatform("linux")]
     public async Task TestKillTaskAsync(int delayBeforeKill)
     {
-        Skip.IfNot(HasRequiredLinuxCommands());
-
         using var user = new TestUser(_system, TestOut);
         Assert.True(user.IsNew);
 
@@ -116,15 +106,13 @@ public class TaskProcessTest : TestBase
 
     //TODO: Test concurrent calls to KillAsync
 
-    [SkippableTheory]
+    [Theory]
     [InlineData(0, false)]
     [InlineData(100, false)]
     [InlineData(2000, true)]
     [SupportedOSPlatform("linux")]
     public async Task TestPeekOutputAsync(int delayBeforePeek, bool shouldHaveOutput)
     {
-        Skip.IfNot(HasRequiredLinuxCommands());
-
         using var user = new TestUser(_system, TestOut);
         Assert.True(user.IsNew);
 
