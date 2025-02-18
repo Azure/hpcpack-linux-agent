@@ -76,6 +76,13 @@ extends:
               script: dotnet build --no-restore
 
           - task: Bash@3
+            displayName: 'Test Preparation'
+            inputs:
+              targetType: 'inline'
+              workingDirectory: $(Build.SourcesDirectory)/src
+              script: apt install -y openssh-client psmisc sudo
+
+          - task: Bash@3
             displayName: 'Test'
             inputs:
               targetType: 'inline'
