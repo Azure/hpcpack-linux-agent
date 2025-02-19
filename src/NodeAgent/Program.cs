@@ -1,4 +1,5 @@
 using NodeAgent.Services;
+using NodeAgent.Services.Extensions;
 using System.Runtime.Versioning;
 
 namespace NodeAgent;
@@ -12,8 +13,8 @@ public class Program
 
         builder.Services.AddControllers();
 
-        //TODO: Config the client ...
-        builder.Services.AddHttpClient();
+        builder.Services.ConfigureDefaultHttpClientFactory();
+        builder.Services.AddTrustedCertificateCollection();
 
         builder.Services.AddMonitorService();
         builder.Services.AddRegisterService();
@@ -30,6 +31,10 @@ public class Program
         builder.Services.AddSingleton<ISystemService, SystemService>();
         builder.Services.AddSingleton<ITaskProcessFactory, TaskProcessFactory>();
         builder.Services.AddSingleton<IOutputSenderFactory, OutputSenderFactory>();
+
+        //NOTE: This has to be placed after all the other builder.Services.* calls, since its
+        //implementation depends on a temporary service provider.
+        builder.Services.ConfigureKestrelServerOptions();
 
         var app = builder.Build();
 

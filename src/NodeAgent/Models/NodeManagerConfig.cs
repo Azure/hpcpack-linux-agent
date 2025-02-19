@@ -25,6 +25,8 @@ public class NodeManagerConfig : DiagBase
     [Required]
     public string RegisterUri { get; set; } = default!;
 
+    [Required]
+    //Server certificate public key file
     public string CertificateChainFile {  get; set; } = default!;
 
     public string PrivateKeyFile { get; set; } = default!;
