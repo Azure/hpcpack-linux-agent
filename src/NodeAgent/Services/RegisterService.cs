@@ -41,7 +41,7 @@ public class RegisterService : BackgroundService, IRegisterService
     {
         try
         {
-            var value = _monitor.GetRegisterInfo();
+            var value = await _monitor.GetRegisterInfoAsync().ConfigureAwait(false);
             var intervalMS = await _schedulerApiClient.RegisterAsync(value, stoppingToken).ConfigureAwait(false);
             if (intervalMS > 0)
             {

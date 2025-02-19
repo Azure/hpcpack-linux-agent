@@ -1,7 +1,10 @@
-﻿namespace NodeAgent.Models;
+﻿using System.ComponentModel.DataAnnotations;
+
+namespace NodeAgent.Models;
 
 public class RegisterInfo : DiagBase
 {
+    [Required]
     public string? NodeName { get; set; }
 
     public int CoreCount { get; set; }
