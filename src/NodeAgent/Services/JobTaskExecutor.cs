@@ -1,4 +1,5 @@
-﻿using NodeAgent.Models;
+﻿using Microsoft.Extensions.Logging;
+using NodeAgent.Models;
 using NodeAgent.Utils;
 using System.Diagnostics;
 
@@ -33,6 +34,11 @@ public interface IJobTaskExecutor
  */
 public class JobTaskExecutor : IJobTaskExecutor
 {
+    private class TaskProcessNotFound : ApplicationException
+    {
+        public TaskProcessNotFound(string msg) : base(msg) { }
+    }
+
     private ILogger _logger;
     private ISchedulerApiClient _schedulerApiClient;
     private IResyncFlag _resyncFlag;
@@ -359,53 +365,69 @@ public class JobTaskExecutor : IJobTaskExecutor
             _logger.LogDebug(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
                 "EndTask for ProcessKey {key}, processes count {count}", taskInfo.ProcessKey, _processes.Count);
 
-            var stat = TerminateTask(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount, taskInfo.ProcessKey,
-                (int)ErrorCodes.EndTaskExitCode, args.TaskCancelGracePeriodSeconds == 0, !taskInfo.PrimaryTask, cancellationToken);
-
-            if (stat == null || stat.IsTerminated)
+            try
             {
-                _logger.LogDebug(args.JobId, args.TaskId, null, "EndTask: Task is terminated.");
+                var stat = TerminateTask(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount, taskInfo.ProcessKey,
+                    (int)ErrorCodes.EndTaskExitCode, args.TaskCancelGracePeriodSeconds == 0, !taskInfo.PrimaryTask, cancellationToken);
 
-                taskInfo.Exited = true;
-                taskInfo.ExitCode = (int)ErrorCodes.EndTaskExitCode;
-                taskInfo.CancelGracefulPeriod?.Cancel();
-                taskInfo.AssignFromStat(stat);
-                ReportTaskCompletionAsync(taskInfo, callbackUri).Wait();
-                _jobTaskTable.RemoveTask(taskInfo.JobId, taskInfo.TaskId, taskInfo.AttemptId);
-            }
-            else
-            {
-                _logger.LogDebug(args.JobId, args.TaskId, null, "EndTask: Task is not terminated. Try to terminate it after {time} seconds.",
-                    args.TaskCancelGracePeriodSeconds);
-
-                taskInfo.Exited = false;
-                taskInfo.AssignFromStat(stat);
-                taskInfo.CancelGracefulPeriod?.Cancel();
-                taskInfo.CancelGracefulPeriod = new CancellationTokenSource();
-
-                //Let the following lambda capture this variable instead of the original taskInfo.
-                var capture = new
+                if (stat == null || stat.IsTerminated)
                 {
-                    JobId = taskInfo.JobId,
-                    TaskId = taskInfo.TaskId,
-                    TaskRequeueCount = taskInfo.TaskRequeueCount,
-                    ProcessKey = taskInfo.ProcessKey,
-                };
+                    _logger.LogDebug(args.JobId, args.TaskId, null, "EndTask: Task is terminated.");
 
-                Task.Delay(args.TaskCancelGracePeriodSeconds * 1000, taskInfo.CancelGracefulPeriod.Token)
-                    .ContinueWith(_ =>
+                    taskInfo.Exited = true;
+                    taskInfo.ExitCode = (int)ErrorCodes.EndTaskExitCode;
+                    taskInfo.CancelGracefulPeriod?.Cancel();
+                    taskInfo.AssignFromStat(stat);
+                    ReportTaskCompletionAsync(taskInfo, callbackUri).Wait();
+                    _jobTaskTable.RemoveTask(taskInfo.JobId, taskInfo.TaskId, taskInfo.AttemptId);
+                }
+                else
+                {
+                    _logger.LogDebug(args.JobId, args.TaskId, null, "EndTask: Task is not terminated. Try to terminate it after {time} seconds.",
+                        args.TaskCancelGracePeriodSeconds);
+
+                    taskInfo.Exited = false;
+                    taskInfo.AssignFromStat(stat);
+                    taskInfo.CancelGracefulPeriod?.Cancel();
+                    taskInfo.CancelGracefulPeriod = new CancellationTokenSource();
+
+                    //Let the following lambda capture this variable instead of the original taskInfo.
+                    var capture = new
                     {
-                        TerminateTaskAfterGracefulPeriod(capture.JobId, capture.TaskId, capture.TaskRequeueCount,
-                            capture.ProcessKey, callbackUri);
-                    }, TaskContinuationOptions.OnlyOnRanToCompletion);
-            }
+                        JobId = taskInfo.JobId,
+                        TaskId = taskInfo.TaskId,
+                        TaskRequeueCount = taskInfo.TaskRequeueCount,
+                        ProcessKey = taskInfo.ProcessKey,
+                    };
 
-            _logger.LogInformation(taskInfo.JobId, taskInfo.TaskId, null, "EndTask: Ended with result: {task}", taskInfo);
+                    Task.Delay(args.TaskCancelGracePeriodSeconds * 1000, taskInfo.CancelGracefulPeriod.Token)
+                        .ContinueWith(_ =>
+                        {
+                            TerminateTaskAfterGracefulPeriod(capture.JobId, capture.TaskId, capture.TaskRequeueCount,
+                                capture.ProcessKey, callbackUri);
+                        }, TaskContinuationOptions.OnlyOnRanToCompletion);
+                }
+
+                _logger.LogInformation(taskInfo.JobId, taskInfo.TaskId, null, "EndTask: Ended with result: {task}", taskInfo);
+            }
+            catch (TaskProcessNotFound ex)
+            {
+                _logger.LogWarning(ex, args.JobId, args.TaskId, null, "EndTask: No task is found for key {key}.", taskInfo.ProcessKey);
+            }
 
             return Task.FromResult<IReadOnlyTaskInfo?>(taskInfo);
         }
     }
 
+    /*
+     * NOTE
+     *
+     * The original C++ version method TerminateTask can terminate plain task or docker task. That is
+     * a bad design as that makes the return value ambiguous: you cannot tell if you succeeded terminating
+     * a task or just that the task is not found or that the task is a docker task when it return null.
+     * So here TaskProcessNotFound is raised when a task is not found. And for docker task, a new method
+     * should be made for that. That is a TODO.
+     */
     private ProcessStatistics? TerminateTask(int jobId, int taskId, int requeueCount, ulong processKey,
         int exitCode, bool forced, bool mpiDockerTask, CancellationToken cancellationToken = default)
     {
@@ -413,16 +435,15 @@ public class JobTaskExecutor : IJobTaskExecutor
 
         if (mpiDockerTask)
         {
+            //TODO: Move the function into a new method like TerminateDockerTask. See above notes.
             throw new NotImplementedException();
         }
         else
         {
             _processes.TryGetValue(processKey, out var process);
-
             if (process == null)
             {
-                _logger.LogWarning(jobId, taskId, requeueCount, "No process is found for the task.");
-                return null;
+                throw new TaskProcessNotFound($"No process is found for the key {processKey}.");
             }
 
             _logger.LogDebug(jobId, taskId, requeueCount, "Try to kill the process. Forced: {forced}", forced);
@@ -448,6 +469,7 @@ public class JobTaskExecutor : IJobTaskExecutor
 
     private void TerminateTaskAfterGracefulPeriod(int jobId, int taskId, int requeueCount, ulong processKey, string callbackUri)
     {
+        //TODO: Why requeue count is not set in log?
         _logger.LogInformation(jobId, taskId, null, "TerminateTaskAfterGracefulPeriod: Started.");
 
         lock (_lock)
@@ -459,9 +481,10 @@ public class JobTaskExecutor : IJobTaskExecutor
             }
             else
             {
-                var stat = TerminateTask(jobId, taskId, requeueCount, processKey, (int)ErrorCodes.EndTaskExitCode, true, false);
-                if (stat != null)
+                try
                 {
+                    var stat = TerminateTask(jobId, taskId, requeueCount, processKey, (int)ErrorCodes.EndTaskExitCode, true, false);
+
                     taskInfo.Exited = true;
                     taskInfo.ExitCode = (int)ErrorCodes.EndTaskExitCode;
                     taskInfo.AssignFromStat(stat);
@@ -472,9 +495,9 @@ public class JobTaskExecutor : IJobTaskExecutor
                     _jobTaskTable.RemoveTask(taskInfo.JobId, taskInfo.TaskId, taskInfo.AttemptId);
                     _logger.LogInformation(jobId, taskId, null, "TerminateTaskAfterGracefulPeriod: Ended with result: {task}", taskInfo);
                 }
-                else
+                catch (TaskProcessNotFound ex)
                 {
-                    _logger.LogWarning(jobId, taskId, null, "TerminateTaskAfterGracefulPeriod: TerminateTask returns null. TaskInfo: {task}", taskInfo);
+                    _logger.LogWarning(ex, jobId, taskId, requeueCount, "TerminateTaskAfterGracefulPeriod: No task is found for key {key}.", processKey);
                 }
             }
         }
@@ -496,17 +519,25 @@ public class JobTaskExecutor : IJobTaskExecutor
                 foreach (var taskInfo in jobInfo.Tasks.Values)
                 {
                     _logger.LogDebug(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount, "EnbJob: Terminating task.");
-                    var stat = TerminateTask(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
-                        taskInfo.ProcessKey, (int)ErrorCodes.EndJobExitCode, true, !taskInfo.PrimaryTask, cancellationToken);
-                    if (stat != null)
+
+                    try
                     {
-                        taskInfo.Exited = stat.IsTerminated;
+                        var stat = TerminateTask(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
+                            taskInfo.ProcessKey, (int)ErrorCodes.EndJobExitCode, true, !taskInfo.PrimaryTask, cancellationToken);
+
+                        taskInfo.Exited = stat?.IsTerminated ?? true;
                         taskInfo.ExitCode = (int)ErrorCodes.EndJobExitCode;
                         taskInfo.AssignFromStat(stat);
                         taskInfo.CancelGracefulPeriod?.Cancel();
+
+                        //NOTE: No ReportTaskCompletionAsync is called here for each task. So no end message will be sent to the Schedular.
+                        //Maybe an issue. But let's keep it as it is.
                     }
-                    //NOTE: No ReportTaskCompletionAsync is called here for each task. So no end message will be sent to the Schedular.
-                    //Maybe an issue. But let's keep it as it is.
+                    catch (TaskProcessNotFound ex)
+                    {
+                        _logger.LogWarning(ex, taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
+                            "EnbJob: No task is found for key {key}.", taskInfo.ProcessKey);
+                    }
                 }
             }
 
