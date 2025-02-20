@@ -293,28 +293,26 @@ public class JobTaskExecutor : IJobTaskExecutor
 
     private void OnTaskProcessComplete(TaskInfo taskInfo, string callbackUri, int processExitCode, string processMessage, ProcessStatistics? stat)
     {
-        taskInfo.CancelGracefulPeriod?.Cancel();
-
-        if (taskInfo.Exited)
+        lock (_lock)
         {
-            _logger.LogDebug(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount, "Task has already been ended by EndTask.");
-        }
-        else
-        {
-            _logger.LogDebug(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount, "Task is complete.");
+            taskInfo.CancelGracefulPeriod?.Cancel();
 
-            lock (_lock) {
+            if (taskInfo.Exited)
+            {
+                _logger.LogDebug(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount, "Task has already been ended by EndTask.");
+            }
+            else
+            {
+                _logger.LogDebug(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount, "Task is complete.");
+
                 taskInfo.Exited = true;
                 taskInfo.ExitCode = processExitCode;
                 taskInfo.Message = processMessage;
                 taskInfo.AssignFromStat(stat);
+
+                ReportTaskCompletionAsync(taskInfo, callbackUri).Wait();
             }
 
-            ReportTaskCompletionAsync(taskInfo, callbackUri).Wait();
-        }
-
-        lock (_lock)
-        {
             //This won't remove the task entry added later as attempt id doesn't match
             _jobTaskTable.RemoveTask(taskInfo.JobId, taskInfo.TaskId, taskInfo.AttemptId);
 
