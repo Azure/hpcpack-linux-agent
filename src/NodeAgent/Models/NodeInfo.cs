@@ -11,10 +11,10 @@ public class NodeInfo : DiagBase
 {
     public string? Name { get; set; }
 
-    //TODO: It's never set?
+    //It's never set?
     public string? MacAddress { get; set; }
 
-    //TODO: It's never changed?
+    //It's never changed?
     public int Availability { get; set; } = (int)NodeAvailability.AlwaysOn;
 
     public bool JustStarted { get; set; }

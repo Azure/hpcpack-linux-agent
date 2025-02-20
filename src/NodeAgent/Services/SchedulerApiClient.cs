@@ -91,7 +91,7 @@ public class SchedulerApiClient : ISchedulerApiClient
         try
         {
             uri = await _namingClient.ResolveUriAsync(
-                _configManager.Config.HostsFileUri!, _configManager.Config.DefaultServiceName, cancelToken);
+                _configManager.Config.HostsFileUri, _configManager.Config.DefaultServiceName, cancelToken);
 
             _logger.LogDebug("Get hosts info from {uri} with update id '{id}'", uri, updateId);
 

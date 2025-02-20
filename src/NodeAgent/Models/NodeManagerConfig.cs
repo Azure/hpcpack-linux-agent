@@ -2,36 +2,36 @@
 
 namespace NodeAgent.Models;
 
-//TODO: Review the nullability of the properties
 public class NodeManagerConfig : DiagBase
 {
-    public string TrustedCAFile { get; set; } = default!;
+    public string? TrustedCAFile { get; set; }
 
-    public string TrustedCAPath { get; set; } = default!;
+    public string? TrustedCAPath { get; set; }
 
+    //No use anywhere?
     public bool UseDefaultCA { get; set; }
 
-    public string ClusterAuthenticationKey { get; set; } = default!;
+    public string? ClusterAuthenticationKey { get; set; }
 
     [Required]
     public string HeartbeatUri { get; set; } = default!;
 
     public string? TaskCompletionUri { get; set; }
 
-    public string MetricInstanceIdsUri { get; set; } = default!;
+    public string? MetricInstanceIdsUri { get; set; }
 
-    public string MetricUri { get; set; } = default!;
+    public string? MetricUri { get; set; }
 
     [Required]
     public string RegisterUri { get; set; } = default!;
 
     [Required]
     //Server certificate public key file
-    public string CertificateChainFile {  get; set; } = default!;
+    public string CertificateChainFile { get; set; } = default!;
 
-    public string PrivateKeyFile { get; set; } = default!;
+    public string? PrivateKeyFile { get; set; }
 
-    public string ListeningUri { get; set; } = default!;
+    public string? ListeningUri { get; set; }
 
     public bool Debug { get; set; }
 
@@ -46,11 +46,12 @@ public class NodeManagerConfig : DiagBase
     [Required]
     public string UdpMetricServiceName { get; set; } = default!;
 
-    public string AzureInstanceMetaDataUri { get; set; } = default!;
+    public string? AzureInstanceMetaDataUri { get; set; }
 
     public int? HostsFetchInterval { get; set; }
 
-    public string? HostsFileUri { get; set; }
+    [Required]
+    public string HostsFileUri { get; set; } = default!;
 
     public int HttpRequestTimeoutSeconds { get; set; }
 }

@@ -39,25 +39,33 @@ public class ConfigManager : IConfigManager
 
     private void ReadConfig()
     {
-        var content = File.ReadAllText(_configFilePath);
-        if (string.IsNullOrWhiteSpace(content))
+        try
         {
-            throw new InvalidDataException($"Config file ${_configFilePath} is empty!");
-        }
-        _config = JsonSerializer.Deserialize<NodeManagerConfig>(content!);
-        if (_config == null)
-        {
-            throw new InvalidDataException($"Config file ${_configFilePath} is invalid!");
-        }
-        var validationResults = new List<ValidationResult>();
-        bool isValid = Validator.TryValidateObject(_config, new ValidationContext(_config), validationResults, true);
-        if (!isValid)
-        {
-            foreach (var validationResult in validationResults)
+            var content = File.ReadAllText(_configFilePath);
+            if (string.IsNullOrWhiteSpace(content))
             {
-                _logger?.LogError("Node Manager configuration validation error: {error}", validationResult.ErrorMessage);
+                throw new InvalidDataException("Empty config file!");
             }
-            throw new InvalidDataException($"Config file ${_configFilePath} contains invalid data!");
+            _config = JsonSerializer.Deserialize<NodeManagerConfig>(content!);
+            if (_config == null)
+            {
+                throw new InvalidDataException("Invalid config file!");
+            }
+            var validationResults = new List<ValidationResult>();
+            bool isValid = Validator.TryValidateObject(_config, new ValidationContext(_config), validationResults, true);
+            if (!isValid)
+            {
+                foreach (var validationResult in validationResults)
+                {
+                    _logger?.LogError("Config validation error: {error}", validationResult.ErrorMessage);
+                }
+                throw new InvalidDataException("Invalid config file!");
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogError(ex, "Error when reading config from {file}", _configFilePath);
+            throw;
         }
     }
 
@@ -67,12 +75,20 @@ public class ConfigManager : IConfigManager
     {
         lock (_saveLock)
         {
-            var options = new JsonSerializerOptions
+            try
             {
-                WriteIndented = true,
-            };
-            var jsonString = JsonSerializer.Serialize(Config, options);
-            File.WriteAllText(_configFilePath, jsonString);
+                var options = new JsonSerializerOptions
+                {
+                    WriteIndented = true,
+                };
+                var jsonString = JsonSerializer.Serialize(Config, options);
+                File.WriteAllText(_configFilePath, jsonString);
+            }
+            catch (Exception ex)
+            {
+                _logger?.LogError(ex, "Error when saving config to {file}", _configFilePath);
+                throw;
+            }
         }
     }
 }

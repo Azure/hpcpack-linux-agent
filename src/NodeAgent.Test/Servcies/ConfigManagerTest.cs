@@ -1,15 +1,24 @@
-﻿using NodeAgent.Services;
+﻿using Microsoft.Extensions.Logging;
+using NodeAgent.Services;
+using Xunit.Abstractions;
 
 namespace NodeAgent.Test.Servcies;
 
-public class ConfigManagerTest
+public class ConfigManagerTest : TestBase
 {
+    private ILogger<ConfigManager> _logger;
+
+    public ConfigManagerTest(ITestOutputHelper output) : base(output)
+    {
+        _logger = LoggerFactory.CreateLogger<ConfigManager>();
+    }
+
     [Fact]
     public void TestNonexistedConfigFile()
     {
         Assert.Throws<FileNotFoundException>(() =>
         {
-            var configManager = new ConfigManager(null, "nonexisted-file");
+            var configManager = new ConfigManager(_logger, "nonexisted-file");
         });
     }
 
@@ -24,7 +33,7 @@ public class ConfigManagerTest
         {
             Assert.Throws<InvalidDataException>(() =>
             {
-                var configManager = new ConfigManager(null, filepath);
+                var configManager = new ConfigManager(_logger, filepath);
             });
         }
         finally
@@ -50,7 +59,7 @@ public class ConfigManagerTest
         {
             Assert.Throws<InvalidDataException>(() =>
             {
-                var configManager = new ConfigManager(null, filepath);
+                var configManager = new ConfigManager(_logger, filepath);
             });
         }
         finally
@@ -64,8 +73,10 @@ public class ConfigManagerTest
     {
         var json = """
 {
+    "CertificateChainFile": "a",
     "HeartbeatUri": "abc",
     "RegisterUri": "a",
+    "HostsFileUri": "a",
     "NamingServiceUri": ["a"],
     "DefaultServiceName": "a",
     "UdpMetricServiceName": "a"
@@ -78,7 +89,7 @@ public class ConfigManagerTest
         try
         {
             //NOTE: Only filename is passed in here.
-            var configManager = new ConfigManager(null, filename);
+            var configManager = new ConfigManager(_logger, filename);
             Assert.Equal("abc", configManager.Config.HeartbeatUri);
             Assert.NotEmpty(configManager.Config.RegisterUri);
             Assert.NotEmpty(configManager.Config.NamingServiceUri);
@@ -90,7 +101,7 @@ public class ConfigManagerTest
             configManager.SaveConfig();
 
             //NOTE: An absolute path is passed in here.
-            configManager = new ConfigManager(null, filepath);
+            configManager = new ConfigManager(_logger, filepath);
             Assert.Equal("xyz", configManager.Config.HeartbeatUri);
         }
         finally
