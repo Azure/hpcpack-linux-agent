@@ -5,14 +5,12 @@ namespace NodeAgent.Models;
 public class OutputData : DiagBase
 {
     [Required]
-    public string? NodeName { get; set; }
+    public string NodeName { get; set; } = default!;
 
-    [Required]
     public int Order { get; set; } = 0;
 
     [Required]
-    public string? Content { get; set; }
+    public string Content { get; set; } = default!;
 
-    [Required]
     public bool Eof { get; set; } = false;
 }

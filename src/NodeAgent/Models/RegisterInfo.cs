@@ -5,7 +5,7 @@ namespace NodeAgent.Models;
 public class RegisterInfo : DiagBase
 {
     [Required]
-    public string? NodeName { get; set; }
+    public string NodeName { get; set; } = default!;
 
     public int CoreCount { get; set; }
 
