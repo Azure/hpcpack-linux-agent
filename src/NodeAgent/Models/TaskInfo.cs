@@ -96,7 +96,7 @@ public class TaskInfo : DiagBase, IReadOnlyTaskInfo
     public IEnumerable<ulong>? Affinity { get; set; }
 
     [JsonIgnore]
-    public ulong ProcessKey { set; get; }
+    public ulong ProcessKey { get; private set; }
 
     private bool _processKeySet = false;
 
