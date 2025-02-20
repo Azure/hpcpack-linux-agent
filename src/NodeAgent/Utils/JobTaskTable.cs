@@ -8,7 +8,7 @@ public class JobTaskTable
     private IDictionary<int, JobInfo> _jobs = new Dictionary<int, JobInfo>();
 
     //Add jobs task if it's not existed in _jobs. Return the existed or new TaskInfo.
-    public TaskInfo AddJobAndTask(int jobId, int taskId, out bool isNewEntry)
+    public TaskInfo AddJobAndTask(int jobId, int taskId, int requeueCount, out bool isNewEntry)
     {
         if (!_jobs.TryGetValue(jobId, out var jobInfo))
         {
@@ -23,7 +23,7 @@ public class JobTaskTable
         else
         {
             isNewEntry = true;
-            taskInfo = new TaskInfo() { JobId = jobId, TaskId = taskId };
+            taskInfo = new TaskInfo(jobId, taskId, requeueCount);
             jobInfo.Tasks.Add(taskId, taskInfo);
         }
 
@@ -32,20 +32,20 @@ public class JobTaskTable
 
     public TaskInfo? GetTask(int jobId, int taskId)
     {
-        if (_jobs.TryGetValue(jobId, out var jobInfo)
-            && jobInfo.Tasks.TryGetValue(taskId, out var taskInfo))
+        if (_jobs.TryGetValue(jobId, out var jobInfo) && jobInfo.Tasks.TryGetValue(taskId, out var taskInfo))
         {
             return taskInfo;
         }
         return null;
     }
 
-    public TaskInfo? RemoveTask(int jobId, int taskId, ulong attemptId)
+    public TaskInfo? RemoveTask(int jobId, int taskId, int? requeueCount = null)
     {
         TaskInfo? taskInfo = null;
         if (_jobs.TryGetValue(jobId, out var jobInfo))
         {
-            if (jobInfo.Tasks.TryGetValue(taskId, out taskInfo) && taskInfo.AttemptId == attemptId)
+            if (jobInfo.Tasks.TryGetValue(taskId, out taskInfo) &&
+                (requeueCount is null || taskInfo.TaskRequeueCount == requeueCount))
             {
                 jobInfo.Tasks.Remove(taskId);
             }

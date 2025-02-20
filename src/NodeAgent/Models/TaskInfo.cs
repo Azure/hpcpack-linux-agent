@@ -33,41 +33,21 @@ public interface IReadOnlyTaskInfo
     IReadOnlyList<int>? ProcessIds { get; }
 }
 
-
-//TODO: Unit test? And should it be a model class with unit test?
 public class TaskInfo : DiagBase, IReadOnlyTaskInfo
 {
-    public int JobId { get; set; }
-
-    public int TaskId { get; set; }
-
-    /*
-     * NOTE
-     *
-     * AttemptId is not always equal to ProcessKey, which is set only once.
-     */
-    public int TaskRequeueCount
+    public TaskInfo(int jobId, int taskId, int requeueCount)
     {
-        set
-        {
-            if (value >= _taskRequeueCount)
-            {
-                _taskRequeueCount = value;
-                if (!_processKeySet)
-                {
-                    ProcessKey = AttemptId;
-                    _processKeySet = true;
-                }
-            }
-        }
-
-        get
-        {
-            return _taskRequeueCount;
-        }
+        JobId = jobId;
+        TaskId = taskId;
+        TaskRequeueCount = requeueCount;
+        ProcessKey = ((ulong)TaskRequeueCount << 32) + (ulong)TaskId;
     }
 
-    private int _taskRequeueCount = 0;
+    public int JobId { get; }
+
+    public int TaskId { get; }
+
+    public int TaskRequeueCount { get; }
 
     public int ExitCode { get; set; } = 0;
 
@@ -96,12 +76,7 @@ public class TaskInfo : DiagBase, IReadOnlyTaskInfo
     public IEnumerable<ulong>? Affinity { get; set; }
 
     [JsonIgnore]
-    public ulong ProcessKey { get; private set; }
-
-    private bool _processKeySet = false;
-
-    [JsonIgnore]
-    public ulong AttemptId => ((ulong)_taskRequeueCount << 32) + (ulong)TaskId;
+    public ulong ProcessKey { get; }
 
     [JsonIgnore]
     public CancellationTokenSource? CancelGracefulPeriod { get; set; }

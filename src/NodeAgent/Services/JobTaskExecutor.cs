@@ -241,9 +241,8 @@ public class JobTaskExecutor : IJobTaskExecutor
             }
 
             var userName = user!.Item1;
-            var taskInfo = _jobTaskTable.AddJobAndTask(args.JobId, args.TaskId, out var isNewEntry);
+            var taskInfo = _jobTaskTable.AddJobAndTask(args.JobId, args.TaskId, args.StartInfo.TaskRequeueCount, out var isNewEntry);
             taskInfo.Affinity = args.StartInfo.Affinity;
-            taskInfo.TaskRequeueCount = args.StartInfo.TaskRequeueCount;
 
             if (string.IsNullOrEmpty(args.StartInfo.CommandLine))
             {
@@ -279,6 +278,7 @@ public class JobTaskExecutor : IJobTaskExecutor
                             OnTaskProcessComplete(taskInfo, callbackUri, exitCode, message, stat);
                         });
 
+                    //TODO: Save the process in a property of taskInfo and remove _processes. Is that OK?
                     _processes[taskInfo.ProcessKey] = process;
 
                     _logger.LogDebug(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
@@ -313,12 +313,7 @@ public class JobTaskExecutor : IJobTaskExecutor
                 ReportTaskCompletionAsync(taskInfo, callbackUri).Wait();
             }
 
-            //This won't remove the task entry added later as attempt id doesn't match
-            _jobTaskTable.RemoveTask(taskInfo.JobId, taskInfo.TaskId, taskInfo.AttemptId);
-
-            _logger.LogDebug(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
-                "Remove task process: ProcessKey {key}, AttemptId {id}", taskInfo.ProcessKey, taskInfo.AttemptId);
-
+            _jobTaskTable.RemoveTask(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount);
             _processes.Remove(taskInfo.ProcessKey);
         }
     }
@@ -377,7 +372,7 @@ public class JobTaskExecutor : IJobTaskExecutor
                     taskInfo.CancelGracefulPeriod?.Cancel();
                     taskInfo.AssignFromStat(stat);
                     ReportTaskCompletionAsync(taskInfo, callbackUri).Wait();
-                    _jobTaskTable.RemoveTask(taskInfo.JobId, taskInfo.TaskId, taskInfo.AttemptId);
+                    _jobTaskTable.RemoveTask(taskInfo.JobId, taskInfo.TaskId);
                 }
                 else
                 {
@@ -490,7 +485,7 @@ public class JobTaskExecutor : IJobTaskExecutor
 
                     ReportTaskCompletionAsync(taskInfo, callbackUri).Wait();
 
-                    _jobTaskTable.RemoveTask(taskInfo.JobId, taskInfo.TaskId, taskInfo.AttemptId);
+                    _jobTaskTable.RemoveTask(taskInfo.JobId, taskInfo.TaskId);
                     _logger.LogInformation(jobId, taskId, null, "TerminateTaskAfterGracefulPeriod: Ended with result: {task}", taskInfo);
                 }
                 catch (TaskProcessNotFound ex)
