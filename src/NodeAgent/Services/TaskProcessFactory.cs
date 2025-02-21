@@ -48,8 +48,23 @@ public class TaskProcessFactory : ITaskProcessFactory
         _loggerFactory = loggerFactory;
         _systemService = systemService;
         _outputSenderFactory = outputSenderFactory;
-        _scriptBaseDir = scriptBaseDir ?? Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)!;
+        _scriptBaseDir = scriptBaseDir ?? DefaultScriptBaseDir;
         _logger.LogInformation("Script base directory: {dir}", _scriptBaseDir);
+    }
+
+    public static string DefaultScriptBaseDir
+    {
+        get
+        {
+#pragma warning disable IL3000 // Avoid accessing Assembly file path when publishing as a single file
+            var assemblyLocation = Assembly.GetExecutingAssembly().Location;
+#pragma warning restore IL3000 // Avoid accessing Assembly file path when publishing as a single file
+            if (!string.IsNullOrEmpty(assemblyLocation))
+            {
+                return Path.GetDirectoryName(assemblyLocation)!;
+            }
+            return AppContext.BaseDirectory;
+        }
     }
 
     public ITaskProcess CreateProcess(
