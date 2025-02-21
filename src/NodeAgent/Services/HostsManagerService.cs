@@ -1,6 +1,5 @@
 ﻿using NodeAgent.Models;
 using NodeAgent.Utils;
-using System.Net;
 
 namespace NodeAgent.Services;
 
@@ -18,7 +17,7 @@ public class HostsManagerService : BackgroundService, IHostsManagerService
     private string? _updateId;
 
     public HostsManagerService(
-        ILogger<RegisterService> logger,
+        ILogger<HostsManagerService> logger,
         ISchedulerApiClient schedulerApiClient,
         IConfigManager configManager)
     {
