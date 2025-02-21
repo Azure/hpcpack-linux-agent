@@ -34,7 +34,7 @@ public class Program
 
         //NOTE: This has to be placed after all the other builder.Services.* calls, since its
         //implementation depends on a temporary service provider.
-        builder.Services.ConfigureKestrelServerOptions();
+        builder.ConfigureKestrelServer();
 
         var app = builder.Build();
 

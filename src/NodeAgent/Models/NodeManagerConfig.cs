@@ -31,7 +31,8 @@ public class NodeManagerConfig : DiagBase
 
     public string? PrivateKeyFile { get; set; }
 
-    public string? ListeningUri { get; set; }
+    [Required]
+    public string ListeningUri { get; set; } = default!;
 
     public bool Debug { get; set; }
 

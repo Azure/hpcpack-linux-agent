@@ -4,19 +4,21 @@ using System.Security.Cryptography.X509Certificates;
 
 namespace NodeAgent.Services.Extensions;
 
-public static class KestrelServerServiceCollectionExtensions
+public static class KestrelServerWebApplicationBuilderExtensions
 {
-    public static IServiceCollection ConfigureKestrelServerOptions(this IServiceCollection services)
+    public static WebApplicationBuilder ConfigureKestrelServer(this WebApplicationBuilder appBuilder)
     {
-        return services.Configure<KestrelServerOptions>(options =>
+        using var provider = appBuilder.Services.BuildServiceProvider();
+        var configManager = provider.GetRequiredService<IConfigManager>();
+        appBuilder.WebHost.UseUrls(configManager.Config.ListeningUri);
+
+        appBuilder.Services.Configure<KestrelServerOptions>(options =>
         {
             options.ConfigureHttpsDefaults(options =>
             {
-                //NOTE: The Configure method doesn't provide a service provider so we have to build one in this scope.
-                //This is not ideal but better than nothing.
-                using var provider = services.BuildServiceProvider();
+                using var provider = appBuilder.Services.BuildServiceProvider();
                 var loggerFactory = provider.GetService<ILoggerFactory>();
-                var logger = loggerFactory?.CreateLogger(nameof(KestrelServerServiceCollectionExtensions));
+                var logger = loggerFactory?.CreateLogger(nameof(KestrelServerWebApplicationBuilderExtensions));
                 try
                 {
                     var configManager = provider.GetRequiredService<IConfigManager>();
@@ -47,5 +49,7 @@ public static class KestrelServerServiceCollectionExtensions
                 }
             });
         });
+
+        return appBuilder;
     }
 }

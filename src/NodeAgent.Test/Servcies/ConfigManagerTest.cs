@@ -74,7 +74,8 @@ public class ConfigManagerTest : TestBase
         var json = """
 {
     "CertificateChainFile": "a",
-    "HeartbeatUri": "abc",
+    "ListeningUri": "a",
+    "HeartbeatUri": "a",
     "RegisterUri": "a",
     "HostsFileUri": "a",
     "NamingServiceUri": ["a"],
@@ -90,7 +91,7 @@ public class ConfigManagerTest : TestBase
         {
             //NOTE: Only filename is passed in here.
             var configManager = new ConfigManager(_logger, filename);
-            Assert.Equal("abc", configManager.Config.HeartbeatUri);
+            Assert.Equal("a", configManager.Config.HeartbeatUri);
             Assert.NotEmpty(configManager.Config.RegisterUri);
             Assert.NotEmpty(configManager.Config.NamingServiceUri);
             Assert.NotEmpty(configManager.Config.DefaultServiceName);
