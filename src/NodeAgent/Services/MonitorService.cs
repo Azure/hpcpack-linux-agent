@@ -49,8 +49,15 @@ public class MonitorService : BackgroundService, IMonitorService
         }));
         tasks.Add(Task.Run(async () =>
         {
-            var gpuInfo = await _systemService.GetGpuInfoAsync().ConfigureAwait(false);
-            info.GpuInfo = gpuInfo;
+            try
+            {
+                var gpuInfo = await _systemService.GetGpuInfoAsync().ConfigureAwait(false);
+                info.GpuInfo = gpuInfo;
+            }
+            catch (SystemException ex)
+            {
+                _logger.LogWarning(ex, "Error when getting GPU info.");
+            }
         }));
         tasks.Add(Task.Run(() =>
         {

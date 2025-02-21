@@ -703,6 +703,7 @@ echo "$path"
         }
     }
 
+    //TODO: If not GPU is found, it should return an empty collection, or null, rather than throw an exception.
     [SupportedOSPlatform("linux")]
     public async Task<IEnumerable<ExtendedGpuInfo>> GetGpuInfoAsync(CancellationToken cancellationToken = default)
     {
