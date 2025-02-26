@@ -1,3 +1,4 @@
+using Microsoft.AspNetCore.HttpLogging;
 using NodeAgent.Services;
 using NodeAgent.Services.Extensions;
 using System.Runtime.Versioning;
@@ -10,6 +11,10 @@ public class Program
     public static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
+
+        builder.Services.AddHttpLogging(options => {
+            options.LoggingFields = HttpLoggingFields.All;
+        });
 
         builder.Services.AddControllers();
 
@@ -38,6 +43,7 @@ public class Program
 
         var app = builder.Build();
 
+        app.UseHttpLogging();
         app.UseMiddleware<ErrorHandler>();
         app.UseRouting();
         app.MapControllers();
