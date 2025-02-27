@@ -14,6 +14,7 @@ public class Program
 
         builder.Services.AddHttpLogging(options => {
             options.LoggingFields = HttpLoggingFields.All;
+            options.RequestHeaders.Add("CallbackUri");
         });
 
         builder.Services.AddControllers();
