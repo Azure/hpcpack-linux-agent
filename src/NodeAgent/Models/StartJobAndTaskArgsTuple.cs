@@ -3,7 +3,7 @@
 namespace NodeAgent.Models;
 
 //The tuple input is really bad! But we have to keep it for compatibility.
-public class StartJobAndTaskArgsTuple : DiagBase
+public class StartJobAndTaskArgsTuple : DiagBase, IValidatableObject
 {
     [Required]
     public JobIdAndTaskId m_item1 { get; set; } = default!;
@@ -12,13 +12,16 @@ public class StartJobAndTaskArgsTuple : DiagBase
     public ProcessStartInfo m_item2 { get; set; } = default!;
 
     [Required]
+    //username
     public string m_item3 { get; set; } = default!;
 
-    [Required]
-    public string m_item4 { get; set; } = default!;
+    //password
+    public string? m_item4 { get; set; } = default!;
 
+    //private key
     public string? m_item5 { get; set; }
 
+    //public key
     public string? m_item6 { get; set; }
 
     public StartJobAndTaskArgs ToStartJobAndTaskArgs()
@@ -33,5 +36,15 @@ public class StartJobAndTaskArgsTuple : DiagBase
             PrivateKey = m_item5,
             PublicKey = m_item6,
         };
+    }
+
+    public IEnumerable<ValidationResult> Validate(ValidationContext _)
+    {
+        if (string.IsNullOrEmpty(m_item4) && string.IsNullOrEmpty(m_item5))
+        {
+            yield return new ValidationResult(
+                "Either a password or a priveate key must be provided.",
+                [nameof(m_item4), nameof(m_item5)]);
+        }
     }
 }

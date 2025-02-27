@@ -110,6 +110,7 @@ public class JobTaskExecutor : IJobTaskExecutor
                 userName = "hpc_faked_root";
             }
 
+            Debug.Assert(args.Password != null);
             existed = !(await _systemService.CreateUserAsync(userName, args.Password, isAdmin, cancellationToken).ConfigureAwait(false));
 
             _logger.LogDebug(args.JobId, args.TaskId, null,
