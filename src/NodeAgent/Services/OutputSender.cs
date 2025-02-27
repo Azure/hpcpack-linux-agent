@@ -39,6 +39,7 @@ public class OutputSender : IOutputSender
     {
         try
         {
+            _logger?.LogDebug("Send {data} to {uri}", data, Uri);
             var response = await _httpClient.PostAsJsonAsync(Uri, data, cancellationToken);
             response.EnsureSuccessStatusCode();
         }

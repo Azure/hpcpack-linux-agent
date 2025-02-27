@@ -73,6 +73,8 @@ public class JobTaskExecutor : IJobTaskExecutor
 
     private async Task<UserInfo> SetupUserAccountAsync(StartJobAndTaskArgs args, CancellationToken cancellationToken = default)
     {
+        _logger.LogDebug(args.JobId, args.TaskId, null, "SetupUserAccountAsync starts.");
+
         string? isAdminValue = null;
         string? mapAdminUserValue = null;
         args.StartInfo?.EnvironmentVariables?.TryGetValue("CCP_ISADMIN", out isAdminValue);
@@ -97,6 +99,8 @@ public class JobTaskExecutor : IJobTaskExecutor
         {
             userName = "root";
             existed = true;
+
+            _logger.LogDebug(args.JobId, args.TaskId, null, "SetupUserAccountAsync: Treat user {user} as root.", args.UserName);
         }
         else
         {
@@ -114,7 +118,7 @@ public class JobTaskExecutor : IJobTaskExecutor
             existed = !(await _systemService.CreateUserAsync(userName, args.Password, isAdmin, cancellationToken).ConfigureAwait(false));
 
             _logger.LogDebug(args.JobId, args.TaskId, null,
-                "User '{user}' is {op} on node.", userName, existed ? "found" : "created");
+                "SetupUserAccountAsync: User '{user}' is {op} on node.", userName, existed ? "found" : "created");
         }
 
         bool privateKeyAdded = false;
@@ -150,12 +154,12 @@ public class JobTaskExecutor : IJobTaskExecutor
             }
 
             _logger.LogDebug(args.JobId, args.TaskId, null,
-                "Add SSH key for user {user} result: private {private}, public {public}, auth {auth}",
+                "SetupUserAccountAsync: Add SSH key for user {user} result: private {private}, public {public}, auth {auth}",
                 userName, privateKeyAdded, publicKeyAdded, authKeyAdded);
         }
         else
         {
-            _logger.LogDebug(args.JobId, args.TaskId, null, "Do not add SSH key for user {user}", userName);
+            _logger.LogDebug(args.JobId, args.TaskId, null, "SetupUserAccountAsync: Do not add SSH key for user {user}", userName);
         }
 
         return new UserInfo(userName, existed, privateKeyAdded , publicKeyAdded, authKeyAdded, args.PublicKey);
@@ -166,7 +170,7 @@ public class JobTaskExecutor : IJobTaskExecutor
         var (userName, existed, privateKeyAdded, publicKeyAdded, authKeyAdded, publicKey) = userInfo;
 
         _logger.LogDebug(jobId, null, null,
-            "Remove SSH key for user {user}: private {private}, public {public}, auth {auth}",
+            "CleanupUserAccountAsync: Remove SSH key for user {user}: private {private}, public {public}, auth {auth}",
             userName, privateKeyAdded, publicKeyAdded, authKeyAdded);
 
         if (privateKeyAdded)
@@ -177,7 +181,7 @@ public class JobTaskExecutor : IJobTaskExecutor
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, jobId, null, null, "Error when removing SSH private key");
+                _logger.LogError(ex, jobId, null, null, "CleanupUserAccountAsync: Error when removing SSH private key");
             }
         }
 
@@ -189,7 +193,7 @@ public class JobTaskExecutor : IJobTaskExecutor
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, jobId, null, null, "Error when removing SSH public key");
+                _logger.LogError(ex, jobId, null, null, "CleanupUserAccountAsync: Error when removing SSH public key");
             }
         }
 
@@ -201,13 +205,15 @@ public class JobTaskExecutor : IJobTaskExecutor
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, jobId, null, null, "Error when removing SSH authorized key");
+                _logger.LogError(ex, jobId, null, null, "CleanupUserAccountAsync: Error when removing SSH authorized key");
             }
         }
     }
 
     public async Task StartJobAndTaskAsync(StartJobAndTaskArgs args, string callbackUri, CancellationToken cancellationToken = default)
     {
+        _logger.LogInformation(args.JobId, args.TaskId, null, "StartJobAndTaskAsync starts.");
+
         await Task.Yield();
         lock (_lock)
         {
@@ -215,7 +221,7 @@ public class JobTaskExecutor : IJobTaskExecutor
             var userName = user.Item1;
 
             var added = _jobUsers.TryAdd(args.JobId, user);
-            _logger.LogDebug(args.JobId, args.TaskId, null, "User '{user}' is added to jobUsers table.", userName);
+            _logger.LogDebug(args.JobId, args.TaskId, null, "StartJobAndTaskAsync: User '{user}' is added to jobUsers table.", userName);
 
             var hasValue = _userJobs.TryGetValue(userName, out var jobs);
             if (hasValue)
@@ -233,6 +239,8 @@ public class JobTaskExecutor : IJobTaskExecutor
 
     public Task StartTaskAsync(StartTaskArgs args, string callbackUri, CancellationToken cancellationToken = default)
     {
+        _logger.LogInformation(args.JobId, args.TaskId, args.StartInfo.TaskRequeueCount, "StartTaskAsync starts.");
+
         lock (_lock)
         {
             var hasValue = _jobUsers.TryGetValue(args.JobId, out var user);
@@ -248,7 +256,7 @@ public class JobTaskExecutor : IJobTaskExecutor
             if (string.IsNullOrEmpty(args.StartInfo.CommandLine))
             {
                 _logger.LogInformation(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
-                    "MPI non-master task found, skip creating the process.");
+                    "StartTaskAsync: MPI non-master task found, skip creating a process.");
 
                 throw new NotImplementedException();
             }
@@ -256,7 +264,7 @@ public class JobTaskExecutor : IJobTaskExecutor
             {
                 if (!isNewEntry || _processes.ContainsKey(taskInfo.ProcessKey))
                 {
-                    _logger.LogWarning(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount, "The task has already started.");
+                    _logger.LogWarning(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount, "StartTaskAsync: The task has already started.");
                 }
                 else
                 {
@@ -283,7 +291,7 @@ public class JobTaskExecutor : IJobTaskExecutor
                     _processes[taskInfo.ProcessKey] = process;
 
                     _logger.LogDebug(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
-                        "Start process with ProcessKey {key} and process count {count}", taskInfo.ProcessKey, _processes.Count);
+                        "StartTaskAsync: Start process with ProcessKey {key}. Total process count: {count}", taskInfo.ProcessKey, _processes.Count);
 
                     return process.StartAsync();
                 }
@@ -300,11 +308,13 @@ public class JobTaskExecutor : IJobTaskExecutor
 
             if (taskInfo.Exited)
             {
-                _logger.LogDebug(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount, "Task has already been ended by EndTask.");
+                _logger.LogInformation(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
+                    "OnTaskProcessComplete: Task has already been ended by EndTask.");
             }
             else
             {
-                _logger.LogDebug(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount, "Task is complete.");
+                _logger.LogInformation(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
+                    "OnTaskProcessComplete: Task is complete.");
 
                 taskInfo.Exited = true;
                 taskInfo.ExitCode = processExitCode;
@@ -332,12 +342,12 @@ public class JobTaskExecutor : IJobTaskExecutor
             await _schedulerApiClient.ReportTaskCompletionAsync(uri, args, cancelToken).ConfigureAwait(false);
 
             _logger.LogInformation(args.JobId, args.TaskInfo.TaskId, args.TaskInfo.TaskRequeueCount,
-                "Report task completion to {uri}. OK", uri);
+                "ReportTaskCompletionAsync: Report task completion to {uri}. OK", uri);
         }
         catch (Exception ex)
         {
             _logger.LogError(ex, taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
-                "Error when reporting task completion to {uri}", uri);
+                "ReportTaskCompletionAsync: Error when reporting task completion to {uri}", uri);
 
             _resyncFlag.RequestResync = true;
         }
@@ -345,28 +355,30 @@ public class JobTaskExecutor : IJobTaskExecutor
 
     public Task<IReadOnlyTaskInfo?> EndTaskAsync(EndTaskArgs args, string callbackUri, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation(args.JobId, args.TaskId, null, "EndTask: Started.");
+        _logger.LogInformation(args.JobId, args.TaskId, null, "EndTaskAsync starts.");
+
         lock (_lock)
         {
             var taskInfo = _jobTaskTable.GetTask(args.JobId, args.TaskId);
             if (taskInfo == null)
             {
-                _logger.LogWarning(args.JobId, args.TaskId, null, "EndTask: Task is already finished.");
+                _logger.LogWarning(args.JobId, args.TaskId, null, "EndTaskAsync: Task is already finished.");
                 return Task.FromResult<IReadOnlyTaskInfo?>(null);
             }
 
-            _logger.LogDebug(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount, "TaskInfo: {task}", taskInfo);
-            _logger.LogDebug(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
-                "EndTask for ProcessKey {key}, processes count {count}", taskInfo.ProcessKey, _processes.Count);
+            _logger.LogDebug(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount, "EndTaskAsync: TaskInfo: {task}", taskInfo);
 
             try
             {
+                _logger.LogDebug(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
+                    "EndTaskAsync: End task of ProcessKey {key}. Total process count: {count}", taskInfo.ProcessKey, _processes.Count);
+
                 var stat = TerminateTask(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount, taskInfo.ProcessKey,
                     (int)ErrorCodes.EndTaskExitCode, args.TaskCancelGracePeriodSeconds == 0, !taskInfo.PrimaryTask, cancellationToken);
 
                 if (stat == null || stat.IsTerminated)
                 {
-                    _logger.LogDebug(args.JobId, args.TaskId, null, "EndTask: Task is terminated.");
+                    _logger.LogInformation(args.JobId, args.TaskId, null, "EndTaskAsync: Task is terminated.");
 
                     taskInfo.Exited = true;
                     taskInfo.ExitCode = (int)ErrorCodes.EndTaskExitCode;
@@ -377,8 +389,8 @@ public class JobTaskExecutor : IJobTaskExecutor
                 }
                 else
                 {
-                    _logger.LogDebug(args.JobId, args.TaskId, null, "EndTask: Task is not terminated. Try to terminate it after {time} seconds.",
-                        args.TaskCancelGracePeriodSeconds);
+                    _logger.LogInformation(args.JobId, args.TaskId, null,
+                        "EndTaskAsync: Task is not terminated. Try to terminate it after {time} seconds.", args.TaskCancelGracePeriodSeconds);
 
                     taskInfo.Exited = false;
                     taskInfo.AssignFromStat(stat);
@@ -402,11 +414,11 @@ public class JobTaskExecutor : IJobTaskExecutor
                         }, TaskContinuationOptions.OnlyOnRanToCompletion);
                 }
 
-                _logger.LogInformation(taskInfo.JobId, taskInfo.TaskId, null, "EndTask: Ended with result: {task}", taskInfo);
+                _logger.LogDebug(taskInfo.JobId, taskInfo.TaskId, null, "EndTaskAsync: Ended with result: {task}", taskInfo);
             }
             catch (TaskProcessNotFound ex)
             {
-                _logger.LogWarning(ex, args.JobId, args.TaskId, null, "EndTask: No task is found for key {key}.", taskInfo.ProcessKey);
+                _logger.LogWarning(ex, args.JobId, args.TaskId, null, "EndTaskAsync: No task is found for key {key}.", taskInfo.ProcessKey);
             }
 
             return Task.FromResult<IReadOnlyTaskInfo?>(taskInfo);
@@ -425,7 +437,8 @@ public class JobTaskExecutor : IJobTaskExecutor
     private ProcessStatistics? TerminateTask(int jobId, int taskId, int requeueCount, ulong processKey,
         int exitCode, bool forced, bool mpiDockerTask, CancellationToken cancellationToken = default)
     {
-        Trace.Assert(Monitor.IsEntered(_lock));
+        _logger.LogDebug(jobId, taskId, requeueCount, "TerminateTask starts.");
+        Debug.Assert(Monitor.IsEntered(_lock));
 
         if (mpiDockerTask)
         {
@@ -440,7 +453,8 @@ public class JobTaskExecutor : IJobTaskExecutor
                 throw new TaskProcessNotFound($"No process is found for the key {processKey}.");
             }
 
-            _logger.LogDebug(jobId, taskId, requeueCount, "Try to kill the process. Forced: {forced}", forced);
+            _logger.LogDebug(jobId, taskId, requeueCount,
+                "TerminateTask: Try to kill the process of key {key}, forced {forced}", processKey, forced);
 
             process.KillAsync(forcedExitCode: exitCode, forced: forced).Wait();
 
@@ -455,7 +469,7 @@ public class JobTaskExecutor : IJobTaskExecutor
             if (stat != null && !stat.IsTerminated)
             {
                 _logger.LogWarning(jobId, taskId, requeueCount,
-                    "The task didn't exit within 1s. Process Ids: {ids}", string.Join(' ', stat.ProcessIds));
+                    "TerminateTask: The task doesn't exit within 1s. Process Ids: {ids}", string.Join(' ', stat.ProcessIds));
             }
             return stat;
         }
@@ -464,7 +478,7 @@ public class JobTaskExecutor : IJobTaskExecutor
     private void TerminateTaskAfterGracefulPeriod(int jobId, int taskId, int requeueCount, ulong processKey, string callbackUri)
     {
         //TODO: Why requeue count is not set in log?
-        _logger.LogInformation(jobId, taskId, null, "TerminateTaskAfterGracefulPeriod: Started.");
+        _logger.LogDebug(jobId, taskId, null, "TerminateTaskAfterGracefulPeriod starts.");
 
         lock (_lock)
         {
@@ -487,7 +501,7 @@ public class JobTaskExecutor : IJobTaskExecutor
                     ReportTaskCompletionAsync(taskInfo, callbackUri).Wait();
 
                     _jobTaskTable.RemoveTask(taskInfo.JobId, taskInfo.TaskId);
-                    _logger.LogInformation(jobId, taskId, null, "TerminateTaskAfterGracefulPeriod: Ended with result: {task}", taskInfo);
+                    _logger.LogDebug(jobId, taskId, null, "TerminateTaskAfterGracefulPeriod: Task is ended: {task}", taskInfo);
                 }
                 catch (TaskProcessNotFound ex)
                 {
@@ -499,20 +513,20 @@ public class JobTaskExecutor : IJobTaskExecutor
 
     public Task<IReadOnlyJobInfo?> EndJobAsync(EndJobArgs args, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation(args.JobId, null, null, "EndJob: Started.");
+        _logger.LogInformation(args.JobId, null, null, "EndJobAsync starts.");
 
         lock (_lock)
         {
             var jobInfo = _jobTaskTable.RemoveJob(args.JobId);
             if (jobInfo == null)
             {
-                _logger.LogWarning(args.JobId, null, null, "EndJob: Job is already finished.");
+                _logger.LogWarning(args.JobId, null, null, "EndJobAsync: Job is already finished.");
             }
             else if (jobInfo.Tasks != null)
             {
                 foreach (var taskInfo in jobInfo.Tasks.Values)
                 {
-                    _logger.LogDebug(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount, "EnbJob: Terminating task.");
+                    _logger.LogInformation(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount, "EndJobAsync: Terminating task.");
 
                     try
                     {
@@ -540,7 +554,7 @@ public class JobTaskExecutor : IJobTaskExecutor
                 var cleanupUser = false;
                 var username = jobUser.Item1;
 
-                _logger.LogInformation(args.JobId, null, null, "EndJob: Clean up user {user}.", username);
+                _logger.LogInformation(args.JobId, null, null, "EndJobAsync: Clean up user {user}.", username);
 
                 if (!_userJobs.TryGetValue(username, out var jobs))
                 {
@@ -551,7 +565,7 @@ public class JobTaskExecutor : IJobTaskExecutor
                     jobs.Remove(args.JobId);
                     var jobCount = jobs.Count();
 
-                    _logger.LogInformation(args.JobId, null, null, "EndJob: {0} jobs associated with the user {1}", jobCount, username);
+                    _logger.LogDebug(args.JobId, null, null, "EndJobAsync: {0} jobs associated with the user {1}", jobCount, username);
 
                     if (jobCount == 0)
                     {
@@ -574,14 +588,15 @@ public class JobTaskExecutor : IJobTaskExecutor
 
     public Task<string?> PeekTaskOutputAsync(PeekTaskOutputArgs args, CancellationToken cancellationToken = default)
     {
-        _logger.LogInformation(args.JobId, args.TaskId, null, "PeekTaskOutput");
+        _logger.LogInformation(args.JobId, args.TaskId, null, "PeekTaskOutputAsync starts.");
+
         lock (_lock)
         {
             var taskInfo = _jobTaskTable.GetTask(args.JobId, args.TaskId);
             if (taskInfo != null)
             {
                 _logger.LogDebug(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
-                    "PeekTaskOutput for ProcessKey {key}, process count {count}", taskInfo.ProcessKey, _processes.Count);
+                    "PeekTaskOutputAsync: ProcessKey {key}. Total process count: {count}", taskInfo.ProcessKey, _processes.Count);
 
                 if (_processes.TryGetValue(taskInfo.ProcessKey, out var process))
                 {

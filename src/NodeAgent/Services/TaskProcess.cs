@@ -152,6 +152,7 @@ public class TaskProcess : ITaskProcess
 
         if (stdOutFile != null && IsHttpUrl(stdOutFile))
         {
+            LogDebug("Output is going to be sent to {output}", stdOutFile);
             _streamOutput = true;
             if (outputSenderFactory == null)
             {
