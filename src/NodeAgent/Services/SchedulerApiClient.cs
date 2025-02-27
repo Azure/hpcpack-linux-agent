@@ -41,7 +41,8 @@ public class SchedulerApiClient : ISchedulerApiClient
         try
         {
             uri = await _namingClient.ResolveUriAsync(
-                _configManager.Config.RegisterUri, _configManager.Config.DefaultServiceName, cancelToken);
+                _configManager.Config.RegisterUri, _configManager.Config.DefaultServiceName, cancelToken)
+                .ConfigureAwait(false);
 
             _logger.LogDebug("Register to {uri} with {value}", uri, info);
 
@@ -66,7 +67,8 @@ public class SchedulerApiClient : ISchedulerApiClient
         try
         {
             uri = await _namingClient.ResolveUriAsync(
-                _configManager.Config.HeartbeatUri, _configManager.Config.DefaultServiceName, cancelToken);
+                _configManager.Config.HeartbeatUri, _configManager.Config.DefaultServiceName, cancelToken)
+                .ConfigureAwait(false);
 
             _logger.LogDebug("Report heartbeat to {uri} with {value}", uri, nodeInfo);
 
@@ -91,7 +93,8 @@ public class SchedulerApiClient : ISchedulerApiClient
         try
         {
             uri = await _namingClient.ResolveUriAsync(
-                _configManager.Config.HostsFileUri, _configManager.Config.DefaultServiceName, cancelToken);
+                _configManager.Config.HostsFileUri, _configManager.Config.DefaultServiceName, cancelToken)
+                .ConfigureAwait(false);
 
             _logger.LogDebug("Get hosts info from {uri} with update id '{id}'", uri, updateId);
 
@@ -134,12 +137,13 @@ public class SchedulerApiClient : ISchedulerApiClient
             {
                 uri = _configManager.Config.TaskCompletionUri;
             }
-            uri = await _namingClient.ResolveUriAsync(uri, _configManager.Config.DefaultServiceName, cancelToken);
+            uri = await _namingClient.ResolveUriAsync(uri, _configManager.Config.DefaultServiceName, cancelToken)
+                .ConfigureAwait(false);
 
             _logger.LogDebug("Report task completion to {uri} with {args}", uri, args);
 
             var httpClient = _httpClientFactory.CreateClient();
-            var response = await httpClient.PostAsJsonAsync(uri, args, cancelToken);
+            var response = await httpClient.PostAsJsonAsync(uri, args, cancelToken).ConfigureAwait(false);
 
             response.EnsureSuccessStatusCode();
         }
