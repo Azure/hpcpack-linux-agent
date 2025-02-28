@@ -104,7 +104,7 @@ public class JobTaskExecutorTest : TestBase, IClassFixture<IdGenerator>
         Assert.Equal(1, jobCount);
         var taskCount = _jobTaskExecutor.GetTaskCount();
         Assert.Equal(1, taskCount);
-        var taskInfo = _jobTaskExecutor.GetJobs().Single().Tasks.Single().Value;
+        var taskInfo = _jobTaskExecutor.GetJobs().Single().Tasks.Single();
         Assert.Equal(jobId, taskInfo.JobId);
         Assert.Equal(taskId, taskInfo.TaskId);
         Assert.Equal(0, taskInfo.TaskRequeueCount);
@@ -219,7 +219,7 @@ public class JobTaskExecutorTest : TestBase, IClassFixture<IdGenerator>
         TestOut.OutputObject(jobInfo);
 
         Assert.Equal(jobId, jobInfo.JobId);
-        Assert.Equal(10, jobInfo.Tasks.Count);
+        Assert.Equal(10, jobInfo.Tasks.Count());
 
         Assert.Equal(0, _jobTaskExecutor.GetJobCount());
         Assert.Equal(0, _jobTaskExecutor.GetTaskCount());
