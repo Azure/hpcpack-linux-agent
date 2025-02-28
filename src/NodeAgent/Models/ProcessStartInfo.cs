@@ -1,13 +1,18 @@
-﻿namespace NodeAgent.Models;
+﻿using System.Text.Json.Serialization;
+
+namespace NodeAgent.Models;
 
 public class ProcessStartInfo : DiagBase
 {
     public string? CommandLine { get; set; }
 
+    [JsonPropertyName("StdIn")]
     public string? StdInFile { get; set; }
 
+    [JsonPropertyName("StdOut")]
     public string? StdOutFile { get; set; }
 
+    [JsonPropertyName("StdErr")]
     public string? StdErrFile { get; set; }
 
     public string? WorkDirectory { get; set; }
