@@ -53,12 +53,11 @@ public class ApiController : ControllerBase
         [FromServices] IJobTaskExecutor executor,
         CancellationToken cancellationToken)
     {
-        args = await filter.OnJobEnd(args);
         _logger.LogDebug("EndJob: before filter: {args}", args);
-
-        var result = await executor.EndJobAsync(args, cancellationToken);
+        args = await filter.OnJobEnd(args);
         _logger.LogDebug("EndJob: after filter: {args}", args);
 
+        var result = await executor.EndJobAsync(args, cancellationToken);
         return Ok(result);
     }
 
