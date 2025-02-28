@@ -30,7 +30,16 @@ public interface IReadOnlyTaskInfo
 
     string? Message { get; }
 
+    /*
+     * NOTE
+     *
+     * The scheduler expects a comma-spearated string of ProcessIds in JSON.
+     */
+    [JsonIgnore]
     IReadOnlyList<int>? ProcessIds { get; }
+
+    [JsonPropertyName("ProcessIds")]
+    string ProcessIdsInString { get; }
 }
 
 public class TaskInfo : DiagBase, IReadOnlyTaskInfo
@@ -71,6 +80,8 @@ public class TaskInfo : DiagBase, IReadOnlyTaskInfo
     public IList<int>? ProcessIds { get; set; }
 
     IReadOnlyList<int>? IReadOnlyTaskInfo.ProcessIds => ProcessIds is List<int> ? (List<int>)ProcessIds : null;
+
+    string IReadOnlyTaskInfo.ProcessIdsInString => ProcessIds is null ? string.Empty : string.Join(',', ProcessIds);
 
     [JsonIgnore]
     public IEnumerable<ulong>? Affinity { get; set; }
