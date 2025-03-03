@@ -1,8 +1,15 @@
-﻿namespace NodeAgent.Models;
+﻿using System.ComponentModel.DataAnnotations;
+using System.Text.Json.Serialization;
+
+namespace NodeAgent.Models;
 
 public class HostEntry : DiagBase
 {
-    public string? HostName { get; set; }
+    [Required]
+    [JsonPropertyName("Name")]
+    public string HostName { get; set; } = default!;
 
-    public string? IPAddress { get; set; }
+    [Required]
+    [JsonPropertyName("Address")]
+    public string IPAddress { get; set; } = default!;
 }

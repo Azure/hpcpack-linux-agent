@@ -25,7 +25,7 @@ public class Program
         builder.Services.AddMonitorService();
         builder.Services.AddRegisterService();
         builder.Services.AddHeartbeatService();
-        //builder.Services.AddHostsManagerService();
+        builder.Services.AddHostsManagerService();
         builder.Services.AddMetricsService();
 
         builder.Services.AddSingleton<IConfigManager, ConfigManager>();

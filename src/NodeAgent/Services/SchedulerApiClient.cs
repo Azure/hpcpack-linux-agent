@@ -1,5 +1,6 @@
 ﻿using NodeAgent.Models;
 using System.Net;
+using System.Text.Json;
 
 namespace NodeAgent.Services;
 
@@ -122,12 +123,13 @@ public class SchedulerApiClient : ISchedulerApiClient
             }
 
             var values = response.Headers.GetValues(UpdateIdHeaderName);
-            var newUpdateId = values.First();
-            var hostEntries = await response.Content.ReadFromJsonAsync<IEnumerable<HostEntry>>(cancelToken).ConfigureAwait(false);
+            var newUpdateId = values.FirstOrDefault();
+            var content = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+
+            _logger.LogDebug("Received hosts update '{id}':\n{content}", newUpdateId, content);
+
+            var hostEntries = JsonSerializer.Deserialize<IEnumerable<HostEntry>>(content);
             var update = new HostsUpdate() { UpdateId = newUpdateId, Hosts = hostEntries };
-
-            _logger.LogDebug("Received hosts update {update}", update);
-
             return update;
         }
         catch (Exception ex)
