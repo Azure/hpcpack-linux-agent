@@ -30,14 +30,14 @@ public interface IReadOnlyTaskInfo
 
     string? Message { get; }
 
-    /*
-     * NOTE
-     *
-     * The scheduler expects a comma-spearated string of ProcessIds in JSON.
-     */
     [JsonIgnore]
     IReadOnlyList<int>? ProcessIds { get; }
 
+    /*
+     * NOTE
+     *
+     * The scheduler expects a comma-spearated string rather than a list, of ProcessIds in JSON.
+     */
     [JsonPropertyName("ProcessIds")]
     string ProcessIdsInString { get; }
 }

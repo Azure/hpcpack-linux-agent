@@ -47,7 +47,7 @@ public class ApiController : ControllerBase
     }
 
     [HttpPost("EndJob")]
-    public async Task<IActionResult> EndJob(
+    public async Task<IReadOnlyJobInfo?> EndJob(
         [FromBody] EndJobArgs args,
         [FromServices] IJobTaskFilter filter,
         [FromServices] IJobTaskExecutor executor,
@@ -57,8 +57,7 @@ public class ApiController : ControllerBase
         args = await filter.OnJobEnd(args);
         _logger.LogDebug("EndJob: after filter: {args}", args);
 
-        var result = await executor.EndJobAsync(args, cancellationToken);
-        return Ok(result);
+        return await executor.EndJobAsync(args, cancellationToken);
     }
 
     [HttpPost("StartTask")]
@@ -78,14 +77,13 @@ public class ApiController : ControllerBase
     }
 
     [HttpPost("EndTask")]
-    public async Task<IActionResult> EndTask(
+    public async Task<IReadOnlyTaskInfo?> EndTask(
         [FromHeader(Name = CallbackURIHeader)] string callbackURI,
         [FromBody] EndTaskArgs args,
         [FromServices] IJobTaskExecutor executor,
         CancellationToken cancellationToken)
     {
-        var result = await executor.EndTaskAsync(args, callbackURI, cancellationToken);
-        return Ok(result);
+        return await executor.EndTaskAsync(args, callbackURI, cancellationToken);
     }
 
     [HttpPost("PeekTaskOutput")]

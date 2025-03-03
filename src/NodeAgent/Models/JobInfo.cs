@@ -6,6 +6,11 @@ public interface IReadOnlyJobInfo
 {
     int JobId { get; }
 
+    /*
+     * NOTE
+     *
+     * The scheduler expects a list rather than a hash, of Tasks in JSON.
+     */
     IEnumerable<IReadOnlyTaskInfo> Tasks { get; }
 }
 
@@ -13,16 +18,18 @@ public class JobInfo : DiagBase, IReadOnlyJobInfo
 {
     public int JobId { get; set; }
 
-    /*
-     * NOTE:
-     *
-     * The Tasks property of type IDictionary must be ignored in JSON output, as the scheduler expects
-     * a Tasks property of array type in JSON, though IReadOnlyJobInfo is returned in IJobTaskExecutor.EndJobAsync.
-     * It seems JsonSerializer.Serialize doesn't use the IReadOnlyJobInfo but the implementing type JobInfo.
-     */
     [JsonIgnore]
     public IDictionary<int, TaskInfo> Tasks { get; set; } = new Dictionary<int, TaskInfo>();
 
+    /*
+     * NOTE
+     *
+     * There's a problem in APS.NET controller action (EndJob) that even IReadOnlyJobInfo is the return type,
+     * JobInfo is serialized in JSON. So here we have to force the JSON serializer to include the (non-public)
+     * IReadOnlyJobInfo.Tasks as "Tasks" and ignore the public IDictionary Tasks.
+     */
+    [JsonInclude]
+    [JsonPropertyName("Tasks")]
     IEnumerable<IReadOnlyTaskInfo> IReadOnlyJobInfo.Tasks
     {
         get
