@@ -59,16 +59,10 @@ public class HostsManagerService : BackgroundService, IHostsManagerService
         try
         {
             var result = await _schedulerApiClient.GetHostsAsync(_updateId, stoppingToken).ConfigureAwait(false);
-            if (result != null)
+            if (result?.UpdateId != null)
             {
-                /*
-                 * NOTE
-                 *
-                 * Here _updateId is updated, even if the result.Item2 is null/empty. I'm not sure if this is
-                 * by design, but the C++ version does so.
-                 */
-                (var hostEntries, _updateId) = result;
-                UpdateHostsFile(hostEntries);
+                _updateId = result.UpdateId;
+                UpdateHostsFile(result.Hosts);
             }
         }
         catch (Exception ex)

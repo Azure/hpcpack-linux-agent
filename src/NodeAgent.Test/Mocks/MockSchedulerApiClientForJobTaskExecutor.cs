@@ -14,7 +14,7 @@ public class MockSchedulerApiClientForJobTaskExecutor : ISchedulerApiClient
 
     public IList<TaskCompletionCall> TaskCompletionCalls { get; private set; } = new List<TaskCompletionCall>();
 
-    public Task<Tuple<IEnumerable<HostEntry>?, string?>?> GetHostsAsync(string? updateId, CancellationToken cancelToken = default)
+    public Task<HostsUpdate?> GetHostsAsync(string? updateId, CancellationToken cancelToken = default)
     {
         throw new NotSupportedException();
     }

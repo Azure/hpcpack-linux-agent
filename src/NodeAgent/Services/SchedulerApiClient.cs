@@ -3,13 +3,20 @@ using System.Net;
 
 namespace NodeAgent.Services;
 
+public class HostsUpdate : DiagBase
+{
+    public string? UpdateId { get; set; }
+
+    public IEnumerable<HostEntry>? Hosts { get; set; }
+}
+
 public interface ISchedulerApiClient
 {
     Task<int> RegisterAsync(RegisterInfo info, CancellationToken cancelToken = default);
 
     Task<int> ReportHeartbeatAsync(NodeInfo nodeInfo, CancellationToken cancelToken = default);
 
-    Task<Tuple<IEnumerable<HostEntry>?, string?>?> GetHostsAsync(string? updateId, CancellationToken cancelToken = default);
+    Task<HostsUpdate?> GetHostsAsync(string? updateId, CancellationToken cancelToken = default);
 
     Task ReportTaskCompletionAsync(string uri, TaskCompletionEventArgs args, CancellationToken cancelToken = default);
 }
@@ -87,7 +94,7 @@ public class SchedulerApiClient : ISchedulerApiClient
         }
     }
 
-    public async Task<Tuple<IEnumerable<HostEntry>?, string?>?> GetHostsAsync(string? updateId, CancellationToken cancelToken = default)
+    public async Task<HostsUpdate?> GetHostsAsync(string? updateId, CancellationToken cancelToken = default)
     {
         string? uri = null;
         try
@@ -116,10 +123,12 @@ public class SchedulerApiClient : ISchedulerApiClient
 
             var values = response.Headers.GetValues(UpdateIdHeaderName);
             var newUpdateId = values.First();
-            _logger.LogDebug("Received hosts update id {id}", newUpdateId);
-
             var hostEntries = await response.Content.ReadFromJsonAsync<IEnumerable<HostEntry>>(cancelToken).ConfigureAwait(false);
-            return new Tuple<IEnumerable<HostEntry>?, string?>(hostEntries, newUpdateId);
+            var update = new HostsUpdate() { UpdateId = newUpdateId, Hosts = hostEntries };
+
+            _logger.LogDebug("Received hosts update {update}", update);
+
+            return update;
         }
         catch (Exception ex)
         {
