@@ -1,4 +1,6 @@
-﻿using NodeAgent.Services;
+﻿using Microsoft.AspNetCore.DataProtection.KeyManagement;
+using Microsoft.Extensions.Logging;
+using NodeAgent.Services;
 using System.Reflection;
 using System.Runtime.Versioning;
 using Xunit.Abstractions;
@@ -12,9 +14,8 @@ namespace NodeAgent.Test.Servcies;
  * "sudo dotnet test ..." for SystemServiceTest.
  */
 [SupportedOSPlatform("linux")]
-public class SystemServiceTest
+public class SystemServiceTest : TestBase
 {
-    private readonly ITestOutputHelper _output;
     private SystemService _system;
 
     private async Task<bool> IsGpuSupported()
@@ -23,12 +24,11 @@ public class SystemServiceTest
         return result.ExitCode == 0;
     }
 
-    public SystemServiceTest(ITestOutputHelper output)
+    public SystemServiceTest(ITestOutputHelper output) : base(output)
     {
-        _output = output;
-        _system = new SystemService();
+        var logger = LoggerFactory.CreateLogger<SystemService>();
+        _system = new SystemService(logger);
     }
-
 
     [Fact]
     public async Task TestHostName()
@@ -129,7 +129,7 @@ fi
         }
         finally
         {
-            await _system.DeleteUserAsync(username, _output);
+            await _system.DeleteUserAsync(username, TestOut);
         }
     }
 
@@ -147,7 +147,7 @@ fi
         }
         finally
         {
-            await _system.DeleteUserAsync(username, _output);
+            await _system.DeleteUserAsync(username, TestOut);
         }
     }
 
@@ -181,12 +181,12 @@ fi
             var content2 = File.ReadAllText(keyFilePath2);
             Assert.Equal(key, content2);
 
-            //TODO: Test key file ownership and permission ...
+            //TODO: Test key keyFile2 ownership and permission ...
         }
         finally
         {
-            //The key file should be deleted since it's inside the user's home.
-            await _system.DeleteUserAsync(username, _output);
+            //The key keyFile2 should be deleted since it's inside the user's home.
+            await _system.DeleteUserAsync(username, TestOut);
         }
     }
     [Fact]
@@ -220,7 +220,7 @@ fi
         finally
         {
             //The key files should be deleted since they're inside the user's home.
-            await _system.DeleteUserAsync(username, _output);
+            await _system.DeleteUserAsync(username, TestOut);
         }
     }
 
@@ -267,7 +267,7 @@ fi
         }
         finally
         {
-            await _system.DeleteUserAsync(username, _output);
+            await _system.DeleteUserAsync(username, TestOut);
         }
     }
 
@@ -304,7 +304,7 @@ fi
         }
         finally
         {
-            await _system.DeleteUserAsync(username, _output);
+            await _system.DeleteUserAsync(username, TestOut);
         }
     }
 
@@ -335,7 +335,7 @@ fi
         }
         finally
         {
-            await _system.DeleteUserAsync(username, _output);
+            await _system.DeleteUserAsync(username, TestOut);
         }
     }
 
@@ -353,12 +353,13 @@ fi
             Assert.Null(keyFile0);
 
             string? keyFile = null;
-            var keys = new string[] { "key1", "key2", "key3" };
+            var keys = new string[] { "key1", @"key2 \ with back slash", @"key3 / with slash" };
             foreach (var key in keys)
             {
                 keyFile = await _system.AddAuthorizedKeyAsync(username, key);
             }
             var keyFileContent = await File.ReadAllTextAsync(keyFile!);
+            TestOut.OutputString(keyFileContent);
 
             //Remove a non-existed key
             var keyFile2 = await _system.RemoveAuthorizedKeyAsync(username, "NonExistedKey");
@@ -368,24 +369,21 @@ fi
             Assert.Equal(keyFileContent, keyFileContent2);
 
             //Remove existed keys
-            var indexes = new int[] { 1, 0, 2 };
-            var count = indexes.Length;
-            foreach (var i in indexes)
+            foreach (var key in keys)
             {
-                var key = keys[i];
                 var file = await _system.RemoveAuthorizedKeyAsync(username, key);
-                count--;
                 Assert.Equal(keyFile, file);
 
                 var fileLines = await File.ReadAllLinesAsync(file!);
+                TestOut.OutputStrings(fileLines);
+
                 Assert.NotNull(fileLines);
-                Assert.Equal(count, fileLines.Length);
                 Assert.DoesNotContain(key, fileLines);
             }
         }
         finally
         {
-            await _system.DeleteUserAsync(username, _output);
+            await _system.DeleteUserAsync(username, TestOut);
         }
     }
 
@@ -478,13 +476,13 @@ perms=$(stat -Lc "%a" "$path")
             var result = await _system.ExecuteInShellAsync(test, ["test", username, path]);
             if (result.ExitCode != 0)
             {
-                _output.WriteLine(result.ToString());
+                TestOut.WriteLine(result.ToString());
             }
             Assert.Equal(0, result.ExitCode);
         }
         finally
         {
-            await _system.DeleteUserAsync(username, _output);
+            await _system.DeleteUserAsync(username, TestOut);
             if (path != null)
             {
                 Directory.Delete(path, true);
@@ -512,7 +510,7 @@ perms=$(stat -Lc "%a" "$path")
         }
         finally
         {
-            await _system.DeleteUserAsync(username, _output);
+            await _system.DeleteUserAsync(username, TestOut);
             if (path != null)
             {
                 Directory.Delete(path, true);

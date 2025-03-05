@@ -31,6 +31,17 @@ OnComplete:
         testout.WriteLine(msg);
     }
 
+    public static void OutputStrings(this ITestOutputHelper testout, IEnumerable<string>? output)
+    {
+        var lines = string.Join('\n', output ?? []);
+        var msg = $"""
+======================================
+{lines}
+======================================
+""";
+        testout.WriteLine(msg);
+    }
+
     public static void OutputObject(this ITestOutputHelper testout, object output)
     {
         var msg = $"""

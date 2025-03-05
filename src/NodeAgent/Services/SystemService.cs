@@ -537,8 +537,22 @@ if [[ ! -a "$key_file" ]]; then
     exit 0
 fi
 
+# Read key from subshell. In this way, the trailing line endings are removed.
 key=$(cat /dev/stdin)
-sed -i /^"$key"$/d "$key_file"
+
+# If the file has only one line that matches the key, "grep -Fv" will return non-zero code (1)
+# In that case we need further test.
+if ! grep -Fv "$key" < "$key_file" > "$key_file".tmp ; then
+    content=$(head -n 1 "$key_file")
+    if [[ $content == $key ]]; then
+        echo > "$key_file".tmp
+    else
+        exit 1
+    fi
+fi
+mv -f "$key_file".tmp "$key_file"
+chown "$user" "$key_file"
+chmod 600 "$key_file"
 printf "$key_file"
 """;
         var result = await ExecuteInShellAsync(script, [nameof(RemoveAuthorizedKeyAsync), username], key, cancellationToken)
