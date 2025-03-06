@@ -53,3 +53,14 @@ See more at https://learn.microsoft.com/en-us/visualstudio/test/remote-testing?v
 1. Make sure Docker Desktop is installed and started.
 2. Build a local image of [Dockerfile.test](./src/Dockerfile.test) once, like `docker build -t local/netsdk:8.0 -f .\Dockerfile.test .`. Note the current directory for the build command is `src`.
 
+## Publishing
+
+Use the following command line for the project [NodeAgent](./src/NodeAgent/) to get an executable ("nodemanager") of the Node Agent.
+
+```
+dotnet publish -c Debug -r linux-x64 --sc
+```
+
+## Runtime Environment
+
+As an ASP.NET program, the executable respects the [ASP.NET Environment](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/environments) by environment variable `ASPNETCORE_ENVIRONMENT`. Set it to 'Development' to enable debug logging, as well as other settings for development, and 'Production' or unset for production environment.
