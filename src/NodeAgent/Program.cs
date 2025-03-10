@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.HttpLogging;
+using Microsoft.Extensions.Configuration;
 using NodeAgent.Services;
 using NodeAgent.Services.Extensions;
+using NReco.Logging.File;
 using System.Runtime.Versioning;
 
 namespace NodeAgent;
@@ -15,6 +17,11 @@ public class Program
 
         builder.Services.ConfigureKestrelServer(trustedCAStore);
         builder.Services.ConfigureDefaultHttpClientFactory(trustedCAStore);
+
+        builder.Services.AddLogging(loggingBuilder => {
+            var loggingSection = builder.Configuration.GetSection("Logging");
+            loggingBuilder.AddFile(loggingSection);
+        });
 
         builder.Services.AddHttpLogging(options => {
             options.LoggingFields = HttpLoggingFields.All;

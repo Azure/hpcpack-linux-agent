@@ -15,4 +15,8 @@
     </Content>
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="NReco.Logging.File" Version="1.2.2" />
+  </ItemGroup>
+
 </Project>
