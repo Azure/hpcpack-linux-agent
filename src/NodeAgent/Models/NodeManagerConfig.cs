@@ -8,9 +8,6 @@ public class NodeManagerConfig : DiagBase
 
     public string? TrustedCAPath { get; set; }
 
-    //No use anywhere?
-    public bool UseDefaultCA { get; set; }
-
     public string? ClusterAuthenticationKey { get; set; }
 
     [Required]
@@ -26,17 +23,7 @@ public class NodeManagerConfig : DiagBase
     public string RegisterUri { get; set; } = default!;
 
     [Required]
-    //Server certificate public key file
     public string CertificateChainFile { get; set; } = default!;
-
-    public string? PrivateKeyFile { get; set; }
-
-    [Required]
-    public string ListeningUri { get; set; } = default!;
-
-    public bool Debug { get; set; }
-
-    public int LogLevel { get; set; }
 
     [Required]
     public string[] NamingServiceUri { get; set; } = default!;

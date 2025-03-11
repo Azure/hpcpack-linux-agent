@@ -8,10 +8,6 @@ public static class KestrelServerWebApplicationBuilderExtensions
 {
     public static WebApplicationBuilder ConfigureKestrelServer(this WebApplicationBuilder appBuilder)
     {
-        using var provider = appBuilder.Services.BuildServiceProvider();
-        var configManager = provider.GetRequiredService<IConfigManager>();
-        appBuilder.WebHost.UseUrls(configManager.Config.ListeningUri);
-
         appBuilder.Services.Configure<KestrelServerOptions>(options =>
         {
             options.ConfigureHttpsDefaults(options =>
@@ -21,14 +17,11 @@ public static class KestrelServerWebApplicationBuilderExtensions
                 var logger = loggerFactory?.CreateLogger(nameof(KestrelServerWebApplicationBuilderExtensions));
                 try
                 {
-                    var configManager = provider.GetRequiredService<IConfigManager>();
                     var trustedCerts = provider.GetRequiredService<X509Certificate2Collection>();
                     //Create a new cert collection from the one from the service provider, which will be disposed out of this scope.
                     var trustedCertsCopy = new X509Certificate2Collection(trustedCerts);
 
                     options.ClientCertificateMode = ClientCertificateMode.RequireCertificate;
-                    options.ServerCertificate = X509Certificate2.CreateFromPemFile(
-                        configManager.Config.CertificateChainFile, configManager.Config.PrivateKeyFile);
                     options.ClientCertificateValidation = (certificate, chain, errors) =>
                     {
                         //NOTE: A logger is needed here but we cannot use the one in the parent scope since the latter will be disposed
