@@ -4,10 +4,6 @@ namespace NodeAgent.Models;
 
 public class NodeManagerConfig : DiagBase
 {
-    public string? TrustedCAFile { get; set; }
-
-    public string? TrustedCAPath { get; set; }
-
     public string? ClusterAuthenticationKey { get; set; }
 
     [Required]
@@ -23,9 +19,6 @@ public class NodeManagerConfig : DiagBase
     public string RegisterUri { get; set; } = default!;
 
     [Required]
-    public string CertificateChainFile { get; set; } = default!;
-
-    [Required]
     public string[] NamingServiceUri { get; set; } = default!;
 
     [Required]
@@ -34,12 +27,12 @@ public class NodeManagerConfig : DiagBase
     [Required]
     public string UdpMetricServiceName { get; set; } = default!;
 
-    public string? AzureInstanceMetaDataUri { get; set; }
-
     public int? HostsFetchInterval { get; set; }
 
     [Required]
     public string HostsFileUri { get; set; } = default!;
+
+    public string? AzureInstanceMetaDataUri { get; set; }
 
     public int HttpRequestTimeoutSeconds { get; set; }
 }

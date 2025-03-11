@@ -4,7 +4,7 @@ namespace NodeAgent.Services.Extensions;
 
 public static class HttpClientFactoryServiceCollectionExtensions
 {
-    public static IServiceCollection ConfigureDefaultHttpClientFactory(this IServiceCollection services)
+    public static IServiceCollection ConfigureDefaultHttpClientFactory(this IServiceCollection services, X509Certificate2Collection trustedCAStore)
     {
         return services.ConfigureHttpClientDefaults(clientBuilder =>
         {
@@ -14,7 +14,6 @@ public static class HttpClientFactoryServiceCollectionExtensions
                 var logger = loggerFactory?.CreateLogger(nameof(HttpClientFactoryServiceCollectionExtensions));
                 try
                 {
-                    var trustedCerts = provider.GetRequiredService<X509Certificate2Collection>();
                     var handler = new HttpClientHandler();
                     handler.ServerCertificateCustomValidationCallback = (message, certificate, chain, errors) =>
                     {
@@ -25,7 +24,7 @@ public static class HttpClientFactoryServiceCollectionExtensions
                         try
                         {
                             chain!.ChainPolicy.TrustMode = X509ChainTrustMode.CustomRootTrust;
-                            chain.ChainPolicy.CustomTrustStore.AddRange(trustedCerts);
+                            chain.ChainPolicy.CustomTrustStore.AddRange(trustedCAStore);
                             return chain.Build(certificate!);
                         }
                         catch (Exception ex)

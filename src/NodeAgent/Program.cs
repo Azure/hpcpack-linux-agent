@@ -11,6 +11,10 @@ public class Program
     public static void Main(string[] args)
     {
         var builder = WebApplication.CreateBuilder(args);
+        var trustedCAStore = builder.Configuration.GetTrustedCAStore();
+
+        builder.Services.ConfigureKestrelServer(trustedCAStore);
+        builder.Services.ConfigureDefaultHttpClientFactory(trustedCAStore);
 
         builder.Services.AddHttpLogging(options => {
             options.LoggingFields = HttpLoggingFields.All;
@@ -18,9 +22,6 @@ public class Program
         });
 
         builder.Services.AddControllers();
-
-        builder.Services.ConfigureDefaultHttpClientFactory();
-        builder.Services.AddTrustedCertificateCollection();
 
         builder.Services.AddMonitorService();
         builder.Services.AddRegisterService();
@@ -37,10 +38,6 @@ public class Program
         builder.Services.AddSingleton<ISystemService, SystemService>();
         builder.Services.AddSingleton<ITaskProcessFactory, TaskProcessFactory>();
         builder.Services.AddSingleton<IOutputSenderFactory, OutputSenderFactory>();
-
-        //NOTE: This has to be placed after all the other builder.Services.* calls, since its
-        //implementation depends on a temporary service provider.
-        builder.ConfigureKestrelServer();
 
         var app = builder.Build();
 
