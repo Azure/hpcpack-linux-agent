@@ -1,5 +1,4 @@
 using Microsoft.AspNetCore.HttpLogging;
-using Microsoft.Extensions.Configuration;
 using NodeAgent.Services;
 using NodeAgent.Services.Extensions;
 using NReco.Logging.File;
@@ -47,6 +46,8 @@ public class Program
         builder.Services.AddSingleton<IOutputSenderFactory, OutputSenderFactory>();
 
         var app = builder.Build();
+        var processFactory = app.Services.GetRequiredService<ITaskProcessFactory>();
+        processFactory.CleanupAsync().Wait();
 
         app.UseHttpLogging();
         app.UseMiddleware<ErrorHandler>();

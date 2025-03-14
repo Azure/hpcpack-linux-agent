@@ -25,7 +25,7 @@ public interface ITaskProcessFactory
         IDictionary<string, string?>? env,
         TaskCompletionHandler? onComplete);
 
-    Task CleanupAsync(CancellationToken cancellationToken);
+    Task CleanupAsync(CancellationToken cancellationToken = default);
 }
 
 [SupportedOSPlatform("linux")]
@@ -105,10 +105,18 @@ public class TaskProcessFactory : ITaskProcessFactory
             onComplete);
     }
 
-    public async Task CleanupAsync(CancellationToken cancellationToken)
+    public async Task CleanupAsync(CancellationToken cancellationToken = default)
     {
-        var result = await _systemService.ExecuteFileInShellAsync(
-            "CleanupAllTasks.sh", workingDir: _scriptBaseDir, cancellationToken: cancellationToken).ConfigureAwait(false);
-        _logger.LogInformation("CleanupAsync result: {result}", result);
+        try
+        {
+            var result = await _systemService.ExecuteFileInShellAsync(
+                "CleanupAllTasks.sh", workingDir: _scriptBaseDir, cancellationToken: cancellationToken).ConfigureAwait(false);
+            _logger.LogInformation("CleanupAsync result: {result}", result);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "CleanupAsync error.");
+            throw;
+        }
     }
 }
