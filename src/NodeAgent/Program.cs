@@ -46,6 +46,13 @@ public class Program
         builder.Services.AddSingleton<IOutputSenderFactory, OutputSenderFactory>();
 
         var app = builder.Build();
+
+        /*
+         * NOTE:
+         *
+         * When a new instance of the app is started, while an existing one is running, the cleanup procedure
+         * may break/fail running tasks in the latter. So it would be nice to keep the app singleton in some way.
+         */
         var processFactory = app.Services.GetRequiredService<ITaskProcessFactory>();
         processFactory.CleanupAsync().Wait();
 
