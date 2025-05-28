@@ -459,8 +459,8 @@ def install():
 		Usage()
 		sys.exit(1)
 
-	if keepcert and (certfile or certpasswd or authenticationkey):
-		print("The parameter keepcert cannot be specified with the parameter certfile, certpass or authenticationkey")
+	if keepcert and (certfile or certpasswd):
+		print("The parameter keepcert cannot be specified with the parameter certfile or certpasswd.")
 		Usage()
 		sys.exit(1)
 
@@ -470,13 +470,6 @@ def install():
 		if not os.path.isfile(pemfile) or not os.path.isfile(rsakeyfile):
 			Log("nodemanager.pem or nodemanager_rsa.key not found")
 			sys.exit(1)
-		configfiletemp = os.path.join(InstallRoot, 'nodemanager.json')
-		if not os.path.isfile(configfiletemp):
-			Log("nodemanager.json not found")
-			sys.exit(1)
-		with open(configfiletemp, 'r') as F:
-			configjsontemp = json.load(F)
-			authenticationkey = configjsontemp.get('ClusterAuthenticationKey')
 	else:
 		if not os.path.isfile(certfile):
 			print("certfile not found: %s" % certfile)
@@ -576,7 +569,7 @@ def install():
 
 def get_dist_info():
 	distroName = ''
-	distroVersion = ''    
+	distroVersion = ''
 	if 'linux_distribution' in dir(platform):
 		distinfo = platform.linux_distribution(full_distribution_name=0)
 		distroName = distinfo[0].strip()
@@ -747,7 +740,7 @@ def Log(message):
 
 def Error(message):
 	LogWithPrefix("ERROR:", message)
-	
+
 def Warn(message):
 	LogWithPrefix("WARNING:", message)
 
