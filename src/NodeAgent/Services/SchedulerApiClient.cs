@@ -1,4 +1,5 @@
 ﻿using NodeAgent.Models;
+using System.Diagnostics;
 using System.Net;
 using System.Text.Json;
 
@@ -97,6 +98,11 @@ public class SchedulerApiClient : ISchedulerApiClient
 
     public async Task<HostsUpdate?> GetHostsAsync(string? updateId, CancellationToken cancelToken = default)
     {
+        if (_configManager.Config.HostsFileUri == null)
+        {
+            throw new InvalidOperationException("HostsFileUri is not configured.");
+        }
+
         string? uri = null;
         try
         {

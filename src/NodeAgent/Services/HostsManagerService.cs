@@ -32,11 +32,10 @@ public class HostsManagerService : BackgroundService, IHostsManagerService
 
     protected override Task ExecuteAsync(CancellationToken stoppingToken)
     {
-        //TODO/Q: When is the service required?
         var uri = _configManager.Config.HostsFileUri;
         if (string.IsNullOrWhiteSpace(uri))
         {
-            _logger.LogWarning("HostsFileUri is not specified. HostsManagerService is exiting.");
+            _logger.LogInformation("HostsFileUri is not specified. HostsManagerService exits.");
             return Task.CompletedTask;
         }
 

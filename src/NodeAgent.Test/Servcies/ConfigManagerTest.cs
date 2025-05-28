@@ -77,7 +77,6 @@ public class ConfigManagerTest : TestBase
     "ListeningUri": "a",
     "HeartbeatUri": "a",
     "RegisterUri": "a",
-    "HostsFileUri": "a",
     "NamingServiceUri": ["a"],
     "DefaultServiceName": "a",
     "UdpMetricServiceName": "a"

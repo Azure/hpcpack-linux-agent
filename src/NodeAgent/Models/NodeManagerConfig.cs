@@ -29,8 +29,7 @@ public class NodeManagerConfig : DiagBase
 
     public int? HostsFetchInterval { get; set; }
 
-    [Required]
-    public string HostsFileUri { get; set; } = default!;
+    public string? HostsFileUri { get; set; }
 
     public string? AzureInstanceMetaDataUri { get; set; }
 
