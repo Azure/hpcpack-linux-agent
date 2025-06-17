@@ -27,16 +27,16 @@ if $isDockerTask; then
 		then
 			echo "Failed to start host ssh service."
 			exit $ec
-		fi	
+		fi
 	fi
-	
+
 	exit
 fi
 
 /bin/bash ./EndTask.sh "$taskId" "$processId" "1"
 
 cgDisabled=$(CheckCgroupDisabledInFlagFile $taskFolder)
-if ! cgDisabled; then
+if ! $cgDisabled; then
 	if ! $CGroupV1; then
 		groupName=$(GetCGroupName "$taskId")
 		rmdir $(GetGroupPathV2 "$groupName")
