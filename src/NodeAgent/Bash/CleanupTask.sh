@@ -36,8 +36,13 @@ fi
 /bin/bash ./EndTask.sh "$taskId" "$processId" "1"
 
 cgDisabled=$(CheckCgroupDisabledInFlagFile $taskFolder)
-if $CGInstalled && ! $cgDisabled; then
+if ! cgDisabled; then
+	if ! $CGroupV1; then
+		groupName=$(GetCGroupName "$taskId")
+		rmdir $(GetGroupPathV2 "$groupName")
+	elif $CGInstalled; then
 	groupName=$(GetCGroupName "$taskId")
 	group=$CGroupSubSys:$groupName
 	cgdelete -g "$group"
+fi
 fi

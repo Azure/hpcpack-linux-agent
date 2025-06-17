@@ -65,7 +65,57 @@ if $isDockerTask; then
 fi
 
 cgDisabled=$(CheckCgroupDisabledInFlagFile $taskFolder)
-if $CGInstalled && ! $cgDisabled; then
+if ! $cgDisabled; then
+	if ! $CGroupV1; then
+		groupName=$(GetCGroupName "$taskId")
+		
+		maxLoop=3
+		while [ $maxLoop -gt 0 ]
+		do
+			mkdir $(GetGroupPathV2 "$groupName")
+			ec=$?
+			if [ $ec -eq 0 ]
+			then
+				break
+			fi
+
+			echo "Failed to create cgroup $groupName, error code $ec, retry after .5 seconds"
+			((maxLoop--))
+			sleep .5
+		done
+
+		if [ $ec -ne 0 ]
+		then
+			exit $ec
+		fi
+
+		maxLoop=3
+		while [ $maxLoop -gt 0 ]
+		do
+			cpusFile=$(GetCpusFileV2 "$groupName")
+			echo "$affinity" > "$cpusFile"
+			ec=$?
+			if [ $ec -eq 0 ]
+			then
+				break
+			fi
+
+			echo "Failed to set cpus for $groupName, error code $ec, retry after .5 seconds"
+			((maxLoop--))
+			sleep .5
+		done
+
+		if [ $ec -ne 0 ]
+		then
+			exit $ec
+		fi
+
+		tasks=$(GetCpusetTasksFileV2 "$groupName")
+
+		[ ! -f "$tasks" ] && echo "$tasks doesn't exist" && exit 200
+
+		exit 0
+	elif $CGInstalled; then
 	groupName=$(GetCGroupName "$taskId")
 	group=$CGroupSubSys:$groupName
 
@@ -140,4 +190,4 @@ if $CGInstalled && ! $cgDisabled; then
 
 	exit 0
 fi
-
+fi
