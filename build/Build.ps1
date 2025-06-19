@@ -29,7 +29,7 @@ Write-Information "Publishing to $publishDir"
 dotnet publish $agentProjFile -c $Config -r $Rid --sc -o $publishDir
 
 if (!$OutDir) {
-  $OutDir = Join-Path (Get-Location).Path 'out'
+  $OutDir = Join-Path (Get-Location).Path 'out' "$Rid-$Config"
 }
 New-Item -Path $OutDir -Type Directory -Force | Out-Null
 
