@@ -14,180 +14,180 @@ userName=$4
 
 isDockerTask=$(CheckDockerEnvFileExist $taskFolder)
 if $isDockerTask; then
-	isMpiTask=$(CheckMpiTask $taskFolder)
-	skipSshSetup=$(CheckSkipSshSetup $taskFolder)
-	if $isMpiTask; then
-		mpiContainerStartOption=$(GetMpiContainerStartOption $userName)
-	fi
+  isMpiTask=$(CheckMpiTask $taskFolder)
+  skipSshSetup=$(CheckSkipSshSetup $taskFolder)
+  if $isMpiTask; then
+    mpiContainerStartOption=$(GetMpiContainerStartOption $userName)
+  fi
 
-	if $skipSshSetup; then
-		mpiContainerStartOption=""
-	fi
+  if $skipSshSetup; then
+    mpiContainerStartOption=""
+  fi
 
-	isDebugMode=$(CheckDockerDebugMode $taskFolder)
-	if $isDebugMode; then
-		taskId=${taskId}_${DebugContainerSuffix}
-	fi
+  isDebugMode=$(CheckDockerDebugMode $taskFolder)
+  if $isDebugMode; then
+    taskId=${taskId}_${DebugContainerSuffix}
+  fi
 
-	containerName=$(GetContainerName $taskId)
-	dockerImage=$(GetDockerImageName $taskFolder)
-	volumeOption=$(GetDockerVolumeOption $taskFolder)
-	additionalOption=$(GetDockerAdditionalOption $taskFolder)
-	envFile=$(GetDockerTaskEnvFile $taskFolder)
-	containerIdFile=$(GetContainerIdFile $taskFolder)
-	dockerEngine=$(GetDockerEngine $taskFolder)
-	$dockerEngine run -id \
-				$additionalOption \
-				$volumeOption \
-				$mpiContainerStartOption \
-				--name $containerName \
-				--cpuset-cpus $affinity \
-				--env-file $envFile \
-				--cidfile $containerIdFile \
-				-v $taskFolder:$taskFolder:z \
-				$dockerImage 2>&1
-	
-	ec=$?
-	if [ $ec -ne 0 ]
-	then
-		echo "Failed to start docker container"
-		exit $ec
-	fi	
+  containerName=$(GetContainerName $taskId)
+  dockerImage=$(GetDockerImageName $taskFolder)
+  volumeOption=$(GetDockerVolumeOption $taskFolder)
+  additionalOption=$(GetDockerAdditionalOption $taskFolder)
+  envFile=$(GetDockerTaskEnvFile $taskFolder)
+  containerIdFile=$(GetContainerIdFile $taskFolder)
+  dockerEngine=$(GetDockerEngine $taskFolder)
+  $dockerEngine run -id \
+        $additionalOption \
+        $volumeOption \
+        $mpiContainerStartOption \
+        --name $containerName \
+        --cpuset-cpus $affinity \
+        --env-file $envFile \
+        --cidfile $containerIdFile \
+        -v $taskFolder:$taskFolder:z \
+        $dockerImage 2>&1
 
-	containerId=$(GetContainerId $taskFolder)
-	docker exec $containerId useradd -m $userName
+  ec=$?
+  if [ $ec -ne 0 ]
+  then
+    echo "Failed to start docker container"
+    exit $ec
+  fi
+
+  containerId=$(GetContainerId $taskFolder)
+  docker exec $containerId useradd -m $userName
     docker exec $containerId chown $userName $taskFolder
-	if $isMpiTask && ! $skipSshSetup; then
-		/bin/bash MpiContainerPreparation.sh $containerId $userName
-	fi
+  if $isMpiTask && ! $skipSshSetup; then
+    /bin/bash MpiContainerPreparation.sh $containerId $userName
+  fi
 
-	exit
+  exit
 fi
 
 cgDisabled=$(CheckCgroupDisabledInFlagFile $taskFolder)
 if ! $cgDisabled; then
-	if ! $CGroupV1; then
-		groupName=$(GetCGroupName "$taskId")
-		
-		maxLoop=3
-		while [ $maxLoop -gt 0 ]
-		do
-			mkdir $(GetGroupPathV2 "$groupName")
-			ec=$?
-			if [ $ec -eq 0 ]
-			then
-				break
-			fi
+  if ! $CGroupV1; then
+    groupName=$(GetCGroupName "$taskId")
 
-			echo "Failed to create cgroup $groupName, error code $ec, retry after .5 seconds"
-			((maxLoop--))
-			sleep .5
-		done
+    maxLoop=3
+    while [ $maxLoop -gt 0 ]
+    do
+      mkdir $(GetGroupPathV2 "$groupName")
+      ec=$?
+      if [ $ec -eq 0 ]
+      then
+        break
+      fi
 
-		if [ $ec -ne 0 ]
-		then
-			exit $ec
-		fi
+      echo "Failed to create cgroup $groupName, error code $ec, retry after .5 seconds"
+      ((maxLoop--))
+      sleep .5
+    done
 
-		maxLoop=3
-		while [ $maxLoop -gt 0 ]
-		do
-			cpusFile=$(GetCpusFileV2 "$groupName")
-			echo "$affinity" > "$cpusFile"
-			ec=$?
-			if [ $ec -eq 0 ]
-			then
-				break
-			fi
+    if [ $ec -ne 0 ]
+    then
+      exit $ec
+    fi
 
-			echo "Failed to set cpus for $groupName, error code $ec, retry after .5 seconds"
-			((maxLoop--))
-			sleep .5
-		done
+    maxLoop=3
+    while [ $maxLoop -gt 0 ]
+    do
+      cpusFile=$(GetCpusFileV2 "$groupName")
+      echo "$affinity" > "$cpusFile"
+      ec=$?
+      if [ $ec -eq 0 ]
+      then
+        break
+      fi
 
-		if [ $ec -ne 0 ]
-		then
-			exit $ec
-		fi
+      echo "Failed to set cpus for $groupName, error code $ec, retry after .5 seconds"
+      ((maxLoop--))
+      sleep .5
+    done
 
-		tasks=$(GetCpusetTasksFileV2 "$groupName")
+    if [ $ec -ne 0 ]
+    then
+      exit $ec
+    fi
 
-		[ ! -f "$tasks" ] && echo "$tasks doesn't exist" && exit 200
+    tasks=$(GetCpusetTasksFileV2 "$groupName")
 
-		exit 0
-	elif $CGInstalled; then
-	groupName=$(GetCGroupName "$taskId")
-	group=$CGroupSubSys:$groupName
+    [ ! -f "$tasks" ] && echo "$tasks doesn't exist" && exit 200
 
-	maxLoop=3
-	while [ $maxLoop -gt 0 ]
-	do
-		cgcreate -g "$group"
-		ec=$?
-		if [ $ec -eq 0 ]
-		then
-			break
-		fi
+    exit 0
+  elif $CGInstalled; then
+    groupName=$(GetCGroupName "$taskId")
+    group=$CGroupSubSys:$groupName
 
-		echo "Failed to create cgroup $group, error code $ec, retry after .5 seconds"
-		((maxLoop--))
-		sleep .5
-	done
+    maxLoop=3
+    while [ $maxLoop -gt 0 ]
+    do
+      cgcreate -g "$group"
+      ec=$?
+      if [ $ec -eq 0 ]
+      then
+        break
+      fi
 
-	if [ $ec -ne 0 ]
-	then
-		exit $ec
-	fi
+      echo "Failed to create cgroup $group, error code $ec, retry after .5 seconds"
+      ((maxLoop--))
+      sleep .5
+    done
 
-	maxLoop=3
-	while [ $maxLoop -gt 0 ]
-	do
-		cpusFile=$(GetCpusFile "$groupName")
-		echo "$affinity" > "$cpusFile"
-		ec=$?
-		if [ $ec -eq 0 ]
-		then
-			break
-		fi
+    if [ $ec -ne 0 ]
+    then
+      exit $ec
+    fi
 
-		echo "Failed to set cpus for $group, error code $ec, retry after .5 seconds"
-		((maxLoop--))
-		sleep .5
-	done
+    maxLoop=3
+    while [ $maxLoop -gt 0 ]
+    do
+      cpusFile=$(GetCpusFile "$groupName")
+      echo "$affinity" > "$cpusFile"
+      ec=$?
+      if [ $ec -eq 0 ]
+      then
+        break
+      fi
 
-	if [ $ec -ne 0 ]
-	then
-		exit $ec
-	fi
+      echo "Failed to set cpus for $group, error code $ec, retry after .5 seconds"
+      ((maxLoop--))
+      sleep .5
+    done
 
-	maxLoop=3
-	while [ $maxLoop -gt 0 ]
-	do
-		memsFile=$(GetMemsFile "$groupName")
-		numaMaxIndex=$((`lscpu | grep 'NUMA node(s)' | awk '{print $NF}'` - 1))
-		echo 0-$numaMaxIndex > "$memsFile"
-		ec=$?
-		if [ $ec -eq 0 ]
-		then
-			break
-		fi
+    if [ $ec -ne 0 ]
+    then
+      exit $ec
+    fi
 
-		echo "Failed to set mems for $group, error code $ec, retry after .5 seconds"
-		((maxLoop--))
-		sleep .5
-	done
+    maxLoop=3
+    while [ $maxLoop -gt 0 ]
+    do
+      memsFile=$(GetMemsFile "$groupName")
+      numaMaxIndex=$((`lscpu | grep 'NUMA node(s)' | awk '{print $NF}'` - 1))
+      echo 0-$numaMaxIndex > "$memsFile"
+      ec=$?
+      if [ $ec -eq 0 ]
+      then
+        break
+      fi
 
-	if [ $ec -ne 0 ]
-	then
-		exit $ec
-	fi
+      echo "Failed to set mems for $group, error code $ec, retry after .5 seconds"
+      ((maxLoop--))
+      sleep .5
+    done
 
-	tasks=$(GetCpusetTasksFile "$groupName")
-	freezerState=$(GetFreezerStateFile "$groupName")
+    if [ $ec -ne 0 ]
+    then
+      exit $ec
+    fi
 
-	[ ! -f "$tasks" ] && echo "$tasks doesn't exist" && exit 200
-	[ ! -f "$freezerState" ] && echo "$freezerState doesn't exist" && exit 201
+    tasks=$(GetCpusetTasksFile "$groupName")
+    freezerState=$(GetFreezerStateFile "$groupName")
 
-	exit 0
-fi
+    [ ! -f "$tasks" ] && echo "$tasks doesn't exist" && exit 200
+    [ ! -f "$freezerState" ] && echo "$freezerState doesn't exist" && exit 201
+
+    exit 0
+  fi
 fi

@@ -16,8 +16,8 @@ eval sshFolder=~${userName}/.ssh/
 mkdir -p "$runDir" > /dev/null
 /bin/bash $runDir/WaitForTrust.sh "$userName" "$taskId" "$runDir" > "$trustLogFile" 2>&1
 if [ $? -ne 0 ]; then
-	echo "Mutual trust failure." >&2
-	mv "$trustLogFile" "$failedTrustLogFile"
-	cp -rf "${sshFolder}" "$trustKeysDir"
-	exit 203
+  echo "Mutual trust failure." >&2
+  mv "$trustLogFile" "$failedTrustLogFile"
+  cp -rf "${sshFolder}" "$trustKeysDir"
+  exit 203
 fi

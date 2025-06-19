@@ -7,117 +7,117 @@ command -v cgexec > /dev/null 2>&1 && CGInstalled=true
 
 CGroupV1=true
 if [ "$(stat -fc %T /sys/fs/cgroup/)" == "cgroup2fs" ]; then
-	CGroupV1=false
+  CGroupV1=false
 fi
 
 CGroupV2Root="/sys/fs/cgroup"
 if [ -d "/sys/fs/cgroup/hpcpack.slice/hpcagent.service" ]; then
-	CGroupV2Root="/sys/fs/cgroup/hpcpack.slice/hpcagent.service"
+  CGroupV2Root="/sys/fs/cgroup/hpcpack.slice/hpcagent.service"
 fi
 
 function GetCGroupName
 {
-	local taskId=$1
-	echo "nmgroup_$taskId"
+  local taskId=$1
+  echo "nmgroup_$taskId"
 }
 
 function GetExistingTaskIdsInCGroup
 {
-	lscgroup | grep 'cpuset:/nmgroup_.*' | sed -e 's/.*nmgroup_\(.*\)/\1/' | uniq
+  lscgroup | grep 'cpuset:/nmgroup_.*' | sed -e 's/.*nmgroup_\(.*\)/\1/' | uniq
 }
 
 function GetExistingTaskIdsInCGroupV2
 {
-	ls $CGroupV2Root | grep 'nmgroup_.*' | sed -e 's/.*nmgroup_\(.*\)/\1/' | uniq
+  ls $CGroupV2Root | grep 'nmgroup_.*' | sed -e 's/.*nmgroup_\(.*\)/\1/' | uniq
 }
 
 function GetGroupPath
 {
-	local groupName=$1
-	local subsys=$2
-	local groupPath=$(lssubsys -am | grep $subsys | cut -d' ' -f2)
-	echo $groupPath/$groupName
+  local groupName=$1
+  local subsys=$2
+  local groupPath=$(lssubsys -am | grep $subsys | cut -d' ' -f2)
+  echo $groupPath/$groupName
 }
 
 function GetGroupPathV2
 {
-	local groupName=$1
-	echo $CGroupV2Root/$groupName
+  local groupName=$1
+  echo $CGroupV2Root/$groupName
 }
 
 function GetGroupFile
 {
-	local groupName=$1
-	local subsys=$2
-	local fileName=$3
-	echo "$(GetGroupPath "$groupName" "$subsys")"/"$fileName"
+  local groupName=$1
+  local subsys=$2
+  local fileName=$3
+  echo "$(GetGroupPath "$groupName" "$subsys")"/"$fileName"
 }
 
 function GetGroupFileV2
 {
-	local groupName=$1
-	local fileName=$2
-	echo "$(GetGroupPathV2 "$groupName")"/"$fileName"
+  local groupName=$1
+  local fileName=$2
+  echo "$(GetGroupPathV2 "$groupName")"/"$fileName"
 }
 
 function GetCpusFile
 {
-	local groupName=$1
-	GetGroupFile "$groupName" cpuset cpuset.cpus
+  local groupName=$1
+  GetGroupFile "$groupName" cpuset cpuset.cpus
 }
 
 function GetCpusFileV2
 {
-	local groupName=$1
-	GetGroupFileV2 "$groupName" cpuset.cpus
+  local groupName=$1
+  GetGroupFileV2 "$groupName" cpuset.cpus
 }
 
 function GetMemsFile
 {
-	local groupName=$1
-	GetGroupFile "$groupName" cpuset cpuset.mems
+  local groupName=$1
+  GetGroupFile "$groupName" cpuset cpuset.mems
 }
 
 function GetMemsFileV2
 {
-	local groupName=$1
-	GetGroupFileV2 "$groupName" cpuset.mems
+  local groupName=$1
+  GetGroupFileV2 "$groupName" cpuset.mems
 }
 
 function GetCpusetTasksFile
 {
-	local groupName=$1
-	GetGroupFile "$groupName" cpuset tasks
+  local groupName=$1
+  GetGroupFile "$groupName" cpuset tasks
 }
 
 function GetCpusetTasksFileV2
 {
-	local groupName=$1
-	GetGroupFileV2 "$groupName" cgroup.procs
+  local groupName=$1
+  GetGroupFileV2 "$groupName" cgroup.procs
 }
 
 function GetFreezerStateFile
 {
-	local groupName=$1
-	GetGroupFile "$groupName" freezer freezer.state
+  local groupName=$1
+  GetGroupFile "$groupName" freezer freezer.state
 }
 
 function GetFreezeTriggerFileV2
 {
-	local groupName=$1
-	GetGroupFileV2 "$groupName" cgroup.freeze
+  local groupName=$1
+  GetGroupFileV2 "$groupName" cgroup.freeze
 }
 
 function GetKillTriggerFileV2
 {
-	local groupName=$1
-	GetGroupFileV2 "$groupName" cgroup.kill
+  local groupName=$1
+  GetGroupFileV2 "$groupName" cgroup.kill
 }
 
 function GetFreezerStateFileV2
 {
-	local groupName=$1
-	GetGroupFileV2 "$groupName" cgroup.events
+  local groupName=$1
+  GetGroupFileV2 "$groupName" cgroup.events
 }
 
 MpiContainerSuffix="MPI"
@@ -126,145 +126,145 @@ TmpSshDir="/tmp/hpcSshKey/.ssh"
 
 function GetContainerName
 {
-	local taskId=$1
-	echo "hpcTask_$taskId"
+  local taskId=$1
+  echo "hpcTask_$taskId"
 }
 
 function GetCGroupNameOfDockerTask
 {
-	local containerId=$1
-	local cgroupfsName="docker/$containerId"
-	local systemdName="system.slice/docker-$containerId.scope"
-	local testFile=$(GetCpusetTasksFile $cgroupfsName)
-	if [ -f $testFile ]; then
-		echo $cgroupfsName
-	else
-		echo $systemdName
-	fi
+  local containerId=$1
+  local cgroupfsName="docker/$containerId"
+  local systemdName="system.slice/docker-$containerId.scope"
+  local testFile=$(GetCpusetTasksFile $cgroupfsName)
+  if [ -f $testFile ]; then
+    echo $cgroupfsName
+  else
+    echo $systemdName
+  fi
 }
 
 function GetCGroupNameOfDockerTaskV2
 {
-	local containerId=$1
-	local cgroupfsName="docker/$containerId"
-	local systemdName="system.slice/docker-$containerId.scope"
-	local testFile=$(GetCpusetTasksFileV2 $cgroupfsName)
-	if [ -f $testFile ]; then
-		echo $cgroupfsName
-	else
-		echo $systemdName
-	fi
+  local containerId=$1
+  local cgroupfsName="docker/$containerId"
+  local systemdName="system.slice/docker-$containerId.scope"
+  local testFile=$(GetCpusetTasksFileV2 $cgroupfsName)
+  if [ -f $testFile ]; then
+    echo $cgroupfsName
+  else
+    echo $systemdName
+  fi
 }
 
 function GetDockerTaskEnvFile
 {
-	local taskFolder=$1
-	echo "$taskFolder/environments"
+  local taskFolder=$1
+  echo "$taskFolder/environments"
 }
 
 function GetContainerIdFile
 {
-	local taskFolder=$1
-	echo "$taskFolder/containerId"
+  local taskFolder=$1
+  echo "$taskFolder/containerId"
 }
 
 function GetContainerId
 {
-	local taskFolder=$1
-	cat $(GetContainerIdFile $taskFolder)
+  local taskFolder=$1
+  cat $(GetContainerIdFile $taskFolder)
 }
 
 function CheckDockerEnvFileExist
 {
-	local taskFolder=$1
-	[ -f $(GetDockerTaskEnvFile $taskFolder) ] && echo true || echo false
+  local taskFolder=$1
+  [ -f $(GetDockerTaskEnvFile $taskFolder) ] && echo true || echo false
 } 
 
 function GetUserSshDir
 {
-	local userName=$1
-	eval echo ~$userName/.ssh
+  local userName=$1
+  eval echo ~$userName/.ssh
 }
 
 function GetMpiContainerStartOption
 {
-	local userName=$1
-	local userSshDir=$(GetUserSshDir $userName)
-	local sshDirMountOption="-v $userSshDir:$TmpSshDir:ro"
-	local networkHostOption="--network host"
-	echo "$sshDirMountOption $networkHostOption"
+  local userName=$1
+  local userSshDir=$(GetUserSshDir $userName)
+  local sshDirMountOption="-v $userSshDir:$TmpSshDir:ro"
+  local networkHostOption="--network host"
+  echo "$sshDirMountOption $networkHostOption"
 }
 
 function CheckMpiTask
 {
-	local taskFolder=$1
-	local nodeNum=$(cat $(GetDockerTaskEnvFile $taskFolder) | grep "CCP_NODES=" | sed -r 's/^CCP_NODES=([0-9]+) .*/\1/g')
-	[ "$nodeNum" -gt 1 ] && echo true || echo false
+  local taskFolder=$1
+  local nodeNum=$(cat $(GetDockerTaskEnvFile $taskFolder) | grep "CCP_NODES=" | sed -r 's/^CCP_NODES=([0-9]+) .*/\1/g')
+  [ "$nodeNum" -gt 1 ] && echo true || echo false
 }
 
 function CheckDockerDebugMode
 {
-	local taskFolder=$1
-	debugOption=$(cat $(GetDockerTaskEnvFile $taskFolder) | grep "CCP_DOCKER_DEBUG=" | cut -d '=' -f 2)
-	[ -z $debugOption ] || [ "$debugOption" == "0" ] && echo false || echo true
+  local taskFolder=$1
+  debugOption=$(cat $(GetDockerTaskEnvFile $taskFolder) | grep "CCP_DOCKER_DEBUG=" | cut -d '=' -f 2)
+  [ -z $debugOption ] || [ "$debugOption" == "0" ] && echo false || echo true
 }
 
 function CheckSkipSshSetup
 {
-	local taskFolder=$1
-	local skipSshSetup=$(cat $(GetDockerTaskEnvFile $taskFolder) | grep "CCP_DOCKER_SKIP_SSH_SETUP=" | cut -d '=' -f 2)
-	[ "$skipSshSetup" == "1" ] && echo true || echo false
+  local taskFolder=$1
+  local skipSshSetup=$(cat $(GetDockerTaskEnvFile $taskFolder) | grep "CCP_DOCKER_SKIP_SSH_SETUP=" | cut -d '=' -f 2)
+  [ "$skipSshSetup" == "1" ] && echo true || echo false
 }
 
 function GetDockerEngine
 {
-	local nvidiaOption=$1
-	if [ -z $nvidiaOption ] || [ "$nvidiaOption" == "0" ]; then
-		echo "docker"
-	else
-		local taskFolder=$1
-		local nvidiaOption=$(cat $(GetDockerTaskEnvFile $taskFolder) | grep "CCP_DOCKER_NVIDIA=" | cut -d '=' -f 2)
-		if [ -z $nvidiaOption ] || [ "$nvidiaOption" == "0" ]; then
-			echo "docker"
-		else
-			echo "nvidia-docker"
-		fi
-	fi	
+  local nvidiaOption=$1
+  if [ -z $nvidiaOption ] || [ "$nvidiaOption" == "0" ]; then
+    echo "docker"
+  else
+    local taskFolder=$1
+    local nvidiaOption=$(cat $(GetDockerTaskEnvFile $taskFolder) | grep "CCP_DOCKER_NVIDIA=" | cut -d '=' -f 2)
+    if [ -z $nvidiaOption ] || [ "$nvidiaOption" == "0" ]; then
+      echo "docker"
+    else
+      echo "nvidia-docker"
+    fi
+  fi  
 }
 
 function GetDockerImageName
 {
-	local taskFolder=$1
-	cat $(GetDockerTaskEnvFile $taskFolder) | grep "CCP_DOCKER_IMAGE=" | cut -d '=' -f 2
+  local taskFolder=$1
+  cat $(GetDockerTaskEnvFile $taskFolder) | grep "CCP_DOCKER_IMAGE=" | cut -d '=' -f 2
 }
 
 function GetDockerVolumeOption
 {
-	local taskFolder=$1
-	cat $(GetDockerTaskEnvFile $taskFolder) | grep "CCP_DOCKER_VOLUMES=" | sed -e 's/^CCP_DOCKER_VOLUMES=/-v /g' -e 's/,/ -v /g'
+  local taskFolder=$1
+  cat $(GetDockerTaskEnvFile $taskFolder) | grep "CCP_DOCKER_VOLUMES=" | sed -e 's/^CCP_DOCKER_VOLUMES=/-v /g' -e 's/,/ -v /g'
 }
 
 function GetDockerAdditionalOption
 {
-	local taskFolder=$1
-	cat $(GetDockerTaskEnvFile $taskFolder) | grep "CCP_DOCKER_START_OPTION=" | sed 's/^CCP_DOCKER_START_OPTION=//'
+  local taskFolder=$1
+  cat $(GetDockerTaskEnvFile $taskFolder) | grep "CCP_DOCKER_START_OPTION=" | sed 's/^CCP_DOCKER_START_OPTION=//'
 }
 
 function GetSshStartCommand
 {
-	local version=$(python -mplatform) || local version=$(cat /etc/*release | grep NAME=)
-	echo $version | grep -iq ubuntu && echo "service ssh start" || echo "service sshd start"
+  local version=$(python -mplatform) || local version=$(cat /etc/*release | grep NAME=)
+  echo $version | grep -iq ubuntu && echo "service ssh start" || echo "service sshd start"
 }
 
 function GetSshStopCommand
 {
-	local version=$(python -mplatform) || local version=$(cat /etc/*release | grep NAME=)
-	echo $version | grep -iq ubuntu && echo "service ssh stop" || echo "service sshd stop"
+  local version=$(python -mplatform) || local version=$(cat /etc/*release | grep NAME=)
+  echo $version | grep -iq ubuntu && echo "service ssh stop" || echo "service sshd stop"
 }
 
 function CheckCgroupDisabledInFlagFile
 {
-	local taskFolder=$1
-	local flagFile="$taskFolder/disable_cgroup"
-	[ -f $flagFile ] && [ "$(head $flagFile)" == "1" ] && echo true || echo false
+  local taskFolder=$1
+  local flagFile="$taskFolder/disable_cgroup"
+  [ -f $flagFile ] && [ "$(head $flagFile)" == "1" ] && echo true || echo false
 }

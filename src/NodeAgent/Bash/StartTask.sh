@@ -25,7 +25,7 @@ esac
 
 isDockerTask=$(CheckDockerEnvFileExist $taskFolder)
 if $isDockerTask; then
-	containerId=$(GetContainerId $taskFolder)
+  containerId=$(GetContainerId $taskFolder)
     docker exec $containerId /bin/bash -c "$taskFolder/TestMutualTrust.sh $taskId $taskFolder $userName" &&\
     docker exec -u $userName -e CCP_MPI_HOSTFILE=$taskFolder/mpi_hostfile $containerId /bin/bash $runPath
     exit
@@ -33,15 +33,15 @@ fi
 
 cgDisabled=$(CheckCgroupDisabledInFlagFile $taskFolder)
 if ! $CGroupV1 && ! $cgDisabled; then
-	groupName=$(GetCGroupName "$taskId")
-	procsFile=$(GetCpusetTasksFileV2 "$groupName")
-	echo $$ > "$procsFile"
-	/bin/bash $taskFolder/TestMutualTrust.sh "$taskId" "$taskFolder" "$userName" || exit
-	if [ "$CCP_SWITCH_USER" == "1" ]; then
-		su $userName -m -c "/bin/bash /opt/hpcnodemanager/RunInCGroup.sh $procsFile $runPath"
-	else
-		sudo -H -E -u $userName env "PATH=$PATH" /bin/bash /opt/hpcnodemanager/RunInCGroup.sh $procsFile $runPath
-	fi
+  groupName=$(GetCGroupName "$taskId")
+  procsFile=$(GetCpusetTasksFileV2 "$groupName")
+  echo $$ > "$procsFile"
+  /bin/bash $taskFolder/TestMutualTrust.sh "$taskId" "$taskFolder" "$userName" || exit
+  if [ "$CCP_SWITCH_USER" == "1" ]; then
+    su $userName -m -c "/bin/bash /opt/hpcnodemanager/RunInCGroup.sh $procsFile $runPath"
+  else
+    sudo -H -E -u $userName env "PATH=$PATH" /bin/bash /opt/hpcnodemanager/RunInCGroup.sh $procsFile $runPath
+  fi
 elif $CGInstalled && ! $cgDisabled; then
     groupName=$(GetCGroupName "$taskId")
     group=$CGroupSubSys:$groupName

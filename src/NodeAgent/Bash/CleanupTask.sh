@@ -12,37 +12,37 @@ taskFolder=$3
 
 isDockerTask=$(CheckDockerEnvFileExist $taskFolder)
 if $isDockerTask; then
-	isDebugMode=$(CheckDockerDebugMode $taskFolder)
-	if ! $isDebugMode; then
-		containerId=$(GetContainerId $taskFolder)
-		docker rm -f $containerId
-	fi
+  isDebugMode=$(CheckDockerDebugMode $taskFolder)
+  if ! $isDebugMode; then
+    containerId=$(GetContainerId $taskFolder)
+    docker rm -f $containerId
+  fi
 
-	isMpiTask=$(CheckMpiTask $taskFolder)
-	skipSshSetup=$(CheckSkipSshSetup $taskFolder)
-	if $isMpiTask && ! $skipSshSetup; then
-		$(GetSshStartCommand)
-		ec=$?
-		if [ $ec -ne 0 ]
-		then
-			echo "Failed to start host ssh service."
-			exit $ec
-		fi
-	fi
+  isMpiTask=$(CheckMpiTask $taskFolder)
+  skipSshSetup=$(CheckSkipSshSetup $taskFolder)
+  if $isMpiTask && ! $skipSshSetup; then
+    $(GetSshStartCommand)
+    ec=$?
+    if [ $ec -ne 0 ]
+    then
+      echo "Failed to start host ssh service."
+      exit $ec
+    fi
+  fi
 
-	exit
+  exit
 fi
 
 /bin/bash ./EndTask.sh "$taskId" "$processId" "1"
 
 cgDisabled=$(CheckCgroupDisabledInFlagFile $taskFolder)
 if ! $cgDisabled; then
-	if ! $CGroupV1; then
-		groupName=$(GetCGroupName "$taskId")
-		rmdir $(GetGroupPathV2 "$groupName")
-	elif $CGInstalled; then
-	groupName=$(GetCGroupName "$taskId")
-	group=$CGroupSubSys:$groupName
-	cgdelete -g "$group"
-fi
+  if ! $CGroupV1; then
+    groupName=$(GetCGroupName "$taskId")
+    rmdir $(GetGroupPathV2 "$groupName")
+  elif $CGInstalled; then
+    groupName=$(GetCGroupName "$taskId")
+    group=$CGroupSubSys:$groupName
+    cgdelete -g "$group"
+  fi
 fi

@@ -6,32 +6,32 @@ echo
 
 docker version >/dev/null 2>&1
 if [ $? -eq 0 ]; then
-	echo "Cleaning up docker containers..."
-	containers=$(docker ps -a -q -f name=^/$(GetContainerName))
-	[ -z "$containers" ] || docker rm -f $containers
-	ec=$?
-	if [ $ec -ne 0 ]
-	then
-		echo "Failed to cleanup docker containers. Exitcode: $ec"
-	fi	
+  echo "Cleaning up docker containers..."
+  containers=$(docker ps -a -q -f name=^/$(GetContainerName))
+  [ -z "$containers" ] || docker rm -f $containers
+  ec=$?
+  if [ $ec -ne 0 ]
+  then
+    echo "Failed to cleanup docker containers. Exitcode: $ec"
+  fi  
 fi
 
 if ! $CGroupV1; then
-	echo "Cleaning up tasks in CGroupV2..."
-	taskIds=$(GetExistingTaskIdsInCGroupV2)
-	for taskId in $taskIds;
-	do
-		echo "$taskId"
-		/bin/bash ./CleanupTask.sh "$taskId" "0"
-	done
-	exit 0
+  echo "Cleaning up tasks in CGroupV2..."
+  taskIds=$(GetExistingTaskIdsInCGroupV2)
+  for taskId in $taskIds;
+  do
+    echo "$taskId"
+    /bin/bash ./CleanupTask.sh "$taskId" "0"
+  done
+  exit 0
 elif $CGInstalled; then
-	echo "Cleaning up tasks in CGroup..."
-	taskIds=$(GetExistingTaskIdsInCGroup)
-	for taskId in $taskIds;
-	do
-		echo "$taskId"
-		/bin/bash ./CleanupTask.sh "$taskId" "0"
-	done
-	exit 0
+  echo "Cleaning up tasks in CGroup..."
+  taskIds=$(GetExistingTaskIdsInCGroup)
+  for taskId in $taskIds;
+  do
+    echo "$taskId"
+    /bin/bash ./CleanupTask.sh "$taskId" "0"
+  done
+  exit 0
 fi
