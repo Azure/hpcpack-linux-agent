@@ -27,6 +27,9 @@ New-Item -Path $publishDir -Type Directory -Force | Out-Null
 
 Write-Information "Publishing to $publishDir"
 dotnet publish $agentProjFile -c $Config -r $Rid --sc -o $publishDir
+if ($LASTEXITCODE -ne 0) {
+  Write-Error "Failed in dotnet publish!"
+}
 
 if (!$OutDir) {
   $OutDir = Join-Path (Get-Location).Path 'out' "$Rid-$Config"
