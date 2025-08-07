@@ -62,6 +62,11 @@ extends:
               minor: '0'
               exclude_commit: true
 
+          - task: UseDotNet@2
+            displayName: 'Install .NET SDK'
+            inputs:
+              useGlobalJson: true
+
           - task: Bash@3
             displayName: 'Restore'
             inputs:
