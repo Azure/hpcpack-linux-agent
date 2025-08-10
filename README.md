@@ -51,7 +51,17 @@ See more at https://learn.microsoft.com/en-us/visualstudio/test/remote-testing?v
 ### Container
 
 1. Make sure Docker Desktop is installed and started.
-2. Build a local image of [Dockerfile.test](./src/Dockerfile.test) once, like `docker build -t local/netsdk:8.0 -f .\Dockerfile.test .`. Note the current directory for the build command is `src`.
+2. Optinally, build a local image of [Dockerfile.test](./src/Dockerfile.test) once, like `docker build -t local/netsdk:9.0 -f .\Dockerfile.test .`. Note the current directory for the build command is `src`.
+
+NOTE
+
+When you see error like
+
+```
+StreamJsonRpc.RemoteInvocationException: /usr/share/dotnet/dotnet process failed to connect to vstest.console process after 90 seconds.
+```
+
+You may need to upgrade the base image of `Dockerfile.test` to a higher version of .NET SDK, with which the [VS Test package](https://www.nuget.org/packages/Microsoft.TestPlatform.CLI#supportedframeworks-body-tab) that is being used to run the tests in the remote environment is built.
 
 ## Publishing
 

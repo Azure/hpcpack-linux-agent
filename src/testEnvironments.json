@@ -12,10 +12,9 @@
       "wslDistribution": "Ubuntu-22.04"
     },
     {
-      "name": ".NET SDK 8.0 container",
+      "name": ".NET SDK 9.0 container",
       "type": "docker",
       "dockerFile": "Dockerfile.test"
     }
   ]
 }
-

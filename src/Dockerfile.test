@@ -1,5 +1,4 @@
-# NOTE: The base image is from Debian 12.
-FROM mcr.microsoft.com/dotnet/sdk:8.0
+FROM mcr.microsoft.com/dotnet/sdk:9.0
 RUN wget https://aka.ms/getvsdbgsh && sh getvsdbgsh -v latest  -l /vsdbg
 RUN apt update
 RUN apt install -y openssh-client
