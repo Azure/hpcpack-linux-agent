@@ -5,9 +5,21 @@ CGroupSubSys=cpuacct,cpuset,memory,freezer
 CGInstalled=false
 command -v cgexec > /dev/null 2>&1 && CGInstalled=true
 
-CGroupV1=true
-if [ "$(stat -fc %T /sys/fs/cgroup/)" == "cgroup2fs" ]; then
-  CGroupV1=false
+if [[ $CGroupVersion != '' ]]; then
+  if [[ $CGroupVersion == 'v1' ]]; then
+    CGroupV1=true
+  elif [[ $CGroupVersion == 'v2' ]]; then
+    CGroupV1=false
+  else
+    echo "Invalid CGroup version specified: $CGroupVersion"
+    exit 1
+  fi
+else
+  if [[ "$(stat -fc %T /sys/fs/cgroup/)" == "cgroup2fs" ]]; then
+    CGroupV1=false
+  else
+    CGroupV1=true
+  fi
 fi
 
 CGroupV2Root="/sys/fs/cgroup"

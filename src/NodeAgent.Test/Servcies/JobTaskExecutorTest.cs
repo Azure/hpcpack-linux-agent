@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using NodeAgent.Models;
 using NodeAgent.Services;
 using NodeAgent.Test.Mocks;
@@ -20,6 +20,7 @@ public class IdGenerator
 
 
 [SupportedOSPlatform("linux")]
+[Collection(nameof(BashScriptCollection))]
 public class JobTaskExecutorTest : TestBase, IClassFixture<IdGenerator>
 {
     private IdGenerator _idGenerator;

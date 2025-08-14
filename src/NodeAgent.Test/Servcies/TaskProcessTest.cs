@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using NodeAgent.Models;
 using NodeAgent.Services;
 using System.Runtime.Versioning;
@@ -7,6 +7,7 @@ using static NodeAgent.Services.ITaskProcessFactory;
 
 namespace NodeAgent.Test.Servcies;
 
+[Collection(nameof(BashScriptCollection))]
 public class TaskProcessTest : TestBase
 {
     private ISystemService _system;
