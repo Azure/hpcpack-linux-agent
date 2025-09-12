@@ -1,4 +1,4 @@
-﻿using NodeAgent.Models;
+using NodeAgent.Models;
 using System.Reflection;
 using System.Runtime.Versioning;
 using static NodeAgent.Services.ITaskProcessFactory;
@@ -26,6 +26,8 @@ public interface ITaskProcessFactory
         TaskCompletionHandler? onComplete);
 
     Task CleanupAsync(CancellationToken cancellationToken = default);
+
+    string ScriptBaseDir { get; }
 }
 
 [SupportedOSPlatform("linux")]
@@ -35,7 +37,8 @@ public class TaskProcessFactory : ITaskProcessFactory
     private ILoggerFactory _loggerFactory;
     private ISystemService _systemService;
     private IOutputSenderFactory? _outputSenderFactory;
-    private string _scriptBaseDir;
+
+    public string ScriptBaseDir { get; }
 
     public TaskProcessFactory(
         ILogger<TaskProcessFactory> logger,
@@ -48,8 +51,8 @@ public class TaskProcessFactory : ITaskProcessFactory
         _loggerFactory = loggerFactory;
         _systemService = systemService;
         _outputSenderFactory = outputSenderFactory;
-        _scriptBaseDir = scriptBaseDir ?? DefaultScriptBaseDir;
-        _logger.LogInformation("Script base directory: {dir}", _scriptBaseDir);
+        ScriptBaseDir = scriptBaseDir ?? DefaultScriptBaseDir;
+        _logger.LogInformation("Script base directory: {dir}", ScriptBaseDir);
     }
 
     public static string DefaultScriptBaseDir
@@ -88,7 +91,7 @@ public class TaskProcessFactory : ITaskProcessFactory
             logger,
             _outputSenderFactory,
             _systemService,
-            _scriptBaseDir,
+            ScriptBaseDir,
             jobId,
             taskId,
             requeueCount,
@@ -110,7 +113,7 @@ public class TaskProcessFactory : ITaskProcessFactory
         try
         {
             var result = await _systemService.ExecuteFileInShellAsync(
-                "CleanupAllTasks.sh", workingDir: _scriptBaseDir, cancellationToken: cancellationToken).ConfigureAwait(false);
+                "CleanupAllTasks.sh", workingDir: ScriptBaseDir, cancellationToken: cancellationToken).ConfigureAwait(false);
             _logger.LogInformation("CleanupAsync result: {result}", result);
         }
         catch (Exception ex)

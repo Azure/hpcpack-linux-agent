@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging;
 using NodeAgent.Models;
 using NodeAgent.Utils;
 using System.Diagnostics;
@@ -258,7 +258,45 @@ public class JobTaskExecutor : IJobTaskExecutor
                 _logger.LogInformation(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount,
                     "StartTaskAsync: MPI non-master task found, skip creating a process.");
 
-                throw new NotImplementedException();
+                if (args.StartInfo.EnvironmentVariables != null &&
+                    args.StartInfo.EnvironmentVariables.TryGetValue("CCP_DOCKER_IMAGE", out var dockerImage) &&
+                    !string.IsNullOrEmpty(dockerImage))
+                {
+                    taskInfo.PrimaryTask = false;
+                    args.StartInfo.EnvironmentVariables.TryGetValue("CCP_DOCKER_NVIDIA", out var isNvidiaDocker);
+                    args.StartInfo.EnvironmentVariables.TryGetValue("CCP_DOCKER_START_OPTION", out var additionalOption);
+                    args.StartInfo.EnvironmentVariables.TryGetValue("CCP_DOCKER_SKIP_SSH_SETUP", out var skipSshSetup);
+
+                    var result = _systemService.ExecuteFileInShellAsync(
+                        "StartMpiContainer.sh",
+                        [
+                            taskInfo.TaskId.ToString(),
+                            userName,
+                            dockerImage,
+                            isNvidiaDocker ?? string.Empty,
+                            additionalOption ?? string.Empty,
+                            skipSshSetup ?? string.Empty
+                        ],
+                        null,
+                        _processFactory.ScriptBaseDir).Result;
+
+                    if (result.ExitCode == 0)
+                    {
+                        _logger.LogInformation(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount, "Start MPI container successfully.");
+                    }
+                    else
+                    {
+                        _logger.LogError(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount, "MPI container failed in starting: {result}", result);
+                    }
+                }
+                else
+                {
+                    var errMsg = "Environment variable CCP_DOCKER_IMAGE is not defined!";
+                    _logger.LogWarning(taskInfo.JobId, taskInfo.TaskId, taskInfo.TaskRequeueCount, errMsg);
+                    //NOTE: The C++ version allow this case without throwing an exception or even a warning.
+                    //This may be an issue or a compatibility requirement. FYI.
+                    //throw new ArgumentException(errMsg);
+                }
             }
             else
             {
@@ -430,7 +468,7 @@ public class JobTaskExecutor : IJobTaskExecutor
      *
      * The original C++ version method TerminateTask can terminate plain task or docker task. That is
      * a bad design as that makes the return value ambiguous: you cannot tell if you succeeded terminating
-     * a task or just that the task is not found or that the task is a docker task when it return null.
+     * a task or just that the task is not found or that the task is a docker task when it returns null.
      * So here TaskProcessNotFound is raised when a task is not found. And for docker task, a new method
      * should be made for that. That is a TODO.
      */
@@ -443,7 +481,21 @@ public class JobTaskExecutor : IJobTaskExecutor
         if (mpiDockerTask)
         {
             //TODO: Move the function into a new method like TerminateDockerTask. See above notes.
-            throw new NotImplementedException();
+            var result = _systemService.ExecuteFileInShellAsync(
+                "StopMpiContainer.sh",
+                [taskId.ToString()],
+                null,
+                _processFactory.ScriptBaseDir).Result;
+
+            if (result.ExitCode == 0)
+            {
+                _logger.LogInformation(jobId, taskId, requeueCount, "Stop MPI container successfully.");
+            }
+            else
+            {
+                _logger.LogError(jobId, taskId, requeueCount, "MPI container failed in stopping: {result}", result);
+            }
+            return null;
         }
         else
         {

@@ -1,4 +1,4 @@
-﻿using NodeAgent.Models;
+using NodeAgent.Models;
 using NodeAgent.Utils;
 using System.Diagnostics;
 using System.Text;
@@ -321,7 +321,10 @@ echo after >{0}/after1.txt 2>{0}/after2.txt || ([ "$?" = "1" ] && exit 253)
 
     private Task PrepareDockerTaskAsync(CancellationToken cancellationToken)
     {
-        throw new NotImplementedException();
+        Debug.Assert(!string.IsNullOrEmpty(_taskDirectory));
+        var envFile = Path.Combine(_taskDirectory, "environments");
+        var lines = (_env != null) ? _env.Select((key, value) => $"{key}={value}") : [];
+        return File.WriteAllLinesAsync(envFile, lines, cancellationToken);
     }
 
     private async Task DisableCGroupAsync(CancellationToken cancellationToken)
