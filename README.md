@@ -1,54 +1,61 @@
 # Linux Node Agent
 
-## Notes on file EOL
+This is a .NET version of HPC Pack node agent for Linux, replacing the old C++ version.
 
-File EOL is critical for a cross-platform project like this, which is developed on Windows with Visual Studio but run on Linux.
+## Installation
 
-Basically, it's required that
+### Build setup pacakge
 
-* All text files except .sh files (for Bash script) have CRLF as EOL.
-* .sh files have LF as EOL.
-* No mixed EOL (some lines end with LF, while others end with CRLF) is allowed.
+A setup package can be built by
 
-To mandate this, a [.gitattributes file](./.gitattributes) is present, and you're also required to make the following Git settings
-
-* `git config set core.safecrlf true`
-* `git config set core.autocrlf false`
-
-You can check your file EOL by executing `git ls-files --eol` under the project root directory. An example result is like
-
-```
-i/lf    w/crlf  attr/text=auto eol=crlf .config/tsaoptions.json
-i/lf    w/crlf  attr/text=auto eol=crlf .gitattributes
-i/lf    w/crlf  attr/text=auto eol=crlf .gitignore
-i/lf    w/crlf  attr/text=auto eol=crlf README.md
-i/lf    w/crlf  attr/text=auto eol=crlf nuget.config
-i/lf    w/crlf  attr/text=auto eol=crlf owners.txt
-i/lf    w/crlf  attr/text=auto eol=crlf pipelines/OneBranch.Buddy.CrossPlat.yml
-i/lf    w/crlf  attr/text=auto eol=crlf pipelines/OneBranch.Official.CrossPlat.yml
-i/lf    w/crlf  attr/text=auto eol=crlf src/NodeAgent.Test/Mocks/MockConfigManager.cs
-...
-i/lf    w/crlf  attr/text=auto eol=crlf src/NodeAgent/appsettings.json
-i/lf    w/crlf  attr/text=auto eol=crlf src/NodeAgent/nodemanager.json
+```ps1
+.\build\Build.ps1
 ```
 
-Make sure the first column is always `i/lf` for all types of text files. This means all text files are saved with LF as EOF in the Git index tree. But for the Git working tree (in the second column), it depends. It can be `w/crlf` (for all text files except .sh files) or `w/lf` (for .sh files only).
+The build result is put in `out\linux-x64-Release`, like
 
-When in doubt of EOL, check it with the command.
+```
+Mode                 LastWriteTime         Length Name
+----                 -------------         ------ ----
+-a---           9/15/2025  3:28 PM       41031615 hpcnodeagent.tar.gz
+-a---           8/10/2025  4:37 PM          26645 setup.py
+```
 
-## Remote Testing in Visual Studio
+### Install agent on compute node
+
+Firstly, uninstall the old C++ version. On compute a node, under the directory `/opt/hpcnodemanager`, execute
+
+```bash
+python3 setup.py -uninstall -keepcert
+```
+
+Then, install the new .NET version. Suppose the setup files are already put in `/mnt/reminst/NewAgent` on a compute node. Then under that directory, execute
+
+```bash
+python3 setup.py -install -connectionstring:leiz-hpctest-2 -keepcert
+```
+
+Note here the `leiz-hpctest-2` is my head node name. You should replace it with yours.
+
+### Runtime Environment
+
+As an ASP.NET program, the agent respects the environment variable `ASPNETCORE_ENVIRONMENT`. Set it to 'Development' to enable debug logging, as well as other settings for development, and 'Production' or unset for production environment.
+
+## Development
+
+### Remote Testing in Visual Studio
 
 Visual Studio can run test remotely. The configure file is [testEnvironments.json](./src/testEnvironments.json). Here we have options for WSL and container. But there're some prerequisites for them, separtely.
 
 See more at https://learn.microsoft.com/en-us/visualstudio/test/remote-testing?view=vs-2022
 
-### WSL
+#### WSL
 
 1. Install a Linux distribution in WSL. See the supported versions of Linux distros in testEnvironments.json.
 2. Install .NET SDK in the distro.
 3. Make sure the distro's default user is "root" in file "/etc/wsl.conf". See help at https://learn.microsoft.com/en-us/windows/wsl/wsl-config#user-settings
 
-### Container
+#### Container
 
 1. Make sure Docker Desktop is installed and started.
 2. Optinally, build a local image of [Dockerfile.test](./src/Dockerfile.test) once, like `docker build -t local/netsdk:9.0 -f .\Dockerfile.test .`. Note the current directory for the build command is `src`.
@@ -62,15 +69,3 @@ StreamJsonRpc.RemoteInvocationException: /usr/share/dotnet/dotnet process failed
 ```
 
 You may need to upgrade the base image of `Dockerfile.test` to a higher version of .NET SDK, with which the [VS Test package](https://www.nuget.org/packages/Microsoft.TestPlatform.CLI#supportedframeworks-body-tab) that is being used to run the tests in the remote environment is built.
-
-## Publishing
-
-Use the following command line for the project [NodeAgent](./src/NodeAgent/) to get an executable ("nodemanager") of the Node Agent.
-
-```
-dotnet publish -c Debug -r linux-x64 --sc
-```
-
-## Runtime Environment
-
-As an ASP.NET program, the executable respects the [ASP.NET Environment](https://learn.microsoft.com/en-us/aspnet/core/fundamentals/environments) by environment variable `ASPNETCORE_ENVIRONMENT`. Set it to 'Development' to enable debug logging, as well as other settings for development, and 'Production' or unset for production environment.
